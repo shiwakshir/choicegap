@@ -1,0 +1,43 @@
+import unittest
+
+from choicegap.benchmark import run_benchmark
+from choicegap.engine import DRIVERS, Session, expected_information_gain, find_experiment, update_posterior
+
+
+class EngineTests(unittest.TestCase):
+    def test_posterior_stays_normalized(self):
+        session = Session.create("trust", "I need proof", seed=1)
+        experiment = find_experiment("proof-v-price")
+        updated = update_posterior(session.posterior, experiment, "a")
+        self.assertAlmostEqual(sum(updated.values()), 1.0)
+        self.assertTrue(all(0 <= value <= 1 for value in updated.values()))
+
+    def test_expected_information_gain_is_non_negative(self):
+        session = Session.create("control", "I want control", seed=2)
+        for experiment_id in ("proof-v-price", "proof-v-control", "retention-v-price"):
+            self.assertGreaterEqual(expected_information_gain(session.posterior, find_experiment(experiment_id)), -1e-12)
+
+    def test_repeated_control_evidence_can_overturn_stated_preference(self):
+        session = Session.create("price", "Price matters", seed=3)
+        experiment = find_experiment("control-v-price")
+        for _ in range(3):
+            session.posterior = update_posterior(session.posterior, experiment, "a")
+        self.assertEqual(max(session.posterior, key=session.posterior.get), "control")
+
+    def test_side_randomization_is_reproducible(self):
+        first = Session.create("risk", "Keep data safe", seed=99).next_experiment()
+        second = Session.create("risk", "Keep data safe", seed=99).next_experiment()
+        self.assertEqual(first, second)
+
+    def test_benchmark_is_reproducible_and_adaptive_is_competitive(self):
+        first = run_benchmark(participants=240, seed=7)
+        second = run_benchmark(participants=240, seed=7)
+        self.assertEqual(first, second)
+        adaptive = first["strategies"]["adaptive"]["top1_accuracy"]
+        random = first["strategies"]["random"]["top1_accuracy"]
+        self.assertGreaterEqual(adaptive, random - 0.03)
+
+
+if __name__ == "__main__":
+    unittest.main()
+

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Adaptive UX research that tests the gap between stated preferences and choices.">
+  <title>ChoiceGap — evidence over assumptions</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="ChoiceGap home"><span class="brandmark">CG</span> ChoiceGap</a>
+    <div class="status"><span id="status-dot" class="dot"></span><span id="model-status">Checking Muse…</span></div>
+  </header>
+
+  <main>
+    <section id="intro" class="screen active">
+      <div class="eyebrow">Adaptive evidence agent</div>
+      <h1>People say one thing.<br><em>Choices reveal the tension.</em></h1>
+      <p class="lede">ChoiceGap forms competing explanations, runs the most informative controlled follow-up, and shows what the evidence can—and cannot—support.</p>
+      <div class="scenario-card">
+        <div class="scenario-kicker">Live study · 2 minutes</div>
+        <h2>Choose an AI meeting assistant</h2>
+        <p>Imagine you are selecting a tool for your team. What matters most to you?</p>
+        <div class="drivers" role="radiogroup" aria-label="Your stated priority">
+          <button class="driver" data-driver="trust"><span>01</span><strong>Trust & proof</strong><small>Audits, reputation, evidence</small></button>
+          <button class="driver" data-driver="control"><span>02</span><strong>User control</strong><small>Approvals, settings, oversight</small></button>
+          <button class="driver" data-driver="price"><span>03</span><strong>Price</strong><small>Lower cost, stronger value</small></button>
+          <button class="driver" data-driver="risk"><span>04</span><strong>Low risk</strong><small>Less retention and exposure</small></button>
+        </div>
+        <label for="statement">In your own words <span>optional</span></label>
+        <textarea id="statement" rows="3" placeholder="I care most about… because…"></textarea>
+        <button id="start" class="primary" disabled>Begin adaptive study <span>→</span></button>
+      </div>
+    </section>
+
+    <section id="study" class="screen">
+      <div class="study-head">
+        <div><div class="eyebrow">Controlled choice <span id="round">1</span> of 4</div><h1 id="experiment-title">Choose one.</h1></div>
+        <div class="uncertainty"><span>uncertainty</span><div class="meter"><i id="uncertainty-bar"></i></div></div>
+      </div>
+      <div id="agent-note" class="agent-note"><span class="spark">✦</span><div><strong>Muse selected this test</strong><p id="plan-reason"></p></div></div>
+      <p id="experiment-rationale" class="rationale"></p>
+      <div id="choices" class="choices"></div>
+      <p class="microcopy">Choose as you actually would. There is no “correct” answer.</p>
+      <div class="hypotheses">
+        <div class="hypothesis-title"><span>Live hypotheses</span><small>Bayesian posterior, not a verdict</small></div>
+        <div id="posterior"></div>
+      </div>
+    </section>
+
+    <section id="report" class="screen">
+      <div class="eyebrow">Evidence report</div>
+      <h1 id="report-headline"></h1>
+      <p id="report-summary" class="lede"></p>
+      <div class="report-grid">
+        <article class="panel"><h2>What the choices support</h2><div id="final-posterior"></div></article>
+        <article class="panel"><h2>Recommended next test</h2><p id="next-step"></p><div class="stamp">Decision support, not causal proof</div></article>
+      </div>
+      <article class="limitations"><h2>Limits before action</h2><ul id="limitations"></ul></article>
+      <button class="secondary" onclick="location.reload()">Run another participant</button>
+    </section>
+  </main>
+
+  <footer><span>Built with Meta Muse Spark</span><span>Controlled stimuli · Transparent uncertainty · Reproducible benchmark</span></footer>
+  <script src="/app.js"></script>
+</body>
+</html>
+
