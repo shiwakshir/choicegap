@@ -4,6 +4,8 @@
 
 ChoiceGap is a narrow, working vertical slice for the Meta Global AI Developer Hackathon 2026. A respondent states what matters when choosing an AI meeting assistant. The agent maintains four competing hypotheses—trust, control, price, and risk—then selects controlled pairwise trade-offs that maximize expected information gain. Each choice updates a Bayesian posterior. The final report separates evidence from speculation and makes its limitations explicit.
 
+The participant experience is intentionally blind by default: it does not expose live hypotheses, information gain, uncertainty, model status, or experiment rationale while choices are being collected. An explicit researcher view reveals those mechanics, and analysis appears only in a post-study debrief. This reduces priming and demand effects in the demo design.
+
 ## Why this is more than a survey
 
 ```text

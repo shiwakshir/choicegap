@@ -6,18 +6,22 @@
   <meta name="description" content="Adaptive UX research that tests the gap between stated preferences and choices.">
   <title>ChoiceGap — evidence over assumptions</title>
   <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/modes.css">
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="/" aria-label="ChoiceGap home"><span class="brandmark">CG</span> ChoiceGap</a>
-    <div class="status"><span id="status-dot" class="dot"></span><span id="model-status">Checking Muse…</span></div>
+    <button id="researcher-toggle" class="mode-toggle" type="button">Researcher view</button>
   </header>
 
   <main>
     <section id="intro" class="screen active">
-      <div class="eyebrow">Adaptive evidence agent</div>
-      <h1>People say one thing.<br><em>Choices reveal the tension.</em></h1>
-      <p class="lede">ChoiceGap forms competing explanations, runs the most informative controlled follow-up, and shows what the evidence can—and cannot—support.</p>
+      <div class="eyebrow participant-copy">Short product study</div>
+      <div class="eyebrow researcher-only">Adaptive evidence agent</div>
+      <h1 class="participant-copy">Choose what works<br><em>for you.</em></h1>
+      <h1 class="researcher-only">People say one thing.<br><em>Choices reveal the tension.</em></h1>
+      <p class="lede participant-copy">Help us understand how people choose between AI meeting assistants. There are no right answers, and it takes about two minutes.</p>
+      <p class="lede researcher-only">ChoiceGap forms competing explanations, runs the most informative controlled follow-up, and shows what the evidence can—and cannot—support.</p>
       <div class="scenario-card">
         <div class="scenario-kicker">Live study · 2 minutes</div>
         <h2>Choose an AI meeting assistant</h2>
@@ -37,32 +41,40 @@
     <section id="study" class="screen">
       <div class="study-head">
         <div><div class="eyebrow">Controlled choice <span id="round">1</span> of 4</div><h1 id="experiment-title">Choose one.</h1></div>
-        <div class="uncertainty"><span>uncertainty</span><div class="meter"><i id="uncertainty-bar"></i></div></div>
+        <div class="uncertainty researcher-only"><span>uncertainty</span><div class="meter"><i id="uncertainty-bar"></i></div></div>
       </div>
-      <div id="agent-note" class="agent-note"><span class="spark">✦</span><div><strong>Muse selected this test</strong><p id="plan-reason"></p></div></div>
-      <p id="experiment-rationale" class="rationale"></p>
+      <div id="agent-note" class="agent-note researcher-only"><span class="spark">✦</span><div><strong>Muse selected this test</strong><p id="plan-reason"></p></div></div>
+      <p id="experiment-rationale" class="rationale researcher-only"></p>
       <div id="choices" class="choices"></div>
       <p class="microcopy">Choose as you actually would. There is no “correct” answer.</p>
-      <div class="hypotheses">
+      <div class="hypotheses researcher-only">
         <div class="hypothesis-title"><span>Live hypotheses</span><small>Bayesian posterior, not a verdict</small></div>
         <div id="posterior"></div>
       </div>
     </section>
 
     <section id="report" class="screen">
-      <div class="eyebrow">Evidence report</div>
-      <h1 id="report-headline"></h1>
-      <p id="report-summary" class="lede"></p>
-      <div class="report-grid">
-        <article class="panel"><h2>What the choices support</h2><div id="final-posterior"></div></article>
-        <article class="panel"><h2>Recommended next test</h2><p id="next-step"></p><div class="stamp">Decision support, not causal proof</div></article>
+      <div id="participant-complete" class="participant-copy completion">
+        <div class="eyebrow">Study complete</div>
+        <h1>Thank you.</h1>
+        <p class="lede">Your four choices have been recorded. This study does not diagnose you or assign a permanent preference.</p>
+        <button id="open-debrief" class="primary">Open researcher debrief <span>→</span></button>
       </div>
-      <article class="limitations"><h2>Limits before action</h2><ul id="limitations"></ul></article>
-      <button class="secondary" onclick="location.reload()">Run another participant</button>
+      <div id="research-report" class="researcher-only">
+        <div class="eyebrow">Researcher debrief · Evidence report</div>
+        <h1 id="report-headline"></h1>
+        <p id="report-summary" class="lede"></p>
+        <div class="report-grid">
+          <article class="panel"><h2>What the choices support</h2><div id="final-posterior"></div></article>
+          <article class="panel"><h2>Recommended next test</h2><p id="next-step"></p><div class="stamp">Decision support, not causal proof</div></article>
+        </div>
+        <article class="limitations"><h2>Limits before action</h2><ul id="limitations"></ul></article>
+        <button class="secondary" onclick="location.reload()">Run another participant</button>
+      </div>
     </section>
   </main>
 
-  <footer><span>Built with Meta Muse Spark</span><span>Controlled stimuli · Transparent uncertainty · Reproducible benchmark</span></footer>
+  <footer><span class="participant-copy">Anonymous demo session</span><span class="researcher-only">Built with Meta Muse Spark</span><span class="researcher-only">Controlled stimuli · Transparent uncertainty · Reproducible benchmark</span></footer>
   <script src="/app.js"></script>
 </body>
 </html>

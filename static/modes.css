@@ -1,0 +1,39 @@
+.mode-toggle {
+  border: 1px solid var(--ink);
+  background: transparent;
+  padding: .55rem .75rem;
+  font: 750 .68rem var(--sans);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  cursor: pointer;
+}
+
+.mode-toggle:hover,
+.researcher-mode .mode-toggle {
+  background: var(--ink);
+  color: #fff;
+}
+
+.researcher-only {
+  display: none !important;
+}
+
+.researcher-mode .researcher-only {
+  display: block !important;
+}
+
+.researcher-mode .participant-copy {
+  display: none !important;
+}
+
+.researcher-mode .agent-note {
+  display: flex !important;
+}
+
+.completion {
+  max-width: 760px;
+}
+
+.completion .primary {
+  max-width: 430px;
+}

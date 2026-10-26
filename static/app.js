@@ -2,10 +2,18 @@ const $ = (selector) => document.querySelector(selector);
 const state = { driver: null, sessionId: null, experiment: null, posterior: null };
 const labels = { trust: 'Trust & proof', control: 'User control', price: 'Price sensitivity', risk: 'Risk avoidance' };
 
-fetch('/api/health').then(r => r.json()).then(data => {
-  $('#status-dot').classList.add('live');
-  $('#model-status').textContent = data.meta_enabled ? `${data.model} live` : 'Local demo mode';
-}).catch(() => { $('#model-status').textContent = 'Server offline'; });
+$('#researcher-toggle').addEventListener('click', () => {
+  const enabled = document.body.classList.toggle('researcher-mode');
+  $('#researcher-toggle').textContent = enabled ? 'Participant view' : 'Researcher view';
+});
+
+$('#open-debrief').addEventListener('click', () => {
+  document.body.classList.add('researcher-mode');
+  $('#researcher-toggle').textContent = 'Participant view';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+});
+
+fetch('/api/health').catch(() => {});
 
 document.querySelectorAll('.driver').forEach(button => button.addEventListener('click', () => {
   document.querySelectorAll('.driver').forEach(item => item.classList.remove('selected'));
