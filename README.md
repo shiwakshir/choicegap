@@ -47,6 +47,16 @@ python -m choicegap.benchmark --participants 2000 --output benchmark-results.jso
 
 The benchmark generates simulated participants with known latent drivers and noisy logistic choices. It compares the adaptive expected-information-gain policy with fixed and random four-question policies. It reports top-1 driver recovery, multiclass Brier score, and probability assigned to the true driver. Seeds are fixed and side placement is randomized reproducibly.
 
+### Current seeded result
+
+| Four-round policy | Top-1 recovery | Mean Brier ↓ | Probability on true driver |
+|---|---:|---:|---:|
+| Adaptive EIG | **89.95%** | **0.0409** | **83.74%** |
+| Fixed | 79.80% | 0.0719 | 71.00% |
+| Random | 79.45% | 0.0739 | 71.04% |
+
+The adaptive policy gains **10.15 percentage points** over the fixed sequence in this seeded simulation. The committed raw result is in `docs/benchmark-results.json`.
+
 This benchmark validates the inference mechanism under its own stated data-generating assumptions. It does **not** establish external validity with humans.
 
 ## Method and guardrails
@@ -69,6 +79,7 @@ choicegap/server.py     dependency-free local web server and API
 choicegap/benchmark.py  objective simulated-participant evaluation
 static/                 demo UI
 tests/                  deterministic unit and benchmark checks
+docs/                   benchmark snapshot and hackathon execution plan
 ```
 
 ## Three-minute demo path
