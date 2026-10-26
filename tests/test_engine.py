@@ -2,6 +2,7 @@ import unittest
 
 from choicegap.benchmark import run_benchmark
 from choicegap.engine import DRIVERS, Session, expected_information_gain, find_experiment, update_posterior
+from choicegap.meta import MetaClient
 
 
 class EngineTests(unittest.TestCase):
@@ -36,6 +37,14 @@ class EngineTests(unittest.TestCase):
         adaptive = first["strategies"]["adaptive"]["top1_accuracy"]
         random = first["strategies"]["random"]["top1_accuracy"]
         self.assertGreaterEqual(adaptive, random - 0.03)
+
+    def test_falsification_plan_is_auditable_and_constrained(self):
+        session = Session.create("trust", "I want proof", seed=11)
+        candidates = session.candidates()
+        plan = MetaClient.fallback_plan(candidates, session.posterior)
+        self.assertIn(plan["experiment_id"], {item["id"] for item in candidates})
+        self.assertNotEqual(plan["leading_account"], plan["rival_account"])
+        self.assertTrue(plan["falsification_rule"])
 
 
 if __name__ == "__main__":

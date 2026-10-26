@@ -15,12 +15,16 @@ stated preference → competing hypotheses → adaptive controlled choice
 ```
 
 - **Muse Spark 1.3 intake:** maps free text to a declared driver without pretending it observed behaviour.
-- **Muse Spark 1.3 orchestration:** chooses one of the three highest-information, prevalidated experiments. The engine rejects invented experiment IDs.
+- **Muse Spark 1.3 falsification loop:** stages a duel between the leading explanation and its strongest rival, chooses one of three high-information validated experiments, and pre-registers what result would count against its current belief. The engine rejects invented experiment IDs.
 - **Deterministic evidence layer:** choice likelihoods, posterior updates, side randomization, and information gain are inspectable Python.
 - **Muse Spark 1.3 synthesis:** turns computed evidence into a concise report under an explicit no-causality schema.
 - **Safe fallback:** the full study works without an API key, making the demo resilient.
 
 Muse Image is intentionally not used in this slice: generated visuals would add an uncontrolled stimulus and weaken the experimental claim.
+
+### Why Muse is essential rather than decorative
+
+This is not a chatbot wrapper. Muse converts ambiguous respondent language into a testable account, reasons over competing explanations and experiment metadata, and makes an auditable falsification commitment before each observation. Deterministic code owns probabilities and validation; Muse owns semantic interpretation and adversarial experiment strategy. That combination lets the agent adapt without allowing fluent model output to masquerade as evidence.
 
 ## Run locally
 

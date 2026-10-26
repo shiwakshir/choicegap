@@ -93,7 +93,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             plan = meta.choose_experiment(candidates, session.posterior)
         except RuntimeError as exc:
-            plan = {"experiment_id": candidates[0]["id"], "reason": str(exc), "source": "local-fallback"}
+            plan = MetaClient.fallback_plan(candidates, session.posterior)
+            plan.update({"reason": str(exc), "source": "local-fallback"})
         experiment = session.next_experiment(plan["experiment_id"])
         token = secrets.token_urlsafe(18)
         with LOCK:
@@ -134,7 +135,8 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 plan = meta.choose_experiment(candidates, session.posterior)
             except RuntimeError as exc:
-                plan = {"experiment_id": candidates[0]["id"], "reason": str(exc), "source": "local-fallback"}
+                plan = MetaClient.fallback_plan(candidates, session.posterior)
+                plan.update({"reason": str(exc), "source": "local-fallback"})
             response.update({"plan": plan, "experiment": session.next_experiment(plan["experiment_id"])})
         self._json(200, response)
 

@@ -50,7 +50,9 @@ function renderExperiment(experiment, plan, round) {
   $('#experiment-title').textContent = experiment.title;
   $('#experiment-rationale').textContent = experiment.rationale;
   $('#plan-reason').textContent = plan.reason;
-  $('#agent-note strong').textContent = plan.source?.startsWith('muse') ? 'Muse selected this test' : 'Evidence engine selected this test';
+  $('#agent-note strong').textContent = plan.source?.startsWith('muse') ? 'Muse falsification loop' : 'Local falsification loop';
+  $('#hypothesis-duel').innerHTML = `<span>${labels[plan.leading_account] || plan.leading_account}</span><b>vs</b><span>${labels[plan.rival_account] || plan.rival_account}</span>`;
+  $('#falsification-rule').textContent = `Pre-registered challenge: ${plan.falsification_rule}`;
   $('#choices').innerHTML = ['a','b'].map((key, index) => {
     const option = experiment[key];
     return `<button class="choice" data-choice="${key}"><span class="option">Option ${index ? 'B' : 'A'}</span><h2>${escapeHtml(option.name)}</h2><ul>${option.facts.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul><span class="select">Choose →</span></button>`;

@@ -6,7 +6,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from .engine import DRIVERS
+from .engine import DRIVER_COPY, DRIVERS
 
 
 META_BASE_URL = "https://api.meta.ai/v1"
@@ -22,6 +22,21 @@ class MetaClient:
     @property
     def enabled(self) -> bool:
         return bool(self.api_key)
+
+    @staticmethod
+    def fallback_plan(candidates: list[dict[str, Any]], posterior: dict[str, float]) -> dict[str, Any]:
+        ranked_accounts = sorted(posterior, key=posterior.get, reverse=True)
+        leader, rival = ranked_accounts[:2]
+        return {
+            "experiment_id": candidates[0]["id"],
+            "objective": "separate_leaders",
+            "leading_account": leader,
+            "rival_account": rival,
+            "predicted_split": f"A controlled trade-off should make {leader} and {rival} predict different choices.",
+            "falsification_rule": f"A choice favored by {rival} would count against the current {leader} account.",
+            "reason": "Maximum expected information gain.",
+            "source": "local",
+        }
 
     def _structured(self, messages: list[dict[str, str]], name: str, schema: dict[str, Any]) -> dict[str, Any]:
         body = {
@@ -70,26 +85,41 @@ class MetaClient:
         return result
 
     def choose_experiment(self, candidates: list[dict[str, Any]], posterior: dict[str, float]) -> dict[str, Any]:
+        ranked_accounts = sorted(posterior, key=posterior.get, reverse=True)
+        leader, rival = ranked_accounts[:2]
         if not self.enabled:
-            return {"experiment_id": candidates[0]["id"], "reason": "Maximum expected information gain.", "source": "local"}
+            return self.fallback_plan(candidates, posterior)
         ids = [item["id"] for item in candidates]
         schema = {
             "type": "object",
             "properties": {
                 "experiment_id": {"type": "string", "enum": ids},
+                "objective": {"type": "string", "enum": ["separate_leaders", "challenge_leader", "resolve_stated_gap"]},
+                "leading_account": {"type": "string", "enum": list(DRIVERS)},
+                "rival_account": {"type": "string", "enum": list(DRIVERS)},
+                "predicted_split": {"type": "string"},
+                "falsification_rule": {"type": "string"},
                 "reason": {"type": "string"},
             },
-            "required": ["experiment_id", "reason"],
+            "required": ["experiment_id", "objective", "leading_account", "rival_account", "predicted_split", "falsification_rule", "reason"],
             "additionalProperties": False,
         }
         result = self._structured([
             {"role": "system", "content": (
-                "You orchestrate an adaptive UX study. Select exactly one validated candidate. Prefer expected "
-                "information gain, but use the posterior to break near-ties. Never invent an experiment and never "
-                "claim causality. Keep the reason under 25 words."
+                "You are a falsification agent for an adaptive UX study. Treat the two strongest accounts as rivals, "
+                "then select exactly one validated candidate that makes them predict meaningfully different choices. "
+                "Prefer expected information gain. State the predicted disagreement and, before observing the answer, "
+                "the result that would count against the current leader. Never invent an experiment, diagnose a person, "
+                "or claim causality. Keep each explanation under 30 words."
             )},
-            {"role": "user", "content": json.dumps({"posterior": posterior, "candidates": candidates})},
-        ], "experiment_plan", schema)
+            {"role": "user", "content": json.dumps({
+                "posterior": posterior,
+                "current_leader": leader,
+                "strongest_rival": rival,
+                "account_meanings": {key: DRIVER_COPY[key]["description"] for key in DRIVERS},
+                "validated_candidates": candidates,
+            })},
+        ], "falsification_plan", schema)
         result["source"] = self.model
         return result
 

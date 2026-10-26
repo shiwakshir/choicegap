@@ -37,3 +37,29 @@
 .completion .primary {
   max-width: 430px;
 }
+
+.duel {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin-top: .8rem;
+}
+
+.duel span {
+  border: 1px solid var(--ink);
+  background: var(--card);
+  padding: .35rem .5rem;
+  font-size: .68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.duel b {
+  color: var(--red);
+  font: italic 500 .9rem var(--serif);
+}
+
+.agent-note .falsifier {
+  color: var(--red);
+  font-weight: 650;
+}
