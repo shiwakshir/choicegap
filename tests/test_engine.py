@@ -7,27 +7,27 @@ from choicegap.meta import MetaClient
 
 class EngineTests(unittest.TestCase):
     def test_posterior_stays_normalized(self):
-        session = Session.create("trust", "I need proof", seed=1)
-        experiment = find_experiment("proof-v-price")
+        session = Session.create("impact", "I want lower emissions", seed=1)
+        experiment = find_experiment("impact-v-price")
         updated = update_posterior(session.posterior, experiment, "a")
         self.assertAlmostEqual(sum(updated.values()), 1.0)
         self.assertTrue(all(0 <= value <= 1 for value in updated.values()))
 
     def test_expected_information_gain_is_non_negative(self):
-        session = Session.create("control", "I want control", seed=2)
-        for experiment_id in ("proof-v-price", "proof-v-control", "retention-v-price"):
+        session = Session.create("convenience", "Timing matters", seed=2)
+        for experiment_id in ("impact-v-price", "impact-v-convenience", "trust-v-price"):
             self.assertGreaterEqual(expected_information_gain(session.posterior, find_experiment(experiment_id)), -1e-12)
 
-    def test_repeated_control_evidence_can_overturn_stated_preference(self):
+    def test_repeated_convenience_evidence_can_overturn_stated_preference(self):
         session = Session.create("price", "Price matters", seed=3)
-        experiment = find_experiment("control-v-price")
+        experiment = find_experiment("convenience-v-price")
         for _ in range(3):
             session.posterior = update_posterior(session.posterior, experiment, "a")
-        self.assertEqual(max(session.posterior, key=session.posterior.get), "control")
+        self.assertEqual(max(session.posterior, key=session.posterior.get), "convenience")
 
     def test_side_randomization_is_reproducible(self):
-        first = Session.create("risk", "Keep data safe", seed=99).next_experiment()
-        second = Session.create("risk", "Keep data safe", seed=99).next_experiment()
+        first = Session.create("trust", "Verify green claims", seed=99).next_experiment()
+        second = Session.create("trust", "Verify green claims", seed=99).next_experiment()
         self.assertEqual(first, second)
 
     def test_benchmark_is_reproducible_and_adaptive_is_competitive(self):
@@ -39,7 +39,7 @@ class EngineTests(unittest.TestCase):
         self.assertGreaterEqual(adaptive, random - 0.03)
 
     def test_falsification_plan_is_auditable_and_constrained(self):
-        session = Session.create("trust", "I want proof", seed=11)
+        session = Session.create("impact", "I want lower emissions", seed=11)
         candidates = session.candidates()
         plan = MetaClient.fallback_plan(candidates, session.posterior)
         self.assertIn(plan["experiment_id"], {item["id"] for item in candidates})

@@ -139,7 +139,7 @@ class Handler(BaseHTTPRequestHandler):
             "experiment": experiment,
             "posterior": session.posterior,
             "driver_copy": driver_copy,
-            "study_title": study.title if study else "AI meeting assistant",
+            "study_title": study.title if study else "Sustainable grocery delivery",
             "meta_enabled": meta.enabled,
         })
 

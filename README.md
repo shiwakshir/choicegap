@@ -1,8 +1,8 @@
 # ChoiceGap
 
-**An adaptive UX research agent that tests the gap between what people say matters and what their choices support.**
+**An adaptive sustainability research agent that tests the gap between green intentions and actual trade-off choices.**
 
-ChoiceGap is a narrow, working vertical slice for the Meta Global AI Developer Hackathon 2026. A respondent states what matters when choosing an AI meeting assistant. The agent maintains four competing hypotheses—trust, control, price, and risk—then selects controlled pairwise trade-offs that maximize expected information gain. Each choice updates a Bayesian posterior. The final report separates evidence from speculation and makes its limitations explicit.
+ChoiceGap is a working vertical slice for the Meta Global AI Developer Hackathon 2026. The evidence-backed preset studies sustainable grocery delivery: a respondent states what matters, then chooses between controlled alternatives that trade environmental impact against affordability, convenience, and credibility of green claims. Each choice updates competing explanations, and Muse selects the next falsification test. The report separates evidence from speculation.
 
 The preset is no longer the boundary of the product. In Researcher view, a researcher can describe a completely different decision problem in natural language. Muse compiles it into four non-overlapping falsifiable accounts and concrete binary factor levels. Deterministic code then constructs all six pairwise trade-offs and refuses to run the generated study unless it passes structural controls.
 
@@ -70,11 +70,11 @@ The benchmark generates simulated participants with known latent drivers and noi
 
 | Four-round policy | Top-1 recovery | Mean Brier ↓ | Probability on true driver |
 |---|---:|---:|---:|
-| Adaptive EIG | **89.95%** | **0.0409** | **83.74%** |
-| Fixed | 79.80% | 0.0719 | 71.00% |
-| Random | 79.45% | 0.0739 | 71.04% |
+| Adaptive EIG | **91.50%** | **0.0341** | **86.94%** |
+| Fixed | 81.95% | 0.0629 | 74.38% |
+| Random | 81.05% | 0.0678 | 73.91% |
 
-The adaptive policy gains **10.15 percentage points** over the fixed sequence in this seeded simulation. The committed raw result is in `docs/benchmark-results.json`.
+The adaptive policy gains **9.55 percentage points** over the fixed sequence in this seeded sustainability simulation. The committed raw result is in `docs/benchmark-results.json`.
 
 This benchmark validates the inference mechanism under its own stated data-generating assumptions. It does **not** establish external validity with humans.
 
@@ -104,13 +104,15 @@ tests/                  deterministic unit and benchmark checks
 docs/                   benchmark snapshot and hackathon execution plan
 ```
 
+The sustainability choices and claims boundary are grounded in the cited evidence review at `docs/sustainability-research-basis.md`.
+
 ## Three-minute demo path
 
 1. **0:00–0:25 — Problem:** surveys capture stated preference; product choices often expose a different trade-off.
-2. **0:25–1:30 — Live study:** state “control,” then choose cheaper or lower-retention options. Show Muse selecting each next test and uncertainty updating.
+2. **0:25–1:30 — Live study:** state “environmental impact,” then make realistic delivery choices where fees, timing, and claim credibility create friction. Show Muse choosing falsification tests.
 3. **1:30–2:10 — Report:** point to the gap, posterior, evidence trail, and limitations. Say “support,” never “prove.”
 4. **2:10–2:40 — Technical depth:** structured Muse outputs + constrained orchestration + Bayesian EIG + randomized controlled stimuli.
-5. **2:40–3:00 — Validation/impact:** show reproducible simulated benchmark; explain how teams could test onboarding, pricing, privacy, or AI-control trade-offs.
+5. **2:40–3:00 — Validation/impact:** show the reproducible benchmark; explain how sustainability teams can test food, travel, energy, packaging, fashion, and circular-economy say–do gaps.
 
 ## Hackathon status
 

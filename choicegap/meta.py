@@ -76,8 +76,8 @@ class MetaClient:
         result = self._structured([
             {"role": "system", "content": (
                 "You are the intake planner for a careful UX research agent. Map only the respondent's stated "
-                "priority to one candidate driver: trust=proof/reputation, control=approval/settings, "
-                "price=cost/value, risk=data exposure/retention. Do not infer actual behaviour."
+                "priority to one candidate driver: impact=environmental footprint, price=delivery cost, "
+                "convenience=timing/ease, trust=credibility or verification of green claims. Do not infer actual behaviour."
             )},
             {"role": "user", "content": f"Explicit selection: {fallback}\nStatement: {statement}"},
         ], "stated_preference", schema)
@@ -112,10 +112,12 @@ class MetaClient:
         }
         result = self._structured([
             {"role": "system", "content": (
-                "You compile a product research question into a controlled adaptive choice study. Produce exactly four "
+                "You compile a sustainability research question into a controlled adaptive choice study. Produce exactly four "
                 "distinct, plausible, falsifiable explanations, each tied to one binary attribute. IDs must appear once "
                 "in order: a, b, c, d. Levels must be concrete, short, mutually exclusive, and displayable to a participant. "
-                "Avoid personality labels, sensitive traits, diagnoses, leading language, brands, and overlapping explanations. "
+                "Include realistic frictions such as cost, convenience, access, quality, trust, habit, or perceived impact when relevant. "
+                "Do not assume individual consumers are solely responsible for a structural sustainability problem. Avoid moralizing, "
+                "personality labels, sensitive traits, diagnoses, leading language, brands, and overlapping explanations. "
                 "The decision prompt must ask the participant to choose between two options. Do not generate conclusions."
             )},
             {"role": "user", "content": f"Research context:\n{context[:3000]}"},

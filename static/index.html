@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Adaptive UX research that tests the gap between stated preferences and choices.">
+  <meta name="description" content="Adaptive sustainability research that tests the gap between stated intentions and actual choices.">
   <title>ChoiceGap — evidence over assumptions</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/modes.css">
@@ -20,29 +20,29 @@
       <div class="eyebrow researcher-only">Adaptive evidence agent</div>
       <h1 class="participant-copy">Choose what works<br><em>for you.</em></h1>
       <h1 class="researcher-only">People say one thing.<br><em>Choices reveal the tension.</em></h1>
-      <p class="lede participant-copy">Help us understand how people choose between AI meeting assistants. There are no right answers, and it takes about two minutes.</p>
-      <p class="lede researcher-only">ChoiceGap forms competing explanations, runs the most informative controlled follow-up, and shows what the evidence can—and cannot—support.</p>
+      <p class="lede participant-copy">Help us understand how people make everyday sustainability trade-offs. There are no right answers, and it takes about two minutes.</p>
+      <p class="lede researcher-only">ChoiceGap finds sustainability say–do gaps by turning intentions into competing explanations, then selecting controlled follow-ups that try to falsify them.</p>
       <div class="study-builder researcher-only">
         <div class="scenario-kicker">Muse study compiler</div>
         <h2>Turn a messy question into a controlled study</h2>
-        <p>Describe a real decision and what competing explanations you want to distinguish. Muse proposes testable axes; the compiler—not the model—builds and audits every stimulus.</p>
+        <p>Describe a sustainability decision and the intention–behaviour gap you want to understand. Muse proposes testable individual and structural frictions; the compiler—not the model—builds and audits every stimulus.</p>
         <label for="design-context">Research context</label>
-        <textarea id="design-context" rows="4" placeholder="Example: We want to understand why freelancers choose one invoicing app over another. Possible reasons include automation, professional appearance, payment speed, and monthly price—but we may be missing better explanations."></textarea>
+        <textarea id="design-context" rows="4" placeholder="Example: We want to understand why commuters who intend to travel sustainably still choose private cars. Possible constraints include journey time, reliability, price, and personal safety—but we may be missing structural explanations."></textarea>
         <button id="design-study" class="primary">Compile study with Muse <span>✦</span></button>
         <div id="design-result" class="design-result" aria-live="polite"></div>
       </div>
       <div class="scenario-card">
         <div class="scenario-kicker">Live study · 2 minutes</div>
-        <h2 id="scenario-title">Choose an AI meeting assistant</h2>
-        <p id="scenario-prompt">Imagine you are selecting a tool for your team. What matters most to you?</p>
+        <h2 id="scenario-title">Choose a grocery delivery option</h2>
+        <p id="scenario-prompt">Imagine this is your real weekly shop. What matters most when choosing delivery?</p>
         <div id="drivers" class="drivers" role="radiogroup" aria-label="Your stated priority">
-          <button class="driver" data-driver="trust"><span>01</span><strong>Trust & proof</strong><small>Audits, reputation, evidence</small></button>
-          <button class="driver" data-driver="control"><span>02</span><strong>User control</strong><small>Approvals, settings, oversight</small></button>
-          <button class="driver" data-driver="price"><span>03</span><strong>Price</strong><small>Lower cost, stronger value</small></button>
-          <button class="driver" data-driver="risk"><span>04</span><strong>Low risk</strong><small>Less retention and exposure</small></button>
+          <button class="driver" data-driver="impact"><span>01</span><strong>Environmental impact</strong><small>Meaningfully lower delivery emissions</small></button>
+          <button class="driver" data-driver="price"><span>02</span><strong>Affordability</strong><small>Keeping the delivery fee low</small></button>
+          <button class="driver" data-driver="convenience"><span>03</span><strong>Convenience</strong><small>A precise, faster delivery window</small></button>
+          <button class="driver" data-driver="trust"><span>04</span><strong>Claim credibility</strong><small>Independent evidence behind green claims</small></button>
         </div>
         <label for="statement">In your own words <span>optional</span></label>
-        <textarea id="statement" rows="3" placeholder="I care most about… because…"></textarea>
+        <textarea id="statement" rows="3" placeholder="For grocery delivery, I care most about… because…"></textarea>
         <button id="start" class="primary" disabled>Begin adaptive study <span>→</span></button>
       </div>
     </section>

@@ -2,7 +2,7 @@
 
 ## Judge-facing thesis
 
-ChoiceGap turns a common research failure—treating stated preference as revealed preference—into an inspectable adaptive experiment. The demo is deliberately narrow enough to trust and broad enough to extend to onboarding, pricing, privacy, and AI-control decisions.
+ChoiceGap targets one of sustainability research's hardest failures: treating green intention as revealed behaviour. The preset isolates impact, affordability, convenience, and claim credibility in grocery delivery, while Muse can compile the same falsification workflow for food, mobility, energy, packaging, fashion, and circular consumption.
 
 ## Scoring alignment
 

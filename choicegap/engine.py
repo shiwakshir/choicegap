@@ -6,38 +6,38 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-DRIVERS = ("trust", "control", "price", "risk")
+DRIVERS = ("impact", "price", "convenience", "trust")
 
 DRIVER_COPY = {
-    "trust": {
-        "label": "Trust & proof",
-        "short": "proof",
-        "description": "Independent evidence and a recognizable vendor reduce uncertainty.",
-    },
-    "control": {
-        "label": "User control",
-        "short": "control",
-        "description": "Review, approval, and granular settings matter more than automation speed.",
+    "impact": {
+        "label": "Environmental impact",
+        "short": "impact",
+        "description": "A materially lower estimated footprint drives the choice.",
     },
     "price": {
-        "label": "Price sensitivity",
+        "label": "Affordability",
         "short": "price",
-        "description": "The respondent trades other benefits for a lower monthly cost.",
+        "description": "The respondent trades other benefits for a lower delivery fee.",
     },
-    "risk": {
-        "label": "Risk avoidance",
-        "short": "risk",
-        "description": "Data retention and organizational exposure dominate the decision.",
+    "convenience": {
+        "label": "Convenience",
+        "short": "convenience",
+        "description": "A precise, faster delivery window dominates the decision.",
+    },
+    "trust": {
+        "label": "Claim credibility",
+        "short": "trust",
+        "description": "Independent verification matters more than an unverified green claim.",
     },
 }
 
 # Utilities are deliberately distinct but not deterministic. Each row is a
 # falsifiable, single-driver account of behaviour, not a personality label.
 HYPOTHESES: dict[str, dict[str, float]] = {
-    "trust": {"trust": 2.6, "control": 0.6, "price": 0.5, "risk": 0.8},
-    "control": {"trust": 0.6, "control": 2.6, "price": 0.5, "risk": 0.8},
-    "price": {"trust": 0.5, "control": 0.5, "price": 2.8, "risk": 0.6},
-    "risk": {"trust": 0.7, "control": 0.8, "price": 0.4, "risk": 2.7},
+    "impact": {"impact": 2.8, "price": 0.45, "convenience": 0.55, "trust": 0.7},
+    "price": {"impact": 0.55, "price": 2.8, "convenience": 0.6, "trust": 0.5},
+    "convenience": {"impact": 0.55, "price": 0.6, "convenience": 2.8, "trust": 0.45},
+    "trust": {"impact": 0.7, "price": 0.45, "convenience": 0.45, "trust": 2.8},
 }
 
 
@@ -52,58 +52,58 @@ class Experiment:
 
 EXPERIMENTS = (
     Experiment(
-        "proof-v-price",
-        "Proof or savings?",
-        "Trades independent evidence against price while holding controls and retention fixed.",
-        {"name": "Verity", "price": 24, "trust": 1, "control": 0, "risk": 0,
-         "facts": ["$24 per seat", "Independent security audit", "Basic admin controls", "30-day retention"]},
-        {"name": "Pico", "price": 12, "trust": 0, "control": 0, "risk": 0,
-         "facts": ["$12 per seat", "Vendor security statement", "Basic admin controls", "30-day retention"]},
+        "impact-v-price",
+        "Lower impact or free delivery?",
+        "Trades a lower estimated footprint against the delivery fee while holding timing and evidence fixed.",
+        {"name": "Lower-impact slot", "price": 3, "impact": 1, "convenience": 0, "trust": 0,
+         "facts": ["£3 delivery fee", "Estimated delivery emissions: 60% lower", "Flexible delivery day", "Retailer calculation"]},
+        {"name": "Free standard slot", "price": 0, "impact": 0, "convenience": 0, "trust": 0,
+         "facts": ["Free delivery", "Standard delivery emissions", "Flexible delivery day", "Retailer calculation"]},
     ),
     Experiment(
-        "control-v-price",
-        "Control or savings?",
-        "Trades granular approval controls against price; proof and retention stay fixed.",
-        {"name": "Steer", "price": 24, "trust": 0, "control": 1, "risk": 0,
-         "facts": ["$24 per seat", "Vendor security statement", "Approve every action", "30-day retention"]},
-        {"name": "Swift", "price": 12, "trust": 0, "control": 0, "risk": 0,
-         "facts": ["$12 per seat", "Vendor security statement", "Fully automatic", "30-day retention"]},
+        "convenience-v-price",
+        "Precise timing or free delivery?",
+        "Trades a two-hour delivery window against the fee while impact and evidence stay fixed.",
+        {"name": "Timed slot", "price": 3, "impact": 0, "convenience": 1, "trust": 0,
+         "facts": ["£3 delivery fee", "Standard delivery emissions", "Two-hour delivery window", "Retailer calculation"]},
+        {"name": "Free flexible slot", "price": 0, "impact": 0, "convenience": 0, "trust": 0,
+         "facts": ["Free delivery", "Standard delivery emissions", "Flexible delivery day", "Retailer calculation"]},
     ),
     Experiment(
-        "retention-v-price",
-        "Low exposure or savings?",
-        "Trades zero retention against price while proof and controls stay fixed.",
-        {"name": "Vanish", "price": 24, "trust": 0, "control": 0, "risk": 1,
-         "facts": ["$24 per seat", "Vendor security statement", "Basic admin controls", "Zero data retention"]},
-        {"name": "Archive", "price": 12, "trust": 0, "control": 0, "risk": 0,
-         "facts": ["$12 per seat", "Vendor security statement", "Basic admin controls", "30-day retention"]},
+        "trust-v-price",
+        "Verified claim or free delivery?",
+        "Trades independent verification against the fee while impact and timing stay fixed.",
+        {"name": "Verified slot", "price": 3, "impact": 0, "convenience": 0, "trust": 1,
+         "facts": ["£3 delivery fee", "Standard delivery emissions", "Flexible delivery day", "Method independently verified"]},
+        {"name": "Free self-reported slot", "price": 0, "impact": 0, "convenience": 0, "trust": 0,
+         "facts": ["Free delivery", "Standard delivery emissions", "Flexible delivery day", "Retailer calculation"]},
     ),
     Experiment(
-        "proof-v-control",
-        "Evidence or control?",
-        "Separates trust in external proof from desire for direct control at the same price.",
-        {"name": "Assure", "price": 18, "trust": 1, "control": 0, "risk": 0,
-         "facts": ["$18 per seat", "Independent security audit", "Fully automatic", "30-day retention"]},
-        {"name": "Command", "price": 18, "trust": 0, "control": 1, "risk": 0,
-         "facts": ["$18 per seat", "Vendor security statement", "Approve every action", "30-day retention"]},
+        "impact-v-convenience",
+        "Lower impact or precise timing?",
+        "Separates environmental impact from convenience at the same fee and evidence level.",
+        {"name": "Lower-impact slot", "price": 1.5, "impact": 1, "convenience": 0, "trust": 0,
+         "facts": ["£1.50 delivery fee", "Estimated delivery emissions: 60% lower", "Flexible delivery day", "Retailer calculation"]},
+        {"name": "Timed standard slot", "price": 1.5, "impact": 0, "convenience": 1, "trust": 0,
+         "facts": ["£1.50 delivery fee", "Standard delivery emissions", "Two-hour delivery window", "Retailer calculation"]},
     ),
     Experiment(
-        "proof-v-retention",
-        "Evidence or low exposure?",
-        "Separates reassurance from proof and reassurance from reduced data exposure.",
-        {"name": "Certified", "price": 18, "trust": 1, "control": 0, "risk": 0,
-         "facts": ["$18 per seat", "Independent security audit", "Basic admin controls", "30-day retention"]},
-        {"name": "Ephemeral", "price": 18, "trust": 0, "control": 0, "risk": 1,
-         "facts": ["$18 per seat", "Vendor security statement", "Basic admin controls", "Zero data retention"]},
+        "impact-v-trust",
+        "Impact magnitude or credible evidence?",
+        "Separates a stronger self-reported reduction from independent verification at the same fee and timing.",
+        {"name": "Bigger claimed reduction", "price": 1.5, "impact": 1, "convenience": 0, "trust": 0,
+         "facts": ["£1.50 delivery fee", "Estimated delivery emissions: 60% lower", "Flexible delivery day", "Retailer calculation"]},
+        {"name": "Verified standard footprint", "price": 1.5, "impact": 0, "convenience": 0, "trust": 1,
+         "facts": ["£1.50 delivery fee", "Standard delivery emissions", "Flexible delivery day", "Method independently verified"]},
     ),
     Experiment(
-        "control-v-retention",
-        "Control or low exposure?",
-        "Separates intervention control from passive risk reduction at the same price.",
-        {"name": "Review", "price": 18, "trust": 0, "control": 1, "risk": 0,
-         "facts": ["$18 per seat", "Vendor security statement", "Approve every action", "30-day retention"]},
-        {"name": "Forget", "price": 18, "trust": 0, "control": 0, "risk": 1,
-         "facts": ["$18 per seat", "Vendor security statement", "Fully automatic", "Zero data retention"]},
+        "convenience-v-trust",
+        "Precise timing or credible evidence?",
+        "Separates convenience from confidence in the environmental evidence at the same fee and footprint.",
+        {"name": "Timed slot", "price": 1.5, "impact": 0, "convenience": 1, "trust": 0,
+         "facts": ["£1.50 delivery fee", "Standard delivery emissions", "Two-hour delivery window", "Retailer calculation"]},
+        {"name": "Verified flexible slot", "price": 1.5, "impact": 0, "convenience": 0, "trust": 1,
+         "facts": ["£1.50 delivery fee", "Standard delivery emissions", "Flexible delivery day", "Method independently verified"]},
     ),
 )
 
@@ -118,11 +118,11 @@ def _entropy(distribution: dict[str, float]) -> float:
 
 def _utility(option: dict[str, Any], hypothesis: str) -> float:
     weights = HYPOTHESES[hypothesis]
-    price_score = (24.0 - float(option["price"])) / 12.0
+    price_score = (3.0 - float(option["price"])) / 3.0
     return (
-        weights["trust"] * float(option["trust"])
-        + weights["control"] * float(option["control"])
-        + weights["risk"] * float(option["risk"])
+        weights["impact"] * float(option["impact"])
+        + weights["convenience"] * float(option["convenience"])
+        + weights["trust"] * float(option["trust"])
         + weights["price"] * price_score
     )
 

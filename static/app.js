@@ -1,6 +1,6 @@
 const $ = (selector) => document.querySelector(selector);
 const state = { driver: null, sessionId: null, studyId: null, experiment: null, posterior: null };
-let labels = { trust: 'Trust & proof', control: 'User control', price: 'Price sensitivity', risk: 'Risk avoidance' };
+let labels = { impact: 'Environmental impact', price: 'Affordability', convenience: 'Convenience', trust: 'Claim credibility' };
 
 $('#researcher-toggle').addEventListener('click', () => {
   const enabled = document.body.classList.toggle('researcher-mode');
@@ -104,7 +104,7 @@ function renderPosterior(posterior, target = '#posterior') {
 
 function renderReport(report, narrative) {
   show('report');
-  $('#report-headline').textContent = report.gap_detected ? 'There’s a meaningful gap.' : 'Stated and observed signals broadly align.';
+  $('#report-headline').textContent = report.gap_detected ? 'The trade-off pattern differs from the stated priority.' : 'Stated and observed signals broadly align.';
   $('#report-summary').textContent = narrative.summary;
   $('#next-step').textContent = narrative.next_step;
   $('#limitations').innerHTML = report.limitations.map(item => `<li>${escapeHtml(item)}</li>`).join('');

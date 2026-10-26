@@ -4,20 +4,20 @@
   "seed": 2026,
   "strategies": {
     "adaptive": {
-      "top1_accuracy": 0.8995,
-      "mean_brier": 0.0409,
-      "mean_probability_on_true_driver": 0.8374
+      "top1_accuracy": 0.915,
+      "mean_brier": 0.0341,
+      "mean_probability_on_true_driver": 0.8694
     },
     "fixed": {
-      "top1_accuracy": 0.798,
-      "mean_brier": 0.0719,
-      "mean_probability_on_true_driver": 0.71
+      "top1_accuracy": 0.8195,
+      "mean_brier": 0.0629,
+      "mean_probability_on_true_driver": 0.7438
     },
     "random": {
-      "top1_accuracy": 0.7945,
-      "mean_brier": 0.0739,
-      "mean_probability_on_true_driver": 0.7104
+      "top1_accuracy": 0.8105,
+      "mean_brier": 0.0678,
+      "mean_probability_on_true_driver": 0.7391
     }
   },
-  "adaptive_accuracy_lift_vs_fixed_pp": 10.15
+  "adaptive_accuracy_lift_vs_fixed_pp": 9.55
 }
