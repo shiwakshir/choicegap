@@ -10,13 +10,15 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from .dynamic import DynamicSession, StudySpec, audit_study, compile_study
 from .engine import DRIVER_COPY, DRIVERS, Session
 from .meta import MetaClient
 
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "static"
-SESSIONS: dict[str, Session] = {}
+SESSIONS: dict[str, Session | DynamicSession] = {}
+STUDIES: dict[str, StudySpec] = {}
 LOCK = threading.Lock()
 
 
@@ -65,7 +67,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         try:
             payload = self._body()
-            if self.path == "/api/start":
+            if self.path == "/api/design":
+                self._design(payload)
+            elif self.path == "/api/start":
                 self._start(payload)
             elif self.path == "/api/answer":
                 self._answer(payload)
@@ -76,22 +80,51 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:  # keep demo usable if an optional model call fails
             self._json(500, {"error": str(exc)})
 
+    def _design(self, payload: dict[str, Any]) -> None:
+        context = str(payload.get("context", "")).strip()
+        if len(context) < 30:
+            raise ValueError("Describe the decision and what you want to learn in at least 30 characters")
+        meta = MetaClient()
+        blueprint = meta.design_study(context)
+        study = compile_study(blueprint)
+        audit = audit_study(study)
+        if not audit["passed"]:
+            raise ValueError("The generated study did not pass the controlled-design audit")
+        token = secrets.token_urlsafe(12)
+        with LOCK:
+            STUDIES[token] = study
+        self._json(200, {
+            "study_id": token,
+            "study": study.to_public(),
+            "audit": audit,
+            "source": blueprint.get("source", meta.model),
+        })
+
     def _start(self, payload: dict[str, Any]) -> None:
         fallback = str(payload.get("driver", ""))
         statement = str(payload.get("statement", "")).strip()[:1000]
-        if fallback not in DRIVERS:
+        study_id = str(payload.get("study_id", ""))
+        study = STUDIES.get(study_id) if study_id else None
+        valid_drivers = study.driver_ids if study else DRIVERS
+        if fallback not in valid_drivers:
             raise ValueError("Choose one stated priority")
         meta = MetaClient()
-        try:
-            intake = meta.parse_statement(statement, fallback)
-        except RuntimeError as exc:
-            intake = {"driver": fallback, "reason": str(exc), "source": "local-fallback"}
-        # Explicit UI selection wins if free text is empty; otherwise Muse may classify it.
-        stated_driver = intake["driver"] if statement else fallback
-        session = Session.create(stated_driver, statement)
+        if study:
+            intake = {"driver": fallback, "reason": "Selected from the Muse-compiled study axes.", "source": meta.model}
+            stated_driver = fallback
+            session = DynamicSession.create(study, stated_driver, statement)
+            driver_copy = study.driver_copy
+        else:
+            try:
+                intake = meta.parse_statement(statement, fallback)
+            except RuntimeError as exc:
+                intake = {"driver": fallback, "reason": str(exc), "source": "local-fallback"}
+            stated_driver = intake["driver"] if statement else fallback
+            session = Session.create(stated_driver, statement)
+            driver_copy = DRIVER_COPY
         candidates = session.candidates()
         try:
-            plan = meta.choose_experiment(candidates, session.posterior)
+            plan = meta.choose_experiment(candidates, session.posterior, driver_copy)
         except RuntimeError as exc:
             plan = MetaClient.fallback_plan(candidates, session.posterior)
             plan.update({"reason": str(exc), "source": "local-fallback"})
@@ -105,7 +138,8 @@ class Handler(BaseHTTPRequestHandler):
             "plan": plan,
             "experiment": experiment,
             "posterior": session.posterior,
-            "driver_copy": DRIVER_COPY,
+            "driver_copy": driver_copy,
+            "study_title": study.title if study else "AI meeting assistant",
             "meta_enabled": meta.enabled,
         })
 
@@ -132,8 +166,9 @@ class Handler(BaseHTTPRequestHandler):
             response.update({"report": report, "narrative": narrative})
         else:
             candidates = session.candidates()
+            driver_copy = session.study.driver_copy if isinstance(session, DynamicSession) else DRIVER_COPY
             try:
-                plan = meta.choose_experiment(candidates, session.posterior)
+                plan = meta.choose_experiment(candidates, session.posterior, driver_copy)
             except RuntimeError as exc:
                 plan = MetaClient.fallback_plan(candidates, session.posterior)
                 plan.update({"reason": str(exc), "source": "local-fallback"})

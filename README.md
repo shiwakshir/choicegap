@@ -4,6 +4,8 @@
 
 ChoiceGap is a narrow, working vertical slice for the Meta Global AI Developer Hackathon 2026. A respondent states what matters when choosing an AI meeting assistant. The agent maintains four competing hypotheses—trust, control, price, and risk—then selects controlled pairwise trade-offs that maximize expected information gain. Each choice updates a Bayesian posterior. The final report separates evidence from speculation and makes its limitations explicit.
 
+The preset is no longer the boundary of the product. In Researcher view, a researcher can describe a completely different decision problem in natural language. Muse compiles it into four non-overlapping falsifiable accounts and concrete binary factor levels. Deterministic code then constructs all six pairwise trade-offs and refuses to run the generated study unless it passes structural controls.
+
 The participant experience is intentionally blind by default: it does not expose live hypotheses, information gain, uncertainty, model status, or experiment rationale while choices are being collected. An explicit researcher view reveals those mechanics, and analysis appears only in a post-study debrief. This reduces priming and demand effects in the demo design.
 
 ## Why this is more than a survey
@@ -15,8 +17,9 @@ stated preference → competing hypotheses → adaptive controlled choice
 ```
 
 - **Muse Spark 1.3 intake:** maps free text to a declared driver without pretending it observed behaviour.
+- **Muse Spark 1.3 study compiler:** turns an open research context into four testable explanations and displayable factor levels using constrained JSON—not arbitrary survey prose.
 - **Muse Spark 1.3 falsification loop:** stages a duel between the leading explanation and its strongest rival, chooses one of three high-information validated experiments, and pre-registers what result would count against its current belief. The engine rejects invented experiment IDs.
-- **Deterministic evidence layer:** choice likelihoods, posterior updates, side randomization, and information gain are inspectable Python.
+- **Deterministic evidence layer:** compiles a complete six-pair design, audits controls and coverage, then owns choice likelihoods, posterior updates, side randomization, and information gain.
 - **Muse Spark 1.3 synthesis:** turns computed evidence into a concise report under an explicit no-causality schema.
 - **Safe fallback:** the full study works without an API key, making the demo resilient.
 
@@ -25,6 +28,16 @@ Muse Image is intentionally not used in this slice: generated visuals would add 
 ### Why Muse is essential rather than decorative
 
 This is not a chatbot wrapper. Muse converts ambiguous respondent language into a testable account, reasons over competing explanations and experiment metadata, and makes an auditable falsification commitment before each observation. Deterministic code owns probabilities and validation; Muse owns semantic interpretation and adversarial experiment strategy. That combination lets the agent adapt without allowing fluent model output to masquerade as evidence.
+
+### Dynamic study workflow
+
+1. Open **Researcher view**.
+2. Describe a decision, population, and uncertainty in the Muse study compiler.
+3. Muse returns four structured candidate explanations with concrete high/low levels.
+4. The local compiler produces the six unique pairwise duels.
+5. The audit verifies four accounts, complete pairwise coverage, exactly two varying factors per test, shared held-constant copy, and position randomization.
+6. Switch to **Participant view** and run the blind adaptive study.
+7. Open the researcher debrief only after data collection.
 
 ## Run locally
 
@@ -65,6 +78,8 @@ The adaptive policy gains **10.15 percentage points** over the fixed sequence in
 
 This benchmark validates the inference mechanism under its own stated data-generating assumptions. It does **not** establish external validity with humans.
 
+Generated studies receive a structural design audit, not automatic domain validation. A human researcher must still review whether Muse selected the right explanations and realistic factor levels before recruiting participants.
+
 ## Method and guardrails
 
 The candidate set is a small fractional-factorial-style library of paired choices. Each pair either holds all but one attribute constant or presents a clearly disclosed two-attribute trade-off. Product names are neutral, copy is templated, and left/right order is randomized. This reduces obvious wording and position confounds; it does not eliminate hypothetical-choice bias.
@@ -80,6 +95,7 @@ The posterior is over four deliberately simple models, not over a person's ident
 
 ```text
 choicegap/engine.py     Bayesian model, experiment design, session state
+choicegap/dynamic.py    generic study compiler, audit, and adaptive session
 choicegap/meta.py       Meta Model API structured-output client
 choicegap/server.py     dependency-free local web server and API
 choicegap/benchmark.py  objective simulated-participant evaluation

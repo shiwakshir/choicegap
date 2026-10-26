@@ -1,6 +1,6 @@
 const $ = (selector) => document.querySelector(selector);
-const state = { driver: null, sessionId: null, experiment: null, posterior: null };
-const labels = { trust: 'Trust & proof', control: 'User control', price: 'Price sensitivity', risk: 'Risk avoidance' };
+const state = { driver: null, sessionId: null, studyId: null, experiment: null, posterior: null };
+let labels = { trust: 'Trust & proof', control: 'User control', price: 'Price sensitivity', risk: 'Risk avoidance' };
 
 $('#researcher-toggle').addEventListener('click', () => {
   const enabled = document.body.classList.toggle('researcher-mode');
@@ -15,18 +15,44 @@ $('#open-debrief').addEventListener('click', () => {
 
 fetch('/api/health').catch(() => {});
 
-document.querySelectorAll('.driver').forEach(button => button.addEventListener('click', () => {
-  document.querySelectorAll('.driver').forEach(item => item.classList.remove('selected'));
-  button.classList.add('selected');
-  state.driver = button.dataset.driver;
-  $('#start').disabled = false;
-}));
+function bindDrivers() {
+  document.querySelectorAll('.driver').forEach(button => button.addEventListener('click', () => {
+    document.querySelectorAll('.driver').forEach(item => item.classList.remove('selected'));
+    button.classList.add('selected');
+    state.driver = button.dataset.driver;
+    $('#start').disabled = false;
+  }));
+}
+bindDrivers();
+
+$('#design-study').addEventListener('click', async () => {
+  const button = $('#design-study');
+  button.disabled = true;
+  button.innerHTML = 'Muse is forming rival explanations… <span>✦</span>';
+  $('#design-result').textContent = '';
+  try {
+    const data = await api('/api/design', { context: $('#design-context').value });
+    state.studyId = data.study_id; state.driver = null;
+    $('#scenario-title').textContent = data.study.title;
+    $('#scenario-prompt').textContent = data.study.decision_prompt;
+    labels = Object.fromEntries(data.study.drivers.map(driver => [driver.id, driver.label]));
+    $('#drivers').innerHTML = data.study.drivers.map((driver, index) => `<button class="driver" data-driver="${driver.id}"><span>0${index + 1}</span><strong>${escapeHtml(driver.label)}</strong><small>${escapeHtml(driver.description)}</small></button>`).join('');
+    bindDrivers();
+    $('#start').disabled = true;
+    const passed = Object.values(data.audit.checks).filter(Boolean).length;
+    $('#design-result').innerHTML = `<strong>Controlled-design audit passed ${passed}/${Object.keys(data.audit.checks).length}</strong><span>${data.audit.experiment_count} experiments · complete pairwise coverage · randomized sides</span><span>Switch to Participant view before handing over the study.</span>`;
+    button.innerHTML = 'Recompile study <span>✦</span>';
+  } catch (error) {
+    $('#design-result').textContent = error.message;
+    button.innerHTML = 'Compile study with Muse <span>✦</span>';
+  } finally { button.disabled = false; }
+});
 
 $('#start').addEventListener('click', async () => {
   $('#start').disabled = true;
   $('#start').innerHTML = 'Forming hypotheses… <span>✦</span>';
   try {
-    const data = await api('/api/start', { driver: state.driver, statement: $('#statement').value });
+    const data = await api('/api/start', { driver: state.driver, statement: $('#statement').value, study_id: state.studyId });
     state.sessionId = data.session_id; state.posterior = data.posterior;
     show('study'); renderExperiment(data.experiment, data.plan, 1); renderPosterior(data.posterior);
   } catch (error) { alert(error.message); $('#start').disabled = false; $('#start').textContent = 'Begin adaptive study →'; }

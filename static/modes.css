@@ -63,3 +63,42 @@
   color: var(--red);
   font-weight: 650;
 }
+
+.study-builder {
+  background: #e8ecff;
+  border: 1px solid var(--blue);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  margin-bottom: 2rem;
+}
+
+.study-builder h2 {
+  font: 500 clamp(1.6rem, 3vw, 2.4rem) var(--serif);
+  margin: .5rem 0;
+}
+
+.study-builder > p {
+  color: var(--muted);
+  max-width: 760px;
+  line-height: 1.5;
+}
+
+.study-builder label {
+  display: block;
+  font-size: .75rem;
+  font-weight: 800;
+  margin: 1.25rem 0 .5rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.design-result {
+  display: grid;
+  gap: .3rem;
+  margin-top: 1rem;
+  font-size: .78rem;
+  color: var(--muted);
+}
+
+.design-result strong {
+  color: var(--blue);
+}

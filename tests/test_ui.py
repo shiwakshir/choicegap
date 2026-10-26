@@ -23,6 +23,12 @@ class ParticipantBlindnessTests(unittest.TestCase):
         self.assertIn('id="open-debrief"', html)
         self.assertIn("$('#open-debrief').addEventListener", script)
 
+    def test_researcher_can_compile_a_new_study(self):
+        html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+        self.assertIn('id="design-context"', html)
+        self.assertIn("api('/api/design'", script)
+
 
 if __name__ == "__main__":
     unittest.main()

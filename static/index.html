@@ -22,11 +22,20 @@
       <h1 class="researcher-only">People say one thing.<br><em>Choices reveal the tension.</em></h1>
       <p class="lede participant-copy">Help us understand how people choose between AI meeting assistants. There are no right answers, and it takes about two minutes.</p>
       <p class="lede researcher-only">ChoiceGap forms competing explanations, runs the most informative controlled follow-up, and shows what the evidence can—and cannot—support.</p>
+      <div class="study-builder researcher-only">
+        <div class="scenario-kicker">Muse study compiler</div>
+        <h2>Turn a messy question into a controlled study</h2>
+        <p>Describe a real decision and what competing explanations you want to distinguish. Muse proposes testable axes; the compiler—not the model—builds and audits every stimulus.</p>
+        <label for="design-context">Research context</label>
+        <textarea id="design-context" rows="4" placeholder="Example: We want to understand why freelancers choose one invoicing app over another. Possible reasons include automation, professional appearance, payment speed, and monthly price—but we may be missing better explanations."></textarea>
+        <button id="design-study" class="primary">Compile study with Muse <span>✦</span></button>
+        <div id="design-result" class="design-result" aria-live="polite"></div>
+      </div>
       <div class="scenario-card">
         <div class="scenario-kicker">Live study · 2 minutes</div>
-        <h2>Choose an AI meeting assistant</h2>
-        <p>Imagine you are selecting a tool for your team. What matters most to you?</p>
-        <div class="drivers" role="radiogroup" aria-label="Your stated priority">
+        <h2 id="scenario-title">Choose an AI meeting assistant</h2>
+        <p id="scenario-prompt">Imagine you are selecting a tool for your team. What matters most to you?</p>
+        <div id="drivers" class="drivers" role="radiogroup" aria-label="Your stated priority">
           <button class="driver" data-driver="trust"><span>01</span><strong>Trust & proof</strong><small>Audits, reputation, evidence</small></button>
           <button class="driver" data-driver="control"><span>02</span><strong>User control</strong><small>Approvals, settings, oversight</small></button>
           <button class="driver" data-driver="price"><span>03</span><strong>Price</strong><small>Lower cost, stronger value</small></button>

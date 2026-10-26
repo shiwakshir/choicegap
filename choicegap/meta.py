@@ -84,19 +84,65 @@ class MetaClient:
         result["source"] = self.model
         return result
 
-    def choose_experiment(self, candidates: list[dict[str, Any]], posterior: dict[str, float]) -> dict[str, Any]:
+    def design_study(self, context: str) -> dict[str, Any]:
+        if not self.enabled:
+            raise RuntimeError("Muse Spark is required to compile a new study")
+        attribute_schema = {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string", "enum": ["a", "b", "c", "d"]},
+                "label": {"type": "string"},
+                "low_label": {"type": "string"},
+                "high_label": {"type": "string"},
+                "hypothesis_label": {"type": "string"},
+                "hypothesis_description": {"type": "string"},
+            },
+            "required": ["id", "label", "low_label", "high_label", "hypothesis_label", "hypothesis_description"],
+            "additionalProperties": False,
+        }
+        schema = {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string"},
+                "decision_prompt": {"type": "string"},
+                "attributes": {"type": "array", "minItems": 4, "maxItems": 4, "items": attribute_schema},
+            },
+            "required": ["title", "decision_prompt", "attributes"],
+            "additionalProperties": False,
+        }
+        result = self._structured([
+            {"role": "system", "content": (
+                "You compile a product research question into a controlled adaptive choice study. Produce exactly four "
+                "distinct, plausible, falsifiable explanations, each tied to one binary attribute. IDs must appear once "
+                "in order: a, b, c, d. Levels must be concrete, short, mutually exclusive, and displayable to a participant. "
+                "Avoid personality labels, sensitive traits, diagnoses, leading language, brands, and overlapping explanations. "
+                "The decision prompt must ask the participant to choose between two options. Do not generate conclusions."
+            )},
+            {"role": "user", "content": f"Research context:\n{context[:3000]}"},
+        ], "controlled_study_blueprint", schema)
+        result["source"] = self.model
+        return result
+
+    def choose_experiment(
+        self,
+        candidates: list[dict[str, Any]],
+        posterior: dict[str, float],
+        account_copy: dict[str, dict[str, str]] | None = None,
+    ) -> dict[str, Any]:
         ranked_accounts = sorted(posterior, key=posterior.get, reverse=True)
         leader, rival = ranked_accounts[:2]
         if not self.enabled:
             return self.fallback_plan(candidates, posterior)
         ids = [item["id"] for item in candidates]
+        account_ids = list(posterior)
+        descriptions = account_copy or {key: DRIVER_COPY[key] for key in account_ids}
         schema = {
             "type": "object",
             "properties": {
                 "experiment_id": {"type": "string", "enum": ids},
                 "objective": {"type": "string", "enum": ["separate_leaders", "challenge_leader", "resolve_stated_gap"]},
-                "leading_account": {"type": "string", "enum": list(DRIVERS)},
-                "rival_account": {"type": "string", "enum": list(DRIVERS)},
+                "leading_account": {"type": "string", "enum": account_ids},
+                "rival_account": {"type": "string", "enum": account_ids},
                 "predicted_split": {"type": "string"},
                 "falsification_rule": {"type": "string"},
                 "reason": {"type": "string"},
@@ -116,7 +162,7 @@ class MetaClient:
                 "posterior": posterior,
                 "current_leader": leader,
                 "strongest_rival": rival,
-                "account_meanings": {key: DRIVER_COPY[key]["description"] for key in DRIVERS},
+                "account_meanings": {key: descriptions[key]["description"] for key in account_ids},
                 "validated_candidates": candidates,
             })},
         ], "falsification_plan", schema)
