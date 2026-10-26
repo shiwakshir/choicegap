@@ -23,6 +23,8 @@ stated preference → competing hypotheses → adaptive controlled choice
 - **Muse Spark 1.3 synthesis:** turns computed evidence into a concise report under an explicit no-causality schema.
 - **Safe fallback:** the full study works without an API key, making the demo resilient.
 
+The stated-attitude measurement and behavioural inference are intentionally separate. Participants rate every factor plus a general lower-impact intention item; the behavioural posterior still begins uniform. Muse may interpret optional free text, but it cannot overwrite the structured ratings or probability update.
+
 Muse Image is intentionally not used in this slice: generated visuals would add an uncontrolled stimulus and weaken the experimental claim.
 
 ### Why Muse is essential rather than decorative
@@ -70,11 +72,11 @@ The benchmark generates simulated participants with known latent drivers and noi
 
 | Four-round policy | Top-1 recovery | Mean Brier ↓ | Probability on true driver |
 |---|---:|---:|---:|
-| Adaptive EIG | **91.50%** | **0.0341** | **86.94%** |
-| Fixed | 81.95% | 0.0629 | 74.38% |
-| Random | 81.05% | 0.0678 | 73.91% |
+| Adaptive EIG | **91.60%** | **0.0333** | **86.86%** |
+| Fixed | 81.10% | 0.0689 | 71.99% |
+| Random | 79.30% | 0.0721 | 72.15% |
 
-The adaptive policy gains **9.55 percentage points** over the fixed sequence in this seeded sustainability simulation. The committed raw result is in `docs/benchmark-results.json`.
+The adaptive policy gains **10.50 percentage points** over the fixed sequence in this seeded sustainability simulation. The committed raw result is in `docs/benchmark-results.json`.
 
 This benchmark validates the inference mechanism under its own stated data-generating assumptions. It does **not** establish external validity with humans.
 

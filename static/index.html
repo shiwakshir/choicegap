@@ -34,16 +34,17 @@
       <div class="scenario-card">
         <div class="scenario-kicker">Live study · 2 minutes</div>
         <h2 id="scenario-title">Choose a grocery delivery option</h2>
-        <p id="scenario-prompt">Imagine this is your real weekly shop. What matters most when choosing delivery?</p>
-        <div id="drivers" class="drivers" role="radiogroup" aria-label="Your stated priority">
-          <button class="driver" data-driver="impact"><span>01</span><strong>Environmental impact</strong><small>Meaningfully lower delivery emissions</small></button>
-          <button class="driver" data-driver="price"><span>02</span><strong>Affordability</strong><small>Keeping the delivery fee low</small></button>
-          <button class="driver" data-driver="convenience"><span>03</span><strong>Convenience</strong><small>A precise, faster delivery window</small></button>
-          <button class="driver" data-driver="trust"><span>04</span><strong>Claim credibility</strong><small>Independent evidence behind green claims</small></button>
+        <p id="scenario-prompt">Imagine this is your real weekly shop. Before seeing any options, rate how important each factor is to you.</p>
+        <div id="drivers" class="drivers rating-grid" aria-label="Importance ratings"></div>
+        <div class="intention-item">
+          <label for="intention-score">“When a lower-impact delivery option is available, I try to choose it.”</label>
+          <div class="scale-labels"><span>Strongly disagree</span><span>Strongly agree</span></div>
+          <input id="intention-score" type="range" min="1" max="5" value="3" step="1">
         </div>
-        <label for="statement">In your own words <span>optional</span></label>
+        <p id="rating-hint" class="microcopy">Move at least one importance rating away from the midpoint to continue.</p>
+        <label for="statement">What shaped those ratings? <span>optional</span></label>
         <textarea id="statement" rows="3" placeholder="For grocery delivery, I care most about… because…"></textarea>
-        <button id="start" class="primary" disabled>Begin adaptive study <span>→</span></button>
+        <button id="start" class="primary" disabled>Continue to choices <span>→</span></button>
       </div>
     </section>
 

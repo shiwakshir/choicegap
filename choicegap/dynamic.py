@@ -178,17 +178,34 @@ class DynamicSession:
     statement: str
     posterior: dict[str, float]
     seed: int
+    stated_ratings: dict[str, int] = field(default_factory=dict)
+    intention_score: int = 3
     rounds: int = 0
     history: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
-    def create(cls, study: StudySpec, stated_driver: str, statement: str, seed: int | None = None) -> "DynamicSession":
+    def create(
+        cls,
+        study: StudySpec,
+        stated_driver: str,
+        statement: str,
+        seed: int | None = None,
+        stated_ratings: dict[str, int] | None = None,
+        intention_score: int = 3,
+    ) -> "DynamicSession":
         if stated_driver not in study.driver_ids:
             raise ValueError("Unknown stated priority")
-        remainder = (1.0 - 0.48) / 3
-        posterior = {key: 0.48 if key == stated_driver else remainder for key in study.driver_ids}
+        posterior = {key: 1.0 / len(study.driver_ids) for key in study.driver_ids}
         actual_seed = seed if seed is not None else random.SystemRandom().randrange(1, 10_000_000)
-        return cls(study, stated_driver, statement, posterior, actual_seed)
+        return cls(
+            study=study,
+            stated_driver=stated_driver,
+            statement=statement,
+            posterior=posterior,
+            seed=actual_seed,
+            stated_ratings=stated_ratings or {key: (5 if key == stated_driver else 3) for key in study.driver_ids},
+            intention_score=intention_score,
+        )
 
     @property
     def used(self) -> set[str]:
@@ -234,6 +251,8 @@ class DynamicSession:
         return {
             "study_title": self.study.title,
             "stated_driver": self.stated_driver,
+            "stated_ratings": self.stated_ratings,
+            "intention_score": self.intention_score,
             "leading_driver": leader,
             "confidence": round(probability, 4),
             "gap_detected": gap,

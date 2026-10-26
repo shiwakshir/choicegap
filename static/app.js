@@ -1,6 +1,7 @@
 const $ = (selector) => document.querySelector(selector);
-const state = { driver: null, sessionId: null, studyId: null, experiment: null, posterior: null };
+const state = { driver: null, ratings: {}, sessionId: null, studyId: null, experiment: null, posterior: null, decisionPrompt: 'Which delivery option would you choose?' };
 let labels = { impact: 'Environmental impact', price: 'Affordability', convenience: 'Convenience', trust: 'Claim credibility' };
+let descriptions = { impact: 'A materially lower estimated footprint', price: 'A lower delivery fee', convenience: 'A precise delivery window', trust: 'Independent evidence behind the claim' };
 
 $('#researcher-toggle').addEventListener('click', () => {
   const enabled = document.body.classList.toggle('researcher-mode');
@@ -15,15 +16,20 @@ $('#open-debrief').addEventListener('click', () => {
 
 fetch('/api/health').catch(() => {});
 
-function bindDrivers() {
-  document.querySelectorAll('.driver').forEach(button => button.addEventListener('click', () => {
-    document.querySelectorAll('.driver').forEach(item => item.classList.remove('selected'));
-    button.classList.add('selected');
-    state.driver = button.dataset.driver;
-    $('#start').disabled = false;
+function renderRatingInputs() {
+  state.ratings = Object.fromEntries(Object.keys(labels).map(key => [key, 3]));
+  $('#drivers').innerHTML = Object.entries(labels).map(([key, label]) => `<div class="rating-row"><div><strong>${escapeHtml(label)}</strong><small>${escapeHtml(descriptions[key] || '')}</small></div><input type="range" min="1" max="5" value="3" step="1" data-driver="${key}" aria-label="${escapeHtml(label)} importance"><output>3</output></div>`).join('');
+  document.querySelectorAll('.rating-row input').forEach(input => input.addEventListener('input', () => {
+    state.ratings[input.dataset.driver] = Number(input.value);
+    input.nextElementSibling.value = input.value;
+    const values = Object.values(state.ratings);
+    const differentiated = Math.max(...values) > Math.min(...values);
+    state.driver = Object.keys(state.ratings).reduce((best, key) => state.ratings[key] > state.ratings[best] ? key : best);
+    $('#start').disabled = !differentiated;
+    $('#rating-hint').textContent = differentiated ? 'Thanks. Your choices may support—or challenge—this profile.' : 'Move at least one importance rating away from the midpoint to continue.';
   }));
 }
-bindDrivers();
+renderRatingInputs();
 
 $('#design-study').addEventListener('click', async () => {
   const button = $('#design-study');
@@ -34,10 +40,11 @@ $('#design-study').addEventListener('click', async () => {
     const data = await api('/api/design', { context: $('#design-context').value });
     state.studyId = data.study_id; state.driver = null;
     $('#scenario-title').textContent = data.study.title;
-    $('#scenario-prompt').textContent = data.study.decision_prompt;
+    $('#scenario-prompt').textContent = 'Before seeing any options, rate how important each factor is to you.';
     labels = Object.fromEntries(data.study.drivers.map(driver => [driver.id, driver.label]));
-    $('#drivers').innerHTML = data.study.drivers.map((driver, index) => `<button class="driver" data-driver="${driver.id}"><span>0${index + 1}</span><strong>${escapeHtml(driver.label)}</strong><small>${escapeHtml(driver.description)}</small></button>`).join('');
-    bindDrivers();
+    descriptions = Object.fromEntries(data.study.drivers.map(driver => [driver.id, driver.description]));
+    state.decisionPrompt = data.study.decision_prompt;
+    renderRatingInputs();
     $('#start').disabled = true;
     const passed = Object.values(data.audit.checks).filter(Boolean).length;
     $('#design-result').innerHTML = `<strong>Controlled-design audit passed ${passed}/${Object.keys(data.audit.checks).length}</strong><span>${data.audit.experiment_count} experiments · complete pairwise coverage · randomized sides</span><span>Switch to Participant view before handing over the study.</span>`;
@@ -52,7 +59,7 @@ $('#start').addEventListener('click', async () => {
   $('#start').disabled = true;
   $('#start').innerHTML = 'Forming hypotheses… <span>✦</span>';
   try {
-    const data = await api('/api/start', { driver: state.driver, statement: $('#statement').value, study_id: state.studyId });
+    const data = await api('/api/start', { driver: state.driver, ratings: state.ratings, intention_score: Number($('#intention-score').value), statement: $('#statement').value, study_id: state.studyId });
     state.sessionId = data.session_id; state.posterior = data.posterior;
     show('study'); renderExperiment(data.experiment, data.plan, 1); renderPosterior(data.posterior);
   } catch (error) { alert(error.message); $('#start').disabled = false; $('#start').textContent = 'Begin adaptive study →'; }
@@ -73,7 +80,7 @@ function show(id) {
 function renderExperiment(experiment, plan, round) {
   state.experiment = experiment;
   $('#round').textContent = round;
-  $('#experiment-title').textContent = experiment.title;
+  $('#experiment-title').textContent = state.decisionPrompt;
   $('#experiment-rationale').textContent = experiment.rationale;
   $('#plan-reason').textContent = plan.reason;
   $('#agent-note strong').textContent = plan.source?.startsWith('muse') ? 'Muse falsification loop' : 'Local falsification loop';
@@ -81,7 +88,7 @@ function renderExperiment(experiment, plan, round) {
   $('#falsification-rule').textContent = `Pre-registered challenge: ${plan.falsification_rule}`;
   $('#choices').innerHTML = ['a','b'].map((key, index) => {
     const option = experiment[key];
-    return `<button class="choice" data-choice="${key}"><span class="option">Option ${index ? 'B' : 'A'}</span><h2>${escapeHtml(option.name)}</h2><ul>${option.facts.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul><span class="select">Choose →</span></button>`;
+    return `<button class="choice" data-choice="${key}"><span class="option">Option ${index ? 'B' : 'A'}</span><h2>Option ${index ? 'B' : 'A'}</h2><ul>${option.facts.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul><span class="select">Choose →</span></button>`;
   }).join('');
   document.querySelectorAll('.choice').forEach(button => button.addEventListener('click', () => answer(button.dataset.choice)));
 }

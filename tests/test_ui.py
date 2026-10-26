@@ -29,6 +29,13 @@ class ParticipantBlindnessTests(unittest.TestCase):
         self.assertIn('id="design-context"', html)
         self.assertIn("api('/api/design'", script)
 
+    def test_intake_uses_ratings_and_choices_use_neutral_labels(self):
+        html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+        self.assertIn('id="intention-score"', html)
+        self.assertIn("ratings: state.ratings", script)
+        self.assertIn("<h2>Option ${index ? 'B' : 'A'}</h2>", script)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -106,21 +106,33 @@ class Handler(BaseHTTPRequestHandler):
         study_id = str(payload.get("study_id", ""))
         study = STUDIES.get(study_id) if study_id else None
         valid_drivers = study.driver_ids if study else DRIVERS
-        if fallback not in valid_drivers:
-            raise ValueError("Choose one stated priority")
+        raw_ratings = payload.get("ratings") or {}
+        if raw_ratings:
+            ratings = {key: int(raw_ratings.get(key, 0)) for key in valid_drivers}
+            if any(value < 1 or value > 5 for value in ratings.values()):
+                raise ValueError("Rate every factor from 1 to 5")
+            fallback = max(valid_drivers, key=lambda key: (ratings[key], -valid_drivers.index(key)))
+        else:
+            if fallback not in valid_drivers:
+                raise ValueError("Rate the factors before starting")
+            ratings = {key: (5 if key == fallback else 3) for key in valid_drivers}
+        intention_score = int(payload.get("intention_score", 3))
+        if intention_score < 1 or intention_score > 5:
+            raise ValueError("Intention rating must be from 1 to 5")
         meta = MetaClient()
         if study:
             intake = {"driver": fallback, "reason": "Selected from the Muse-compiled study axes.", "source": meta.model}
             stated_driver = fallback
-            session = DynamicSession.create(study, stated_driver, statement)
+            session = DynamicSession.create(study, stated_driver, statement, stated_ratings=ratings, intention_score=intention_score)
             driver_copy = study.driver_copy
         else:
             try:
                 intake = meta.parse_statement(statement, fallback)
             except RuntimeError as exc:
                 intake = {"driver": fallback, "reason": str(exc), "source": "local-fallback"}
-            stated_driver = intake["driver"] if statement else fallback
-            session = Session.create(stated_driver, statement)
+            # The structured ratings—not Muse's interpretation—define the stated profile.
+            stated_driver = fallback
+            session = Session.create(stated_driver, statement, stated_ratings=ratings, intention_score=intention_score)
             driver_copy = DRIVER_COPY
         candidates = session.candidates()
         try:

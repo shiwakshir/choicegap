@@ -10,6 +10,9 @@ ChoiceGap is oriented around the sustainability **intention–behaviour** (or **
 - A natural field experiment on Fair Trade coffee found that a 20% price reduction increased sales while added information and moral appeals did not. This supports price as a rival behavioural explanation instead of assuming more sustainability information will close the gap. [Social Science Research, 2015](https://doi.org/10.1016/j.ssresearch.2015.02.007)
 - An incentivized sustainable-fashion experiment distinguishes stated from revealed preference and reports that price, perceived quality, design, and prior experience can alter whether intentions translate into willingness to pay. [Scientific Reports, 2025](https://www.nature.com/articles/s41598-025-23008-9)
 - Across 20 experiments with 16,114 participants, hypothetical nudges usually recovered the direction of real-world effects but produced noisy effect magnitudes. The app therefore treats hypothetical choices as directional evidence and explicitly refuses cost-benefit or causal claims. [Communications Psychology, 2025](https://www.nature.com/articles/s44271-025-00339-x)
+- A last-mile delivery discrete-choice study found that respondents disliked delays and emissions but accepted longer waits for lower-impact delivery, with meaningful heterogeneity across respondents. This supports adaptive rather than one-size-fits-all questioning. [Transportation Research Part D, 2021](https://doi.org/10.1016/j.trd.2021.102863)
+- A simulated online-shopping experiment found that disclosing delivery emissions could shift people away from expedited shipping, with an effect comparable to price discounts. This supports testing impact information against convenience and price rather than studying each in isolation. [Sustainable Production and Consumption, 2022](https://doi.org/10.1016/j.spc.2022.09.014)
+- Good-practice guidance for discrete-choice experiments requires explicit objectives, defensible attributes and levels, sufficient independent variation, balance, and attention to respondent fatigue and comprehension. ChoiceGap uses a small pairwise candidate set for hypothesis discrimination, not population-level utility estimation. [ISPOR Experimental Design Task Force](https://www.valueinhealthjournal.com/article/S1098-3015%2812%2904162-9/fulltext)
 
 ## Default rival explanations
 
@@ -19,6 +22,12 @@ ChoiceGap is oriented around the sustainability **intention–behaviour** (or **
 4. **Claim credibility:** independent verification matters more than the claimed reduction itself.
 
 The six preset experiments cover every pair of these four explanations once. Each comparison changes two factors in opposite directions and holds the remaining factors constant. Left/right position is randomized.
+
+## Question architecture
+
+The participant no longer selects one forced “most important” factor. Before the choice tasks, they rate all four factors on the same five-point importance scale and separately respond to a lower-impact-delivery intention item. The behavioural model starts uniform: stated ratings do **not** seed its posterior. This prevents the analysis from manufacturing alignment with the survey response. Product names and trade-off-revealing titles are hidden; participants see neutral Option A/Option B profiles, while the researcher view preserves the target contrast and falsification rule.
+
+The four adaptive choices are intentionally a rapid diagnostic rather than a conventional DCE claiming population preference weights. Production use should add comprehension testing, a dominant-choice attention check, a repeated holdout task, an opt-out/current-choice alternative, larger samples, and hierarchical or mixed-logit estimation.
 
 ## Claims boundary
 

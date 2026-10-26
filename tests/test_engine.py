@@ -13,6 +13,13 @@ class EngineTests(unittest.TestCase):
         self.assertAlmostEqual(sum(updated.values()), 1.0)
         self.assertTrue(all(0 <= value <= 1 for value in updated.values()))
 
+    def test_stated_profile_does_not_bias_behavioural_prior(self):
+        ratings = {"impact": 5, "price": 1, "convenience": 2, "trust": 4}
+        session = Session.create("impact", "I choose lower impact", seed=10, stated_ratings=ratings, intention_score=5)
+        self.assertEqual(session.stated_ratings, ratings)
+        self.assertEqual(session.intention_score, 5)
+        self.assertTrue(all(value == 0.25 for value in session.posterior.values()))
+
     def test_expected_information_gain_is_non_negative(self):
         session = Session.create("convenience", "Timing matters", seed=2)
         for experiment_id in ("impact-v-price", "impact-v-convenience", "trust-v-price"):

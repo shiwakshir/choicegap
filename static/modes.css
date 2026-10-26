@@ -102,3 +102,61 @@
 .design-result strong {
   color: var(--blue);
 }
+
+.rating-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.rating-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(180px, 1.2fr) 28px;
+  gap: 1rem;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding: 1rem 0;
+}
+
+.rating-row div {
+  display: grid;
+  gap: .25rem;
+}
+
+.rating-row small,
+.scale-labels {
+  color: var(--muted);
+}
+
+.rating-row output {
+  font-weight: 850;
+  text-align: right;
+}
+
+.rating-row input,
+.intention-item input {
+  accent-color: var(--blue);
+  width: 100%;
+}
+
+.intention-item {
+  border-top: 1px solid var(--ink);
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+}
+
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: .68rem;
+  margin: .75rem 0 .2rem;
+}
+
+@media (max-width: 650px) {
+  .rating-row {
+    grid-template-columns: 1fr 40px;
+  }
+  .rating-row div {
+    grid-column: 1 / -1;
+  }
+}

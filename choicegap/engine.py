@@ -200,13 +200,32 @@ class Session:
     statement: str
     posterior: dict[str, float]
     seed: int
+    stated_ratings: dict[str, int] = field(default_factory=dict)
+    intention_score: int = 3
     rounds: int = 0
     history: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
-    def create(cls, stated_driver: str, statement: str, seed: int | None = None) -> "Session":
+    def create(
+        cls,
+        stated_driver: str,
+        statement: str,
+        seed: int | None = None,
+        stated_ratings: dict[str, int] | None = None,
+        intention_score: int = 3,
+    ) -> "Session":
         actual_seed = seed if seed is not None else random.SystemRandom().randrange(1, 10_000_000)
-        return cls(stated_driver, statement, prior_from_stated(stated_driver), actual_seed)
+        # Stated attitudes and observed choices are deliberately kept separate.
+        # A uniform behavioural prior prevents the survey answer from baking in alignment.
+        posterior = {key: 1.0 / len(DRIVERS) for key in DRIVERS}
+        return cls(
+            stated_driver=stated_driver,
+            statement=statement,
+            posterior=posterior,
+            seed=actual_seed,
+            stated_ratings=stated_ratings or {key: (5 if key == stated_driver else 3) for key in DRIVERS},
+            intention_score=intention_score,
+        )
 
     @property
     def used(self) -> set[str]:
@@ -247,6 +266,8 @@ class Session:
         gap = leader != self.stated_driver and probability >= 0.45
         return {
             "stated_driver": self.stated_driver,
+            "stated_ratings": self.stated_ratings,
+            "intention_score": self.intention_score,
             "leading_driver": leader,
             "confidence": round(probability, 4),
             "gap_detected": gap,
@@ -276,6 +297,8 @@ class Session:
             "statement": self.statement,
             "posterior": self.posterior,
             "seed": self.seed,
+            "stated_ratings": self.stated_ratings,
+            "intention_score": self.intention_score,
             "rounds": self.rounds,
             "history": self.history,
         }
@@ -287,6 +310,8 @@ class Session:
             statement=payload.get("statement", ""),
             posterior={key: float(value) for key, value in payload["posterior"].items()},
             seed=int(payload["seed"]),
+            stated_ratings={key: int(value) for key, value in payload.get("stated_ratings", {}).items()},
+            intention_score=int(payload.get("intention_score", 3)),
             rounds=int(payload.get("rounds", 0)),
             history=list(payload.get("history", [])),
         )
