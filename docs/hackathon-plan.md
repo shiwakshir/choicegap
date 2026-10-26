@@ -24,7 +24,7 @@ One complete respondent uses six small Muse Spark calls: intake, four planning t
 - [x] Objective simulated-participant benchmark
 - [x] Tests and reproducible seed
 - [x] Three-minute demo outline
-- [ ] Add `MODEL_API_KEY` locally and run the live Meta smoke test
+- [x] Add `MODEL_API_KEY` locally and run the live Meta smoke test
 - [ ] Validate with 5–10 humans and record qualitative failure cases
 - [ ] Publish this repository publicly
 - [ ] Record a three-minute demo
