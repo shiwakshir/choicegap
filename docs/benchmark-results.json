@@ -1,0 +1,23 @@
+{
+  "participants_per_strategy": 2000,
+  "rounds": 4,
+  "seed": 2026,
+  "strategies": {
+    "adaptive": {
+      "top1_accuracy": 0.8995,
+      "mean_brier": 0.0409,
+      "mean_probability_on_true_driver": 0.8374
+    },
+    "fixed": {
+      "top1_accuracy": 0.798,
+      "mean_brier": 0.0719,
+      "mean_probability_on_true_driver": 0.71
+    },
+    "random": {
+      "top1_accuracy": 0.7945,
+      "mean_brier": 0.0739,
+      "mean_probability_on_true_driver": 0.7104
+    }
+  },
+  "adaptive_accuracy_lift_vs_fixed_pp": 10.15
+}
