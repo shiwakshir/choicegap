@@ -1,6 +1,6 @@
 # ChoiceGap
 
-**An adaptive sustainability research agent that tests the gap between green intentions and actual trade-off choices.**
+**An adaptive sustainability research agent that tests the gap between green intentions and controlled trade-off choices.**
 
 ChoiceGap is a working vertical slice for the Meta Global AI Developer Hackathon 2026. The evidence-backed preset studies sustainable grocery delivery: a respondent states what matters, then chooses between controlled alternatives that trade environmental impact against affordability, convenience, and credibility of green claims. Each choice updates competing explanations, and Muse selects the next falsification test. The report separates evidence from speculation.
 
