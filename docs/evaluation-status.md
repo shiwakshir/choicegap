@@ -23,7 +23,7 @@ Run all automated checks with:
 python -m unittest discover -s tests -v
 ```
 
-The current implementation completes 51 automated tests successfully, including the existing choice-engine tests. This is a regression-check count, not a research-quality score.
+The current implementation completes 61 Python tests successfully, including the existing choice-engine tests. The Node editor check additionally verifies exact quote spans, multiple relationships to the same source and rejection of invented quotations. These are regression checks, not research-quality scores. New checks exercise the actual dynamic workbench engine, all-six coverage, descriptive reporting, and zero model requests during configured participant sessions.
 
 The Muse design-review integration additionally checks:
 
@@ -36,6 +36,8 @@ The Muse design-review integration additionally checks:
 - Offline mode reports that a Meta key is required rather than fabricating a review.
 
 The review display and stale-input behavior were checked in the browser using findings explicitly labelled as a test fixture, not a live model response. This verifies presentation and state handling only.
+
+For the latest revision, a real HTTP walkthrough additionally checked exact quote spans (including two different relationships to one source), approved study loading, four outside responses, an inconclusive report and the source-linked brief. The quote editor serializer was exercised directly in Node. A new visual browser walkthrough was unavailable because the browser automation tool failed to initialize; the earlier browser observations above refer to the previous revision.
 
 ## Browser walkthrough
 
@@ -59,7 +61,23 @@ The walkthrough produced no JavaScript console errors. The deliberately uninform
 - Researcher planning time and methodological quality relative to their usual tools.
 - Researcher willingness to use or pay for the product.
 - Human comprehension and realism of the default or revised stimuli.
-- Added value of Muse experiment selection over the deterministic expected-information-gain baseline.
+- Participant question selection is now deterministic; no added value from model selection is claimed.
 - Population prevalence, real adoption outcomes, and causal intervention effects.
 
 The fictional corpus supports repeatable software checks and demonstration. It must not be presented as customer research or evidence of adoption barriers in a real population.
+
+## New workbench simulation
+
+`python -m choicegap.workbench_benchmark` evaluates the shipped grocery blueprint and `DynamicSession`, with 2,000 simulated sessions per population/policy. Four adaptive tasks plus one repeat recovered the generating account in 93.35% of in-model sessions; all six pairs plus one repeat recovered it in 93.15%. The small difference is simulation variation, not an accuracy-superiority claim. Adaptive uses two fewer tasks.
+
+Under continuous mixed dominant weights, recovery is 62.45% adaptive versus 61.25% all-six. Adaptive repeat failure is 41.85%. Among passing null-cohort adaptive sessions, 20.46% show a rating–model mismatch despite ratings matching the generating main preference; with no deliberately dominant preference the rate is 39.30%. Thresholds from .45 through .90 do not reduce these adaptive rates. All cohorts, assumptions, sensitivity results, and denominators are in the raw output. This independent simulation does not reproduce Claude's exact percentages because its scripts were not supplied.
+
+The result supports removing automatic behaviour-gap diagnosis; it does not justify a calibrated probability claim. `gap_detected` remains false in new exports for compatibility. Descriptive comparison and model probabilities remain available with limitations and tested levels.
+
+The new visual review evaluation includes 18 frozen screenshots, six clean controls, three repeats and two input conditions. Prepared cases, fixture tests and live measurements are different statuses. See `review-evaluation-protocol.md` and the output run summary for the actual execution status.
+
+## Recorded Muse run
+
+The final v4 development run completed 108/108 calls on `muse-spark-1.3`, with no API errors or validation failures. In the image condition the fixed visual-basis keyword rule matched 32/36 planted calls; 0/18 clean image calls returned findings. Text-only produced findings in 10/18 clean calls, but these include source/design caveats and are not automatically false alarms. The keyword rule excludes text-only image-basis matches by definition, so its condition difference is not an unbiased semantic accuracy lift. Missing primary human adjudications remain missing.
+
+An unblinded Codex development spot check reviewed one recorded example per planted screen and recorded observations, side and proposed-control rationales separately. It is not independent human validation. The final run returned 293,760 input tokens (240,330 cached) and 482,705 output tokens. Published Standard-mode rates give an estimated $2.1543 for that run, excluding pilots and any interrupted calls without returned usage. See Meta's pricing source in the readable output report. The sanitized aggregate is committed as `review-evaluation-results.json`; exact calls, screenshots and pilot records accompany the source ZIP.

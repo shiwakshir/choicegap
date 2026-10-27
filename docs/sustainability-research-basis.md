@@ -29,7 +29,7 @@ The participant no longer selects one forced “most important” factor. Before
 
 The four adaptive choices are intentionally a rapid diagnostic rather than a conventional DCE claiming population preference weights. The app includes a neutral practice check, repeated holdout, and opt-out/current-choice alternative. Production use still needs cognitive interviewing, a defensible dominant-choice check where realistic, larger samples, and hierarchical or mixed-logit estimation.
 
-Individual gap language is suppressed unless at least three choices are informative and the reversed-side holdout is consistent. A skipped or failed holdout yields an inconclusive report rather than an alignment or gap claim.
+The application does not diagnose an individual behaviour gap from hypothetical tasks. A descriptive rating–choice comparison requires at least three informative choices, a consistent repeat and sufficient separation under the candidate models. A skipped or failed repeat yields an inconclusive report. Rating scales and forced trade-offs measure different constructs, and mixed priorities can invalidate a single-factor interpretation even when posterior probability is high.
 
 ## Claims boundary
 

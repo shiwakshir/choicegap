@@ -84,8 +84,8 @@ function renderWorkspace(workspace) {
         <label>Missing evidence<textarea data-field="missing_evidence" rows="2">${escapeHtml(account.missing_evidence)}</textarea></label>
         <p>For each source, review its relationship to this explanation. This is an interpretation, not a verified mechanism.</p>
         ${workspace.sources.map(source => {
-          const reference = account.references.find(item => item.source_id === source.id);
-          return `
+          const references = account.references.filter(item => item.source_id === source.id);
+          return (references.length ? references : [null]).map(reference => `
             <div class="source-reference">
               <label>${escapeHtml(sourceName(source))}
                 <select data-source="${source.id}">
@@ -93,9 +93,12 @@ function renderWorkspace(workspace) {
                     .map(([value, label]) => `<option value="${value}" ${value === (reference?.relation || 'none') ? 'selected' : ''}>${label}</option>`).join('')}
                 </select>
               </label>
+              <label>Exact quoted evidence
+                <textarea data-quote="${source.id}" rows="2">${escapeHtml(reference?.quote || source.text)}</textarea>
+              </label>
               <details><summary>Read source</summary><p>${escapeHtml(source.text)}</p></details>
             </div>
-          `;
+          `).join('');
         }).join('')}
       </article>
     `;
@@ -194,7 +197,11 @@ function readWorkspaceEditor() {
     card.querySelectorAll('[data-source]').forEach(select => {
       if (select.value === 'none') return;
       const source = researchWorkspace.sources.find(item => item.id === select.dataset.source);
-      references.push({ source_id: source.id, quote: source.text, relation: select.value });
+      const quote = select.closest('.source-reference').querySelector('[data-quote]').value;
+      if (!quote.trim() || !source.text.includes(quote)) {
+        throw new Error(`${source.id}: quoted evidence must be an exact, contiguous part of the source.`);
+      }
+      references.push({ source_id: source.id, quote, relation: select.value });
     });
     mapping.accounts.push({ id, explanation: field('explanation'), missing_evidence: field('missing_evidence'), references });
   });
@@ -233,13 +240,13 @@ $('#workspace-review').addEventListener('input', event => {
 $('#challenge-design').addEventListener('click', async () => {
   clearError();
   if (!researchWorkspace) return;
-  const { blueprint, mapping } = readWorkspaceEditor();
   const button = $('#challenge-design');
   button.disabled = true;
   button.textContent = 'Muse is checking competing explanations…';
   $('#approve-workspace').disabled = true;
   $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => { input.disabled = true; });
   try {
+    const { blueprint, mapping } = readWorkspaceEditor();
     const reviewed = await api('/api/research/review', {
       id: researchWorkspace.id, blueprint, mapping, prototype_image: prototypeImage,
     });
@@ -258,10 +265,10 @@ $('#challenge-design').addEventListener('click', async () => {
 $('#approve-workspace').addEventListener('click', async () => {
   clearError();
   if (!researchWorkspace) return;
-  const { blueprint, mapping } = readWorkspaceEditor();
   const button = $('#approve-workspace');
   button.disabled = true;
   try {
+    const { blueprint, mapping } = readWorkspaceEditor();
     const approved = await api('/api/research/approve', {
       id: researchWorkspace.id, blueprint, mapping, confirmed: $('#workspace-approved').checked,
     });
@@ -293,10 +300,17 @@ $('#workspace-report').addEventListener('click', async () => {
         <p>${escapeHtml(brief.next_step)}</p>
         <h4>Session leaders within the candidate model set</h4>
         <ul>${Object.entries(brief.session_leader_counts).map(([id, count]) => `<li>${escapeHtml(labelsById[id])}: ${count} sessions</li>`).join('')}</ul>
+        <h4>Compare source interpretations with these sessions</h4>
+        ${(brief.account_evidence || []).map(account => `<details class="trace-entry"><summary>${escapeHtml(labelsById[account.account])}: ${account.sessions_led} session leaders</summary>
+          <p>Tested levels: ${escapeHtml(account.baseline_level)} versus ${escapeHtml(account.alternative_level)}.</p>
+          <p>${escapeHtml(account.explanation)}</p>
+          ${account.source_references.map(ref => `<p>${escapeHtml(ref.source_id)} · ${escapeHtml(ref.relation)}</p><blockquote>${escapeHtml(ref.quote)}</blockquote>`).join('')}
+          <p>Missing evidence: ${escapeHtml(account.missing_evidence)}</p><p>${escapeHtml(account.interpretation)}</p></details>`).join('')}
         <details><summary>Inspect individual and contradictory cases</summary>
           ${brief.session_cases.map(item => `<p>Session ${item.case}: ${escapeHtml(item.response_quality)} response quality; leading model ${escapeHtml(labelsById[item.leading_account])} (${Math.round(item.model_probability * 100)}%); stated priorities ${escapeHtml(item.stated_priorities.map(id => labelsById[id]).join(', '))}; outside choices ${item.outside_choices}; repeat ${item.holdout_consistent === true ? 'consistent' : 'inconsistent or unavailable'}.</p>`).join('')}
         </details>
         <h4>Proposed field contrasts — not executed</h4>
+        <p>${escapeHtml(brief.field_test_basis || '')}</p>
         ${brief.field_tests.map(test => `
           <details class="trace-entry field-contrast">
             <summary>${escapeHtml(test.factor)}</summary>
@@ -364,6 +378,7 @@ function briefMarkdown(brief) {
     if (review.prototype) lines.push(`Reviewed screenshot digest: ${review.prototype.sha256}`, '');
   }
   lines.push('## Proposed field contrasts — not executed', '');
+  lines.push(brief.field_test_basis || 'Generic single-factor templates, not result-derived recommendations.', '');
   brief.field_tests.forEach(test => {
     lines.push(`### ${test.factor}`, '', test.prediction, '', '| Factor | Baseline focal option | Intervention focal option |', '|---|---|---|');
     Object.keys(test.baseline).forEach(id => lines.push(`| ${cell(labelById[id])} | ${cell(test.baseline[id])} | ${cell(test.intervention[id])} |`));

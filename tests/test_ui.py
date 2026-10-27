@@ -48,7 +48,7 @@ class ParticipantBlindnessTests(unittest.TestCase):
         self.assertIn('id="comprehension"', html)
         self.assertNotIn("Quick check:", html)
         self.assertIn("Practice example", html)
-        self.assertIn("study inputs and derived results may be processed", html)
+        self.assertIn("Your ratings and choices are stored locally for this study", html)
         self.assertIn("=== 'fee'", script)
         self.assertIn('data-choice="outside"', script)
         self.assertIn("Boolean(state.experiment.holdout)", script)

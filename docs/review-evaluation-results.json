@@ -1,0 +1,84 @@
+{
+  "status": "completed",
+  "protocol_sha256": "bb436d3dbae57eac4ffa0b55fe1f23903ba8309b73da95f1699a31817553441e",
+  "planned_calls": 108,
+  "recorded_calls": 108,
+  "scoring_warning": "Keyword screening is not measured semantic reviewer accuracy. Use blind human labels for primary detection; missing labels are reported.",
+  "conditions": {
+    "text_only": {
+      "calls": 54,
+      "planted_calls": 36,
+      "clean_calls": 18,
+      "proxy_matches": 0,
+      "primary_adjudicated_calls": 0,
+      "primary_detected_calls": 0,
+      "primary_clean_adjudicated_calls": 0,
+      "primary_clean_false_alarm_calls": 0,
+      "per_case_proxy_matches": {
+        "case-01": 0,
+        "case-02": 0,
+        "case-03": 0,
+        "case-04": 0,
+        "case-05": 0,
+        "case-06": 0,
+        "case-07": 0,
+        "case-08": 0,
+        "case-09": 0,
+        "case-10": 0,
+        "case-11": 0,
+        "case-12": 0
+      },
+      "clean_calls_with_any_finding": 10,
+      "api_errors": 0,
+      "validation_failures": 0,
+      "estimated_cost_usd": null,
+      "mean_latency_seconds": 22.245
+    },
+    "with_image": {
+      "calls": 54,
+      "planted_calls": 36,
+      "clean_calls": 18,
+      "proxy_matches": 32,
+      "primary_adjudicated_calls": 0,
+      "primary_detected_calls": 0,
+      "primary_clean_adjudicated_calls": 0,
+      "primary_clean_false_alarm_calls": 0,
+      "per_case_proxy_matches": {
+        "case-01": 3,
+        "case-02": 2,
+        "case-03": 3,
+        "case-04": 3,
+        "case-05": 3,
+        "case-06": 3,
+        "case-07": 3,
+        "case-08": 0,
+        "case-09": 3,
+        "case-10": 3,
+        "case-11": 3,
+        "case-12": 3
+      },
+      "clean_calls_with_any_finding": 0,
+      "api_errors": 0,
+      "validation_failures": 0,
+      "estimated_cost_usd": null,
+      "mean_latency_seconds": 16.487
+    }
+  },
+  "cost_estimate": {
+    "source": "https://dev.meta.ai/docs/pricing-rate-limits",
+    "verified_date": "2026-10-27",
+    "rates_usd_per_million": {
+      "uncached_input": 1.25,
+      "cached_input": 0.15,
+      "output": 4.25
+    },
+    "applies_to": "muse-spark-1.3 Standard only; estimates are not an invoice",
+    "calls_with_usage": 108,
+    "recorded_calls": 108,
+    "estimated_usd": 2.154333,
+    "prompt_tokens": 293760,
+    "cached_input_tokens": 240330,
+    "completion_tokens": 482705
+  },
+  "primary_adjudication": "Not performed; keyword screening and developer spot checks are separate"
+}

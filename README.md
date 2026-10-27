@@ -33,15 +33,15 @@ stated preference → competing hypotheses → adaptive controlled choice
        └──────── cautious evidence report ← Bayesian update
 ```
 
-- **Muse Spark 1.3 intake:** maps free text to a declared driver without pretending it observed behaviour.
-- **Muse Spark 1.3 study compiler:** turns an open research context into four testable explanations and displayable factor levels using constrained JSON—not arbitrary survey prose.
-- **Muse Spark 1.3 experiment selector:** compares the leading explanation with its strongest rival, chooses one of three validated experiments, and records what result would count against the current leader. The engine rejects unknown experiment IDs.
+- **Muse evidence mapping:** interprets supplied excerpts within four predefined, editable grocery-delivery categories. Omitted explanations remain unresolved.
+- **Muse design review:** reads source quotes, exact study levels and an optional prototype screenshot together, identifying possible confounds and suggested controls before fieldwork.
+- **Computed question selection:** maximum expected information gain selects each task and records the predicted disagreement before observing a response. No participant task calls the model API.
 - **Deterministic evidence layer:** compiles a complete six-pair design, audits controls and coverage, then owns choice likelihoods, posterior updates, side randomization, and information gain.
-- **Muse Spark 1.3 synthesis:** turns computed evidence into a concise report under an explicit no-causality schema.
+- **Computed reporting:** preserves exact tested levels and distinguishes hypothetical choices from reported actions. Source interpretations and new session results appear side by side without assuming participant matching.
 - **Deterministic operation:** the fixed study works without an API key.
 - **Research quality layer:** neutral practice example, genuine outside option, reversed-side holdout, and de-identified JSON export.
 
-The stated-attitude measurement and behavioural inference are intentionally separate. Participants rate every factor plus a general lower-impact intention item; the behavioural posterior still begins uniform. Muse may interpret optional free text, but it cannot overwrite the structured ratings or probability update.
+Participants rate every factor plus a general lower-impact intention item; the choice-model posterior begins uniform. Optional participant free text is retained without a model interpretation. The participant loop, including report completion, makes zero API calls.
 
 The repeated holdout is not used to update beliefs. Outside-option selections also leave the posterior unchanged and are reported as possible evidence that the offered explanations or choices are incomplete.
 
@@ -49,7 +49,7 @@ Muse Image is not used in this prototype because generated visuals would add an 
 
 ### Model boundary
 
-Muse performs bounded semantic interpretation and experiment selection. Deterministic code owns study validation, likelihoods, probability updates, randomization, evidence-quality thresholds, and the candidate experiments available at each turn. A model response cannot override an inconclusive result or introduce an unvalidated experiment.
+Muse performs bounded semantic interpretation and pre-fieldwork review. Deterministic code owns question selection, study validation, likelihoods, probability updates, randomization, and descriptive reporting. A model response cannot override an inconclusive result or introduce an unvalidated experiment. Legacy standalone compiler/API methods remain for compatibility but are hidden from the main researcher workflow.
 
 ### Dynamic study workflow
 
@@ -76,6 +76,8 @@ python -m choicegap.server
 
 Open <http://127.0.0.1:8000>. Set `META_MODEL` to override the default `muse-spark-1.3`. Without `MODEL_API_KEY`, the app runs in deterministic local mode and clearly labels that state.
 
+Alternatively save `MODEL_API_KEY=your-key` in a local `.env` file in the project folder. The server reads that file at startup; existing environment variables take precedence. The file is excluded from Git and source ZIPs. Do not include keys in shared research packets.
+
 Participant mode is the default and contains no researcher controls or debrief access. Open <http://127.0.0.1:8000/?mode=researcher> for the researcher console.
 
 Meta Model API configuration follows the official OpenAI-compatible endpoint:
@@ -92,9 +94,12 @@ Research data is stored in `work/choicegap-data/research.sqlite3` relative to th
 ```powershell
 python -m unittest discover -s tests -v
 python -m choicegap.benchmark --participants 2000 --output benchmark-results.json
+python -m choicegap.workbench_benchmark --participants 2000 --output outputs/workbench-benchmark.json
 ```
 
-The benchmark generates simulated participants with known latent drivers and noisy logistic choices. It compares the deterministic adaptive expected-information-gain policy with fixed and random four-question policies. It reports top-1 driver recovery, multiclass Brier score, and probability assigned to the true driver. Seeds are fixed and side placement is randomized reproducibly. It does not call Muse and does not establish that Muse improves experiment selection; that comparison requires a separately budgeted model ablation.
+The optional Node check `node tests/research_ui.test.cjs` exercises the quote editor serializer. See `docs/review-evaluation-protocol.md` to prepare or resume the live Muse review evaluation; it requires a local key and uses synthetic inputs.
+
+The original benchmark below is a legacy preset-engine diagnostic. The workbench benchmark evaluates the engine used by approved workbench studies, adds an all-six-pairs baseline, null rating–model mismatch rates, repeat-failure rates, mixed preferences and threshold sensitivity. It uses no model API calls. Its seeded results and limitations are described in `docs/evaluation-status.md`. The Muse review evaluation is specified separately in `docs/review-evaluation-protocol.md` and uses live API calls only when explicitly run.
 
 ### Current seeded result
 
@@ -114,7 +119,7 @@ Generated studies receive a structural design audit, not automatic domain valida
 
 The candidate set is a small fractional-factorial-style library of paired choices. Each pair either holds all but one attribute constant or presents a clearly disclosed two-attribute trade-off. Product names are neutral, copy is templated, and left/right order is randomized. This reduces obvious wording and position confounds; it does not eliminate hypothetical-choice bias.
 
-The posterior is over four deliberately simple models, not over a person's identity. Importance ratings may be tied, including all equal ratings. All factors with the highest rating are retained as stated priorities. A “gap” is shown only when at least three responses are informative, the reversed-side holdout is consistent, and the leading behavioural hypothesis falls outside those priorities with at least 45% posterior probability. This threshold is a prototype heuristic awaiting empirical calibration. The report always discloses:
+The posterior is over four deliberately simple models, not over a person's identity. Tied highest ratings are retained. The 45% separation threshold is an uncalibrated descriptive heuristic. Reports show differences between ratings and the leading candidate model only after three informative choices and a consistent repeat; they do not diagnose a behaviour gap. The legacy `gap_detected` export field is always false in new reports. `rating_choice_mismatch` is descriptive, not a validated diagnostic. Increasing the threshold to 90% did not fix misspecification in the adaptive workbench simulation, so the application removes the diagnostic claim instead of manufacturing a calibration result. The report always discloses:
 
 1. one respondent and four choices cannot prove causality;
 2. conclusions are local to this scenario;
@@ -129,6 +134,9 @@ choicegap/dynamic.py    generic study compiler, audit, and adaptive session
 choicegap/meta.py       Meta Model API structured-output client
 choicegap/server.py     dependency-free local web server and API
 choicegap/benchmark.py  objective simulated-participant evaluation
+choicegap/workbench_benchmark.py  shipped-engine simulation and all-six comparison
+choicegap/review_benchmark.py     frozen multimodal review evaluation and resume
+choicegap/evaluation_report.py    readable reports from recorded results
 choicegap/research.py   source validation, approval, decision briefs, SQLite workspaces
 choicegap/review.py     validated Muse review of semantic and visual confounds
 static/                 participant and researcher web interfaces
@@ -143,8 +151,8 @@ The sustainability choices and claims boundary are grounded in `docs/sustainabil
 - Unfinished session state is held in memory and is cleared when the server restarts. Workspaces, published studies, and completed reports are saved in SQLite.
 - The interface does not request direct identifiers.
 - Free-text statements are excluded from the research-data export.
-- Exported records include exact stimuli, decision trails, model source, and returned API token usage when available. There are no API price estimates.
-- When Muse is enabled, study inputs and derived reports may be sent to the configured Meta endpoint.
+- App exports include exact stimuli, decision trails, model source, and returned API token usage when available. Separate evaluation reports estimate token cost using explicitly documented published rates.
+- Muse receives imported excerpts and draft study inputs for researcher-requested mapping/review, plus the optional screenshot when a review is requested. Participant sessions make zero model API calls.
 - Imported excerpts are persisted and may appear in the decision-brief export. Use de-identified material you are authorized to process.
 - The local server has no authentication, encrypted storage, retention controls, or multi-user isolation. It is not a production deployment.
 

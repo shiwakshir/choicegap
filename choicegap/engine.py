@@ -213,10 +213,10 @@ def report_headline(
         return "The choices do not yet distinguish clearly between the candidate explanations."
     if gap_detected:
         return (
-            f"Choices lean toward {labels[leading_driver]['label'].lower()}, despite stating "
-            f"{labels[stated_driver]['label'].lower()}."
+            f"At the tested levels, the leading candidate model is {labels[leading_driver]['label'].lower()}, "
+            "which differs from the highest importance ratings. This descriptive comparison does not establish a behaviour gap."
         )
-    return f"Choices are most consistent with {labels[leading_driver]['label'].lower()}."
+    return f"At the tested levels, hypothetical choices are most consistent with {labels[leading_driver]['label'].lower()}."
 
 
 @dataclass
@@ -339,7 +339,8 @@ class Session:
             "evidence_quality": evidence_quality,
             "leading_driver": leader,
             "confidence": round(probability, 4),
-            "gap_detected": gap,
+            "gap_detected": False,  # Legacy export field: hypothetical tasks cannot establish a behaviour gap.
+            "rating_choice_mismatch": gap,
             "posterior": {key: round(value, 4) for key, value in self.posterior.items()},
             "rounds": self.rounds,
             "headline": report_headline(
@@ -349,12 +350,13 @@ class Session:
                 gap_detected=gap,
                 evidence_quality=evidence_quality,
                 probability=probability,
-            ),
+            ) + " Tested levels: estimated emissions 60% lower versus standard; free versus £3 delivery; two-hour versus all-day window; independent verification versus retailer calculation.",
             "evidence": [
                 {"experiment_id": item["experiment_id"], "choice": item["choice"], "round": item["round"]}
                 for item in self.history
             ],
             "limitations": [
+                "Rating scales and forced trade-offs measure different things; disagreement is not proof of a say–do gap.",
                 "This is evidence about this decision context, not a stable personality trait.",
                 "A small number of hypothetical choices cannot establish a causal effect.",
                 "The candidate explanations are deliberately incomplete; unmeasured factors may matter.",

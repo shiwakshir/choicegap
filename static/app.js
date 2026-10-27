@@ -107,6 +107,7 @@ $('#refresh-results').addEventListener('click', async () => {
 });
 
 function applyStudy(data) {
+  document.body.classList.add('configured-study');
   state.studyReady = true;
   state.studyId = data.study_id;
   state.decisionPrompt = data.study.decision_prompt;
@@ -240,9 +241,7 @@ function renderExperiment(experiment, plan, round) {
   $('#experiment-title').textContent = state.decisionPrompt;
   $('#experiment-rationale').textContent = experiment.rationale;
   $('#plan-reason').textContent = plan.reason;
-  $('#agent-note strong').textContent = plan.source?.startsWith('muse')
-    ? 'Muse experiment selection'
-    : 'Local experiment selection';
+  $('#agent-note strong').textContent = 'Computed experiment selection';
   const leadingLabel = labels[plan.leading_account] || plan.leading_account;
   const rivalLabel = labels[plan.rival_account] || plan.rival_account;
   $('#hypothesis-duel').innerHTML = `
@@ -323,9 +322,6 @@ function renderReport(report, narrative) {
   show('report');
   if (report.evidence_quality === 'low') {
     $('#report-headline').textContent = 'The result is inconclusive.';
-  } else if (report.gap_detected) {
-    $('#report-headline').textContent =
-      'The trade-off pattern differs from the stated priority.';
   } else {
     $('#report-headline').textContent = report.headline;
   }

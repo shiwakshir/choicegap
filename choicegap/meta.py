@@ -7,6 +7,7 @@ import urllib.request
 from typing import Any
 
 from .engine import DRIVER_COPY, DRIVERS, GAP_PROBABILITY_THRESHOLD
+from .dynamic import compile_study
 
 
 META_BASE_URL = "https://api.meta.ai/v1"
@@ -218,6 +219,10 @@ class MetaClient:
             "decision": decision, "sources": sources, "evidence_map": mapping,
             "proposed_design": blueprint, "structural_audit": audit,
             "prototype_image_supplied": prototype_image is not None,
+            "compiled_experiments": [
+                {"id": exp.id, "varies": exp.varies, "a": exp.a, "b": exp.b}
+                for exp in compile_study(blueprint).experiments
+            ],
         })
         content: Any = context
         if prototype_image:
@@ -232,6 +237,10 @@ class MetaClient:
                 "Identify contradictory evidence, semantic confounds in attribute levels, and omitted structural explanations. "
                 "When an image is supplied, inspect actual visible defaults, option prominence, wording, and availability. "
                 "Compare those observations with the text-based hypotheses. Each finding must distinguish its basis. "
+                "Use compiled_experiments to verify exactly what varies within each task; factor definitions alone do not mean a factor varies in every task. "
+                "A deliberate trade-off between the two declared factors is not itself an uncontrolled confound. "
+                "Report concrete problems or clearly conditional concerns; do not list one generic finding per account or treat missing evidence as a discovered defect. "
+                "If the design and supplied image meet the stated controls, findings may be empty. Prioritize visible departures from the compiled task when an image is supplied. "
                 "For source_text, cite source IDs and a verbatim quote from a cited source. For image or design findings, "
                 "use empty source_ids and quote; describe the visible region or exact design field instead. "
                 "Never invent an image observation when no image is supplied; never infer clicks, attention, motivation, "
@@ -273,9 +282,9 @@ class MetaClient:
             {"role": "system", "content": (
                 "You are a falsification agent for an adaptive UX study. Treat the two strongest accounts as rivals, "
                 "then select exactly one validated candidate that makes them predict meaningfully different choices. "
-                "Prefer expected information gain. State the predicted disagreement and, before observing the answer, "
+                "Prefer expected information gain. "
                 "The predictions field gives computed P(canonical A | account); use those numbers rather than inventing predictions. "
-                "the result that would count against the current leader. Never invent an experiment, diagnose a person, "
+                "State the predicted disagreement and the result that would count against the current leader before observing the answer. Never invent an experiment, diagnose a person, "
                 "or claim causality. Keep each explanation under 30 words."
             )},
             {"role": "user", "content": json.dumps({

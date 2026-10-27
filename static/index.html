@@ -20,9 +20,9 @@
       <div class="eyebrow participant-copy">Short product study</div>
       <div class="eyebrow researcher-only">Researcher console</div>
       <h1 class="participant-copy">Choose what works<br><em>for you.</em></h1>
-      <h1 class="researcher-only">Compare stated priorities<br><em>with controlled choices.</em></h1>
+      <h1 class="researcher-only">Challenge the explanation.<br><em>Before fieldwork.</em></h1>
       <p class="lede participant-copy">Help us understand how people make everyday sustainability trade-offs. There are no right answers, and it takes about two minutes.</p>
-      <p class="lede researcher-only">ChoiceGap represents possible explanations as competing models, then selects controlled follow-up choices that can distinguish between them.</p>
+      <p class="lede researcher-only">Review source evidence, rival explanations, and your prototype together. Check Muse's proposed controls, approve exact test levels, then collect a short, auditable choice study.</p>
       <div class="study-builder researcher-only evidence-workbench">
         <div class="scenario-kicker">Evidence → explanations → follow-up study</div>
         <h2>Resolve a research decision</h2>
@@ -67,7 +67,7 @@
           <div id="workspace-summary"></div>
         </div>
       </div>
-      <div class="study-builder researcher-only">
+      <div class="study-builder researcher-only legacy-workflow">
         <div class="scenario-kicker">Advanced · standalone study without imported evidence</div>
         <h2>Configure a controlled study</h2>
         <p>Describe a sustainability decision and the intention–behaviour gap you want to understand. Muse proposes testable individual and structural frictions; the compiler—not the model—builds and audits every stimulus.</p>
@@ -113,7 +113,7 @@
         </div>
         <label for="statement">What shaped those ratings? <span>optional</span></label>
         <textarea id="statement" rows="3" placeholder="For grocery delivery, I care most about… because…"></textarea>
-        <p class="privacy-note">Avoid personal information. When AI features are enabled, study inputs and derived results may be processed by the configured Meta model.</p>
+        <p class="privacy-note">Your ratings and choices are stored locally for this study. Avoid personal information in the optional comment.</p>
         <button id="start" class="primary" disabled>Continue to choices <span>→</span></button>
       </div>
     </section>
@@ -123,7 +123,7 @@
         <div><div class="eyebrow" id="progress-label">Choice 1 of 4</div><h1 id="experiment-title">Choose one.</h1></div>
         <div class="uncertainty researcher-only"><span>uncertainty</span><div class="meter"><i id="uncertainty-bar"></i></div></div>
       </div>
-      <div id="agent-note" class="agent-note researcher-only"><span class="spark">M</span><div><strong>Muse experiment selection</strong><p id="plan-reason"></p><div id="hypothesis-duel" class="duel"></div><p id="falsification-rule" class="falsifier"></p></div></div>
+      <div id="agent-note" class="agent-note researcher-only"><span class="spark">E</span><div><strong>Computed experiment selection</strong><p id="plan-reason"></p><div id="hypothesis-duel" class="duel"></div><p id="falsification-rule" class="falsifier"></p></div></div>
       <p id="experiment-rationale" class="rationale researcher-only"></p>
       <div id="choices" class="choices"></div>
       <p class="microcopy">Choose as you actually would. There is no “correct” answer.</p>

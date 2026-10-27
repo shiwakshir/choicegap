@@ -71,6 +71,17 @@ class ServerWorkflowTests(unittest.TestCase):
         self.assertNotIn(self.token, server.SESSIONS)
         self.assertNotIn('statement', server.COMPLETED[0])
 
+    def test_participant_session_makes_no_model_requests_even_when_configured(self):
+        with patch.dict('os.environ', {'MODEL_API_KEY': 'test-not-a-real-key'}), patch.object(server.MetaClient, '_structured', side_effect=AssertionError('Participant loop must not call Muse')):
+            data = self.start(statement='I care about lower emissions')
+            self.token = data['session_id']
+            for _ in range(4):
+                data = self.answer(data)
+            if data.get('holdout'):
+                data = self.answer(data)
+            self.assertTrue(data['done'])
+            self.assertEqual(server.COMPLETED[0]['api_usage'], [])
+
     def test_replayed_answer_and_wrong_experiment_do_not_mutate_evidence(self):
         first = self.start()
         self.token = first['session_id']

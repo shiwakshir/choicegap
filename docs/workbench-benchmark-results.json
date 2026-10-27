@@ -1,0 +1,215 @@
+{
+  "engine": "dynamic.DynamicSession with grocery workbench blueprint",
+  "participants_per_condition": 2000,
+  "seed": 2026,
+  "threshold": 0.45,
+  "threshold_policy": "Uncalibrated descriptive heuristic; not tuned on evaluation data.",
+  "design": "Same participant seeds across policies; independent choice draws after paths diverge. All six uses two extra tasks; each policy adds one reversed repeat.",
+  "limitations": [
+    "Synthetic diagnostics only; no human or Muse accuracy claim.",
+    "All cohorts are null cohorts: stated highest rating matches the generating largest weight.",
+    "A null mismatch is model/measurement disagreement, not a verified behavioural false positive.",
+    "Mixed participants need not be represented by any single-factor model; top1 is largest-weight recovery only.",
+    "No outside choices simulated. Repeat consistency is not a validation of the inferred account."
+  ],
+  "populations": {
+    "in_model": {
+      "adaptive": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 5,
+        "top1_recovery": 0.9335,
+        "mean_brier": 0.0263,
+        "response_check_inconclusive_rate": 0.275,
+        "weak_separation_among_passing": 0.0421,
+        "null_mismatch_rate_all": 0.024,
+        "null_mismatch_rate_passing": 0.0331,
+        "threshold_sensitivity": {
+          "0.45": 0.0331,
+          "0.6": 0.0331,
+          "0.75": 0.0331,
+          "0.9": 0.0331
+        }
+      },
+      "fixed": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 5,
+        "top1_recovery": 0.822,
+        "mean_brier": 0.0554,
+        "response_check_inconclusive_rate": 0.275,
+        "weak_separation_among_passing": 0.0117,
+        "null_mismatch_rate_all": 0.0805,
+        "null_mismatch_rate_passing": 0.111,
+        "threshold_sensitivity": {
+          "0.45": 0.111,
+          "0.6": 0.0352,
+          "0.75": 0.0352,
+          "0.9": 0.0352
+        }
+      },
+      "random": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 5,
+        "top1_recovery": 0.8055,
+        "mean_brier": 0.0661,
+        "response_check_inconclusive_rate": 0.3065,
+        "weak_separation_among_passing": 0.0187,
+        "null_mismatch_rate_all": 0.1055,
+        "null_mismatch_rate_passing": 0.1521,
+        "threshold_sensitivity": {
+          "0.45": 0.1521,
+          "0.6": 0.1319,
+          "0.75": 0.0324,
+          "0.9": 0.0173
+        }
+      },
+      "all_six": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 7,
+        "top1_recovery": 0.9315,
+        "mean_brier": 0.0222,
+        "response_check_inconclusive_rate": 0.277,
+        "weak_separation_among_passing": 0.0201,
+        "null_mismatch_rate_all": 0.034,
+        "null_mismatch_rate_passing": 0.047,
+        "threshold_sensitivity": {
+          "0.45": 0.047,
+          "0.6": 0.0201,
+          "0.75": 0.0201,
+          "0.9": 0.0201
+        }
+      }
+    },
+    "mixed_dominant": {
+      "adaptive": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 5,
+        "top1_recovery": 0.6245,
+        "mean_brier": 0.1516,
+        "response_check_inconclusive_rate": 0.4185,
+        "weak_separation_among_passing": 0.2253,
+        "null_mismatch_rate_all": 0.119,
+        "null_mismatch_rate_passing": 0.2046,
+        "threshold_sensitivity": {
+          "0.45": 0.2046,
+          "0.6": 0.2046,
+          "0.75": 0.2046,
+          "0.9": 0.2046
+        }
+      },
+      "fixed": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 5,
+        "top1_recovery": 0.574,
+        "mean_brier": 0.1669,
+        "response_check_inconclusive_rate": 0.4185,
+        "weak_separation_among_passing": 0.0714,
+        "null_mismatch_rate_all": 0.184,
+        "null_mismatch_rate_passing": 0.3164,
+        "threshold_sensitivity": {
+          "0.45": 0.3164,
+          "0.6": 0.2382,
+          "0.75": 0.2382,
+          "0.9": 0.2382
+        }
+      },
+      "random": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 5,
+        "top1_recovery": 0.5505,
+        "mean_brier": 0.1687,
+        "response_check_inconclusive_rate": 0.41,
+        "weak_separation_among_passing": 0.0619,
+        "null_mismatch_rate_all": 0.197,
+        "null_mismatch_rate_passing": 0.3339,
+        "threshold_sensitivity": {
+          "0.45": 0.3339,
+          "0.6": 0.3119,
+          "0.75": 0.1873,
+          "0.9": 0.128
+        }
+      },
+      "all_six": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 7,
+        "top1_recovery": 0.6125,
+        "mean_brier": 0.1421,
+        "response_check_inconclusive_rate": 0.3925,
+        "weak_separation_among_passing": 0.0955,
+        "null_mismatch_rate_all": 0.1725,
+        "null_mismatch_rate_passing": 0.284,
+        "threshold_sensitivity": {
+          "0.45": 0.284,
+          "0.6": 0.1523,
+          "0.75": 0.1523,
+          "0.9": 0.1523
+        }
+      }
+    },
+    "mixed_no_dominant": {
+      "adaptive": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 5,
+        "top1_recovery": 0.35,
+        "mean_brier": 0.2544,
+        "response_check_inconclusive_rate": 0.4885,
+        "weak_separation_among_passing": 0.349,
+        "null_mismatch_rate_all": 0.201,
+        "null_mismatch_rate_passing": 0.393,
+        "threshold_sensitivity": {
+          "0.45": 0.393,
+          "0.6": 0.393,
+          "0.75": 0.393,
+          "0.9": 0.393
+        }
+      },
+      "fixed": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 5,
+        "top1_recovery": 0.339,
+        "mean_brier": 0.2702,
+        "response_check_inconclusive_rate": 0.4885,
+        "weak_separation_among_passing": 0.1212,
+        "null_mismatch_rate_all": 0.2815,
+        "null_mismatch_rate_passing": 0.5503,
+        "threshold_sensitivity": {
+          "0.45": 0.5503,
+          "0.6": 0.4663,
+          "0.75": 0.4663,
+          "0.9": 0.4663
+        }
+      },
+      "random": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 5,
+        "top1_recovery": 0.3185,
+        "mean_brier": 0.2693,
+        "response_check_inconclusive_rate": 0.482,
+        "weak_separation_among_passing": 0.1042,
+        "null_mismatch_rate_all": 0.3015,
+        "null_mismatch_rate_passing": 0.582,
+        "threshold_sensitivity": {
+          "0.45": 0.582,
+          "0.6": 0.555,
+          "0.75": 0.4208,
+          "0.9": 0.2954
+        }
+      },
+      "all_six": {
+        "sessions": 2000,
+        "total_questions_including_repeat": 7,
+        "top1_recovery": 0.3395,
+        "mean_brier": 0.2504,
+        "response_check_inconclusive_rate": 0.4775,
+        "weak_separation_among_passing": 0.1349,
+        "null_mismatch_rate_all": 0.29,
+        "null_mismatch_rate_passing": 0.555,
+        "threshold_sensitivity": {
+          "0.45": 0.555,
+          "0.6": 0.2909,
+          "0.75": 0.2909,
+          "0.9": 0.2909
+        }
+      }
+    }
+  }
+}

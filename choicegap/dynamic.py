@@ -318,7 +318,9 @@ class DynamicSession:
             "evidence_quality": evidence_quality,
             "leading_driver": leader,
             "confidence": round(probability, 4),
-            "gap_detected": gap,
+            "gap_detected": False,  # Compatibility only; no verified behaviour-gap claim.
+            "rating_choice_mismatch": gap,
+            "tested_levels": [{"factor": item["label"], "baseline": item["low_label"], "alternative": item["high_label"]} for item in self.study.attributes],
             "posterior": {key: round(value, 4) for key, value in self.posterior.items()},
             "rounds": self.rounds,
             "headline": report_headline(
@@ -328,12 +330,14 @@ class DynamicSession:
                 gap_detected=gap,
                 evidence_quality=evidence_quality,
                 probability=probability,
-            ),
+            ) + f" Tested contrast for {labels[leader]['short']}: " + next(f"{item['low_label']} versus {item['high_label']}." for item in self.study.attributes if item['id'] == leader),
             "evidence": list(self.history),
             "limitations": [
+                "These are hypothetical choices, not purchases. Rating scales and trade-offs can disagree without a behaviour gap.",
+                "Mixed priorities and omitted explanations can make all four single-factor models misleading.",
                 "This result is specific to this decision context, not a stable trait.",
                 "Four hypothetical choices from one person cannot establish causality.",
-                "Muse-generated explanations may omit an important driver.",
+                "Four researcher-reviewed candidate accounts may omit an important explanation.",
                 "The compiler controls factor changes, but the chosen factor levels still require human review.",
                 "A failed or skipped holdout makes the individual result inconclusive.",
             ],

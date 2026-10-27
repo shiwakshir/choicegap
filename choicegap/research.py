@@ -233,6 +233,16 @@ def decision_report(workspace: dict[str, Any], records: list[dict[str, Any]]) ->
             "Field experiments are proposals and have not been run by this application.",
         ],
         "field_tests": workspace.get("field_tests", []),
+        "field_test_basis": "Generic single-factor templates, not result-derived recommendations.",
+        "account_evidence": [
+            {"account": account["id"], "explanation": account["explanation"],
+             "source_references": account["references"], "missing_evidence": account["missing_evidence"],
+             "sessions_led": counts[account["id"]],
+             "baseline_level": next(a["low_label"] for a in workspace["blueprint"]["attributes"] if a["id"] == account["id"]),
+             "alternative_level": next(a["high_label"] for a in workspace["blueprint"]["attributes"] if a["id"] == account["id"]),
+             "interpretation": "Source interpretations and new hypothetical sessions are shown together for review; they are not matched participants or a causal confirmation."}
+            for account in workspace["mapping"]["accounts"]
+        ],
         "sources": workspace["sources"], "mapping": workspace["mapping"],
         "design_sha256": workspace.get("design_sha256"),
         "session_cases": [

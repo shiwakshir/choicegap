@@ -7,10 +7,13 @@ Muse Spark connects a researcher's source material to competing explanations, co
 1. Map varied interview excerpts to explanations while retaining supporting, challenging, and missing evidence.
 2. Critically review an editable study design and identify alternative interpretations or semantic confounds.
 3. Optionally inspect a prototype screenshot alongside the evidence and design to flag visible defaults, hierarchy, wording, or availability as competing explanations.
-4. Select from validated experiments using computed predictions and record a challenge before the response.
-5. Summarize computed evidence subject to the application's inconclusive-result rules.
+4. Return observations, competing explanations, and proposed controls in a schema that code validates before displaying it for researcher review.
+
+The workbench maps evidence into four predefined editable grocery-delivery categories; it does not autonomously discover an unrestricted hypothesis space. Task selection and report completion are computed locally and make no model calls.
 
 The screenshot review does not infer clicks, attention, motives, or real purchases from a static image. Visual findings are model interpretations requiring researcher verification.
+
+The reviewer receives the exact compiled task pairs as well as the study-wide factor definitions. This prevents changes between different tasks being mistaken for an uncontrolled change within one task. It is allowed to return an empty finding list when the controls are satisfied.
 
 ## Meta capability mapping
 
@@ -19,7 +22,7 @@ The screenshot review does not infer clicks, attention, motives, or real purchas
 | Native image understanding | Compare visible prototype context with textual explanations and the proposed study | Findings explicitly labelled `prototype_image` |
 | Reasoning | Challenge a leading account and propose distinguishing controls | Observation, competing explanation, suggested control, unresolved questions |
 | Structured output | Convert model reasoning into a known research-review schema | Locally validated citations, evidence basis, account IDs, and review fields |
-| Contextual experiment selection | Choose among high-information candidate tests with supplied model predictions | Pre-response plan preserved beside exact stimuli and posterior updates |
+| Contextual pre-fieldwork review | Compare source evidence, proposed design and screenshot in one request | Observation, rival explanation and proposed control with explicit evidence basis |
 
 Implementation uses the Meta Model API with `muse-spark-1.3` by default, schema strict mode, and high reasoning effort for the critical design-review task. The screenshot is sent as a native `image_url` content part in a user message.
 
@@ -43,5 +46,9 @@ The deterministic engine still compiles designs and updates probabilities. A res
 ## Claims boundary
 
 This is a distinctive application of Meta's capabilities, not evidence that only Meta can perform the task. Provider exclusivity or superiority requires a comparative evaluation. The existing simulated-participant benchmark measures deterministic experiment selection; it is not a measure of Muse's multimodal reasoning or reviewer quality.
+
+The frozen 18-case screenshot-versus-text evaluation is specified in `review-evaluation-protocol.md`. Keyword screening is not a substitute for adjudicated accuracy, and a prepared test set is not a live model result.
+
+The recorded v4 development evaluation completed 108 calls successfully. Image-conditioned screening matched 32/36 planted calls and none of 18 clean image calls returned findings. These are fixed-rule screening counts on one synthetic checkout template, not human-adjudicated accuracy. The raw outputs and unblinded developer spot checks make the examples inspectable; external UXR value and provider superiority remain unmeasured.
 
 Image bytes are not stored in the research workspace or included in the decision brief. The review stores an image digest, findings, model source, returned API usage, and a digest of the design inputs reviewed. Image signatures, source references, and current-design matching are checked locally; these checks do not prove the semantic accuracy of a finding.

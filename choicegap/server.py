@@ -20,6 +20,7 @@ from .research import (
     ResearchStore, EXAMPLE_EVIDENCE, draft_workspace, approve_workspace, decision_report,
 )
 from .review import review_workspace
+from .config import load_env_file
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -287,34 +288,18 @@ class Handler(BaseHTTPRequestHandler):
         if intention_score < 1 or intention_score > 5:
             raise ValueError("Intention rating must be from 1 to 5")
         meta = MetaClient()
+        intake = {"driver": fallback_driver, "reason": "Structured importance ratings; free text retained without automated interpretation.", "source": "structured-ratings"}
         if study:
-            intake = {
-                "driver": fallback_driver,
-                "reason": "Selected from the Muse-compiled study axes.",
-                "source": meta.model,
-            }
             stated_driver = fallback_driver
             session = DynamicSession.create(study, stated_driver, statement, stated_ratings=ratings, intention_score=intention_score)
             driver_copy = study.driver_copy
         else:
-            try:
-                intake = meta.parse_statement(statement, fallback_driver)
-            except RuntimeError as exc:
-                intake = {
-                    "driver": fallback_driver,
-                    "reason": str(exc),
-                    "source": "local-fallback",
-                }
             # The structured ratings—not Muse's interpretation—define the stated profile.
             stated_driver = fallback_driver
             session = Session.create(stated_driver, statement, stated_ratings=ratings, intention_score=intention_score)
             driver_copy = DRIVER_COPY
         candidates = session.candidates()
-        try:
-            plan = meta.choose_experiment(candidates, session.posterior, driver_copy)
-        except RuntimeError as exc:
-            plan = MetaClient.fallback_plan(candidates, session.posterior)
-            plan.update({"reason": str(exc), "source": "local-fallback"})
+        plan = MetaClient.fallback_plan(candidates, session.posterior)
         experiment = session.next_experiment(plan["experiment_id"])
         token = secrets.token_urlsafe(18)
         with LOCK:
@@ -363,11 +348,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             candidates = session.candidates()
             driver_copy = session.study.driver_copy if isinstance(session, DynamicSession) else DRIVER_COPY
-            try:
-                plan = meta.choose_experiment(candidates, session.posterior, driver_copy)
-            except RuntimeError as exc:
-                plan = MetaClient.fallback_plan(candidates, session.posterior)
-                plan.update({"reason": str(exc), "source": "local-fallback"})
+            plan = MetaClient.fallback_plan(candidates, session.posterior)
             response.update({"plan": plan, "experiment": session.next_experiment(plan["experiment_id"])})
         if not response["done"]:
             next_candidates = session.candidates() if not response.get("holdout") else []
@@ -385,10 +366,7 @@ class Handler(BaseHTTPRequestHandler):
         report["driver_labels"] = (
             session.study.driver_copy if isinstance(session, DynamicSession) else DRIVER_COPY
         )
-        try:
-            narrative = meta.narrate_report(report)
-        except RuntimeError as exc:
-            narrative = {"summary": report["headline"], "next_step": "Collect more observations before acting.", "source": "local-fallback", "error": str(exc)}
+        narrative = {"summary": report["headline"], "next_step": "Review exact tested levels and contradictory cases before designing a field experiment.", "source": "computed-report"}
         record = {
             "study_title": report.get("study_title", "Sustainable grocery delivery"),
             "stated_ratings": report.get("stated_ratings", {}),
@@ -433,6 +411,8 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
 
 
 def main() -> None:
+    if Path('.env').is_file():
+        load_env_file(Path('.env'))
     run(port=int(os.getenv("PORT", "8000")))
 
 

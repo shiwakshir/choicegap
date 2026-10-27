@@ -26,6 +26,11 @@
   display: none !important;
 }
 
+.researcher-mode .legacy-workflow,
+.researcher-mode:not(.configured-study) .scenario-card {
+  display: none !important;
+}
+
 .researcher-mode .agent-note {
   display: flex !important;
 }
