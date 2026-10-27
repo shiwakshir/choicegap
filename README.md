@@ -22,8 +22,11 @@ stated preference → competing hypotheses → adaptive controlled choice
 - **Deterministic evidence layer:** compiles a complete six-pair design, audits controls and coverage, then owns choice likelihoods, posterior updates, side randomization, and information gain.
 - **Muse Spark 1.3 synthesis:** turns computed evidence into a concise report under an explicit no-causality schema.
 - **Safe fallback:** the full study works without an API key, making the demo resilient.
+- **Research quality layer:** comprehension gate, genuine outside option, reversed-side holdout, and de-identified JSON export.
 
 The stated-attitude measurement and behavioural inference are intentionally separate. Participants rate every factor plus a general lower-impact intention item; the behavioural posterior still begins uniform. Muse may interpret optional free text, but it cannot overwrite the structured ratings or probability update.
+
+The repeated holdout is not used to update beliefs. Outside-option selections also leave the posterior unchanged and are reported as possible evidence that the offered explanations or choices are incomplete.
 
 Muse Image is intentionally not used in this slice: generated visuals would add an uncontrolled stimulus and weaken the experimental claim.
 
@@ -106,7 +109,7 @@ tests/                  deterministic unit and benchmark checks
 docs/                   benchmark snapshot and hackathon execution plan
 ```
 
-The sustainability choices and claims boundary are grounded in the cited evidence review at `docs/sustainability-research-basis.md`.
+The sustainability choices and claims boundary are grounded in `docs/sustainability-research-basis.md`. The path from prototype to incentive-compatible research, design-specific power simulation, and mixed-logit analysis is specified in `docs/field-validation-protocol.md`.
 
 ## Three-minute demo path
 

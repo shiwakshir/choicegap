@@ -35,6 +35,9 @@ class ParticipantBlindnessTests(unittest.TestCase):
         self.assertIn('id="intention-score"', html)
         self.assertIn("ratings: state.ratings", script)
         self.assertIn("<h2>Option ${index ? 'B' : 'A'}</h2>", script)
+        self.assertIn('id="comprehension"', html)
+        self.assertIn('data-choice="outside"', script)
+        self.assertIn("Boolean(state.experiment.holdout)", script)
 
 
 if __name__ == "__main__":

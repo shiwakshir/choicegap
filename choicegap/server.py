@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "static"
 SESSIONS: dict[str, Session | DynamicSession] = {}
 STUDIES: dict[str, StudySpec] = {}
+COMPLETED: list[dict[str, Any]] = []
 LOCK = threading.Lock()
 
 
@@ -48,6 +49,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/health":
             meta = MetaClient()
             self._json(200, {"ok": True, "meta_enabled": meta.enabled, "model": meta.model if meta.enabled else None})
+            return
+        if path == "/api/export":
+            with LOCK:
+                records = list(COMPLETED)
+            self._json(200, {
+                "schema_version": 1,
+                "description": "De-identified ChoiceGap session records; no free-text statements are included.",
+                "records": records,
+            })
             return
         requested = "index.html" if path == "/" else path.lstrip("/")
         target = (STATIC / requested).resolve()
@@ -158,24 +168,38 @@ class Handler(BaseHTTPRequestHandler):
     def _answer(self, payload: dict[str, Any]) -> None:
         token = str(payload["session_id"])
         choice = str(payload["choice"])
-        if choice not in ("a", "b"):
-            raise ValueError("Choice must be a or b")
+        if choice not in ("a", "b", "outside"):
+            raise ValueError("Choice must be a, b, or outside")
         with LOCK:
             session = SESSIONS.get(token)
             if session is None:
                 raise ValueError("Session expired")
-            session.observe(str(payload["experiment_id"]), choice, bool(payload.get("flipped")))
+            is_holdout = bool(payload.get("holdout"))
+            if is_holdout:
+                session.observe_holdout(choice, bool(payload.get("flipped")))
+            else:
+                session.observe(str(payload["experiment_id"]), choice, bool(payload.get("flipped")))
 
         meta = MetaClient()
-        done = session.rounds >= 4
-        response: dict[str, Any] = {"posterior": session.posterior, "rounds": session.rounds, "done": done}
-        if done:
-            report = session.report()
-            try:
-                narrative = meta.narrate_report(report)
-            except RuntimeError as exc:
-                narrative = {"summary": report["headline"], "next_step": "Collect more observations before acting.", "source": "local-fallback", "error": str(exc)}
-            response.update({"report": report, "narrative": narrative})
+        response: dict[str, Any] = {"posterior": session.posterior, "rounds": session.rounds, "done": False}
+        if is_holdout:
+            self._finish(token, session, meta, response)
+        elif session.rounds >= 4:
+            holdout = session.holdout_experiment()
+            if holdout:
+                response.update({
+                    "holdout": True,
+                    "experiment": holdout,
+                    "plan": {
+                        "reason": "A repeated choice with reversed sides checks response consistency.",
+                        "source": "quality-check",
+                        "leading_account": max(session.posterior, key=session.posterior.get),
+                        "rival_account": sorted(session.posterior, key=session.posterior.get, reverse=True)[1],
+                        "falsification_rule": "This response is not used to update the posterior.",
+                    },
+                })
+            else:
+                self._finish(token, session, meta, response)
         else:
             candidates = session.candidates()
             driver_copy = session.study.driver_copy if isinstance(session, DynamicSession) else DRIVER_COPY
@@ -186,6 +210,26 @@ class Handler(BaseHTTPRequestHandler):
                 plan.update({"reason": str(exc), "source": "local-fallback"})
             response.update({"plan": plan, "experiment": session.next_experiment(plan["experiment_id"])})
         self._json(200, response)
+
+    def _finish(self, token: str, session: Session | DynamicSession, meta: MetaClient, response: dict[str, Any]) -> None:
+        report = session.report()
+        try:
+            narrative = meta.narrate_report(report)
+        except RuntimeError as exc:
+            narrative = {"summary": report["headline"], "next_step": "Collect more observations before acting.", "source": "local-fallback", "error": str(exc)}
+        record = {
+            "study_title": report.get("study_title", "Sustainable grocery delivery"),
+            "stated_ratings": report.get("stated_ratings", {}),
+            "intention_score": report.get("intention_score"),
+            "choices": report.get("evidence", []),
+            "posterior": report["posterior"],
+            "opt_out_count": report.get("opt_out_count", 0),
+            "holdout_consistent": report.get("holdout_consistent"),
+        }
+        with LOCK:
+            COMPLETED.append(record)
+            SESSIONS.pop(token, None)
+        response.update({"done": True, "report": report, "narrative": narrative})
 
 
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:

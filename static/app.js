@@ -3,6 +3,13 @@ const state = { driver: null, ratings: {}, sessionId: null, studyId: null, exper
 let labels = { impact: 'Environmental impact', price: 'Affordability', convenience: 'Convenience', trust: 'Claim credibility' };
 let descriptions = { impact: 'A materially lower estimated footprint', price: 'A lower delivery fee', convenience: 'A precise delivery window', trust: 'Independent evidence behind the claim' };
 
+function updateEligibility() {
+  const values = Object.values(state.ratings);
+  const differentiated = values.length > 0 && Math.max(...values) > Math.min(...values);
+  const understood = $('#comprehension').value === 'held';
+  $('#start').disabled = !(differentiated && understood);
+}
+
 $('#researcher-toggle').addEventListener('click', () => {
   const enabled = document.body.classList.toggle('researcher-mode');
   $('#researcher-toggle').textContent = enabled ? 'Participant view' : 'Researcher view';
@@ -12,6 +19,22 @@ $('#open-debrief').addEventListener('click', () => {
   document.body.classList.add('researcher-mode');
   $('#researcher-toggle').textContent = 'Participant view';
   window.scrollTo({top: 0, behavior: 'smooth'});
+});
+
+$('#comprehension').addEventListener('change', () => {
+  const correct = $('#comprehension').value === 'held';
+  $('#comprehension-feedback').textContent = correct ? 'Correct—the unchanged detail is controlled in that comparison.' : ($('#comprehension').value ? 'Not quite. Look for what changes and what stays the same.' : '');
+  updateEligibility();
+});
+
+$('#export-data').addEventListener('click', async () => {
+  const response = await fetch('/api/export');
+  const data = await response.json();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = 'choicegap-deidentified-data.json'; link.click();
+  URL.revokeObjectURL(url);
 });
 
 fetch('/api/health').catch(() => {});
@@ -25,7 +48,7 @@ function renderRatingInputs() {
     const values = Object.values(state.ratings);
     const differentiated = Math.max(...values) > Math.min(...values);
     state.driver = Object.keys(state.ratings).reduce((best, key) => state.ratings[key] > state.ratings[best] ? key : best);
-    $('#start').disabled = !differentiated;
+    updateEligibility();
     $('#rating-hint').textContent = differentiated ? 'Thanks. Your choices may support—or challenge—this profile.' : 'Move at least one importance rating away from the midpoint to continue.';
   }));
 }
@@ -79,7 +102,7 @@ function show(id) {
 
 function renderExperiment(experiment, plan, round) {
   state.experiment = experiment;
-  $('#round').textContent = round;
+  $('#round').textContent = round === 'check' ? 'quality check' : round;
   $('#experiment-title').textContent = state.decisionPrompt;
   $('#experiment-rationale').textContent = experiment.rationale;
   $('#plan-reason').textContent = plan.reason;
@@ -89,18 +112,18 @@ function renderExperiment(experiment, plan, round) {
   $('#choices').innerHTML = ['a','b'].map((key, index) => {
     const option = experiment[key];
     return `<button class="choice" data-choice="${key}"><span class="option">Option ${index ? 'B' : 'A'}</span><h2>Option ${index ? 'B' : 'A'}</h2><ul>${option.facts.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul><span class="select">Choose →</span></button>`;
-  }).join('');
-  document.querySelectorAll('.choice').forEach(button => button.addEventListener('click', () => answer(button.dataset.choice)));
+  }).join('') + `<button class="outside" data-choice="outside">Neither option — keep my usual choice</button>`;
+  document.querySelectorAll('[data-choice]').forEach(button => button.addEventListener('click', () => answer(button.dataset.choice)));
 }
 
 async function answer(choice) {
-  document.querySelectorAll('.choice').forEach(button => button.disabled = true);
+  document.querySelectorAll('[data-choice]').forEach(button => button.disabled = true);
   try {
-    const data = await api('/api/answer', { session_id: state.sessionId, experiment_id: state.experiment.id, flipped: state.experiment.flipped, choice });
+    const data = await api('/api/answer', { session_id: state.sessionId, experiment_id: state.experiment.id, flipped: state.experiment.flipped, holdout: Boolean(state.experiment.holdout), choice });
     state.posterior = data.posterior; renderPosterior(data.posterior);
     if (data.done) renderReport(data.report, data.narrative);
-    else setTimeout(() => renderExperiment(data.experiment, data.plan, data.rounds + 1), 300);
-  } catch (error) { alert(error.message); document.querySelectorAll('.choice').forEach(button => button.disabled = false); }
+    else setTimeout(() => renderExperiment(data.experiment, data.plan, data.holdout ? 'check' : data.rounds + 1), 300);
+  } catch (error) { alert(error.message); document.querySelectorAll('[data-choice]').forEach(button => button.disabled = false); }
 }
 
 function renderPosterior(posterior, target = '#posterior') {

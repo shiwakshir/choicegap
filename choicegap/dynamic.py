@@ -182,6 +182,8 @@ class DynamicSession:
     intention_score: int = 3
     rounds: int = 0
     history: list[dict[str, Any]] = field(default_factory=list)
+    holdout_source: dict[str, Any] | None = None
+    holdout_consistent: bool | None = None
 
     @classmethod
     def create(
@@ -230,18 +232,40 @@ class DynamicSession:
     def observe(self, experiment_id: str, displayed_choice: str, flipped: bool) -> None:
         experiment = next(exp for exp in self.study.experiments if exp.id == experiment_id)
         canonical = displayed_choice
-        if flipped:
+        if displayed_choice in ("a", "b") and flipped:
             canonical = "b" if displayed_choice == "a" else "a"
         before = dict(self.posterior)
-        self.posterior = update_posterior(self.study, self.posterior, experiment, canonical)
+        if canonical in ("a", "b"):
+            self.posterior = update_posterior(self.study, self.posterior, experiment, canonical)
         self.rounds += 1
         self.history.append({
             "round": self.rounds,
             "experiment_id": experiment_id,
             "choice": canonical,
+            "displayed_choice": displayed_choice,
+            "flipped": flipped,
             "posterior_before": before,
             "posterior_after": dict(self.posterior),
         })
+        if self.holdout_source is None and canonical in ("a", "b"):
+            self.holdout_source = {"experiment_id": experiment_id, "choice": canonical, "flipped": flipped}
+
+    def holdout_experiment(self) -> dict[str, Any] | None:
+        if not self.holdout_source:
+            return None
+        experiment = next(exp for exp in self.study.experiments if exp.id == self.holdout_source["experiment_id"])
+        payload = _public(experiment, 0.0, not bool(self.holdout_source["flipped"]))
+        payload["holdout"] = True
+        return payload
+
+    def observe_holdout(self, displayed_choice: str, flipped: bool) -> None:
+        if not self.holdout_source:
+            return
+        if displayed_choice not in ("a", "b"):
+            self.holdout_consistent = None
+            return
+        canonical = ("b" if displayed_choice == "a" else "a") if flipped else displayed_choice
+        self.holdout_consistent = canonical == self.holdout_source["choice"]
 
     def report(self) -> dict[str, Any]:
         ranked = sorted(self.posterior.items(), key=lambda item: -item[1])
@@ -253,6 +277,8 @@ class DynamicSession:
             "stated_driver": self.stated_driver,
             "stated_ratings": self.stated_ratings,
             "intention_score": self.intention_score,
+            "opt_out_count": sum(item["choice"] == "outside" for item in self.history),
+            "holdout_consistent": self.holdout_consistent,
             "leading_driver": leader,
             "confidence": round(probability, 4),
             "gap_detected": gap,

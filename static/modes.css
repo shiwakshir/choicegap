@@ -145,6 +145,36 @@
   padding-top: 1.2rem;
 }
 
+.comprehension-item {
+  border-top: 1px solid var(--line);
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+}
+
+.comprehension-item select {
+  width: 100%;
+  margin-top: .65rem;
+  padding: .8rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  font: inherit;
+}
+
+.outside {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  padding: .9rem;
+  cursor: pointer;
+  font: 700 .78rem var(--sans);
+}
+
+.outside:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
 .scale-labels {
   display: flex;
   justify-content: space-between;

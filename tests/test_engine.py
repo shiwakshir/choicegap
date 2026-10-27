@@ -53,6 +53,27 @@ class EngineTests(unittest.TestCase):
         self.assertNotEqual(plan["leading_account"], plan["rival_account"])
         self.assertTrue(plan["falsification_rule"])
 
+    def test_outside_option_does_not_manufacture_evidence(self):
+        session = Session.create("impact", "", seed=12)
+        before = dict(session.posterior)
+        experiment = session.next_experiment()
+        session.observe(experiment["id"], "outside", experiment["flipped"])
+        self.assertEqual(session.posterior, before)
+        self.assertEqual(session.report()["opt_out_count"], 1)
+
+    def test_reversed_holdout_checks_consistency_without_updating(self):
+        session = Session.create("impact", "", seed=13)
+        experiment = session.next_experiment()
+        session.observe(experiment["id"], "a", experiment["flipped"])
+        after_choice = dict(session.posterior)
+        holdout = session.holdout_experiment()
+        expected_displayed = "b" if session.holdout_source["choice"] == "a" else "a"
+        if not holdout["flipped"]:
+            expected_displayed = session.holdout_source["choice"]
+        session.observe_holdout(expected_displayed, holdout["flipped"])
+        self.assertTrue(session.holdout_consistent)
+        self.assertEqual(session.posterior, after_choice)
+
 
 if __name__ == "__main__":
     unittest.main()
