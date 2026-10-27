@@ -3,6 +3,7 @@ import unittest
 from choicegap.benchmark import run_benchmark
 from choicegap.engine import DRIVERS, Session, expected_information_gain, find_experiment, update_posterior
 from choicegap.meta import MetaClient
+from unittest.mock import patch
 
 
 class EngineTests(unittest.TestCase):
@@ -94,6 +95,25 @@ class EngineTests(unittest.TestCase):
         })
         self.assertEqual(narrative["source"], "quality-guardrail")
         self.assertIn("inconclusive", narrative["summary"].lower())
+
+    def test_model_cannot_select_an_unissued_experiment(self):
+        client = MetaClient()
+        client.api_key = 'test-only'
+        session = Session.create('impact', '', seed=1)
+        result = {'experiment_id': 'invented'}
+        with patch.object(client, '_structured', return_value=result):
+            with self.assertRaises(RuntimeError):
+                client.choose_experiment(session.candidates(), session.posterior)
+
+    def test_candidates_include_computed_predictions_for_every_account(self):
+        session = Session.create('impact', '', seed=1)
+        for candidate in session.candidates():
+            experiment = find_experiment(candidate['id'])
+            from choicegap.engine import choice_probability
+            for driver in DRIVERS:
+                self.assertAlmostEqual(
+                    candidate['predictions'][driver], choice_probability(experiment, driver), places=4,
+                )
 
 
 if __name__ == "__main__":

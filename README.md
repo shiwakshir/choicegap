@@ -38,9 +38,13 @@ Muse performs bounded semantic interpretation and experiment selection. Determin
 2. Describe a decision, population, and uncertainty in the Muse study compiler.
 3. Muse returns four structured candidate explanations with concrete high/low levels.
 4. The local compiler produces the six unique pairwise experiments.
-5. The audit verifies four accounts, complete pairwise coverage, exactly two varying factors per test, shared held-constant copy, and position randomization.
-6. Switch to **Participant view** and run the blind adaptive study.
-7. Review the evidence report after data collection.
+5. The audit checks four accounts, complete pairwise coverage, binary factor levels, two varying factors per test, unique experiment IDs, and exact agreement between displayed copy and encoded levels.
+6. Open the generated participant link in a separate tab. The study ID survives refresh and the handoff from researcher mode. Links expire when the server restarts.
+7. Return to the researcher console and select **Load completed sessions** to open a report.
+
+Every completed report includes a decision trail: the plan recorded before each response, computed choice probabilities for all four models, the exact displayed stimuli and their SHA-256 digest, option orientation, and posterior probabilities before and after the response. Entropy may increase after an unexpected answer; the trail preserves that outcome. The digest identifies the recorded payload; it does not provide an external timestamp or independent preregistration.
+
+The server owns question order and orientation. Each issued question has a one-use response token. Replayed answers, out-of-order responses, and responses for an unissued experiment are rejected before evidence is updated.
 
 ## Run locally
 
@@ -69,7 +73,7 @@ python -m unittest discover -s tests -v
 python -m choicegap.benchmark --participants 2000 --output benchmark-results.json
 ```
 
-The benchmark generates simulated participants with known latent drivers and noisy logistic choices. It compares the adaptive expected-information-gain policy with fixed and random four-question policies. It reports top-1 driver recovery, multiclass Brier score, and probability assigned to the true driver. Seeds are fixed and side placement is randomized reproducibly.
+The benchmark generates simulated participants with known latent drivers and noisy logistic choices. It compares the deterministic adaptive expected-information-gain policy with fixed and random four-question policies. It reports top-1 driver recovery, multiclass Brier score, and probability assigned to the true driver. Seeds are fixed and side placement is randomized reproducibly. It does not call Muse and does not establish that Muse improves experiment selection; that comparison requires a separately budgeted model ablation.
 
 ### Current seeded result
 
@@ -89,7 +93,7 @@ Generated studies receive a structural design audit, not automatic domain valida
 
 The candidate set is a small fractional-factorial-style library of paired choices. Each pair either holds all but one attribute constant or presents a clearly disclosed two-attribute trade-off. Product names are neutral, copy is templated, and left/right order is randomized. This reduces obvious wording and position confounds; it does not eliminate hypothetical-choice bias.
 
-The posterior is over four deliberately simple models, not over a person's identity. A “gap” is shown only when at least three responses are informative, the reversed-side holdout is consistent, and the leading behavioural hypothesis differs from the stated driver with at least 45% posterior probability. The report always discloses:
+The posterior is over four deliberately simple models, not over a person's identity. Importance ratings may be tied, including all equal ratings. All factors with the highest rating are retained as stated priorities. A “gap” is shown only when at least three responses are informative, the reversed-side holdout is consistent, and the leading behavioural hypothesis falls outside those priorities with at least 45% posterior probability. This threshold is a prototype heuristic awaiting empirical calibration. The report always discloses:
 
 1. one respondent and four choices cannot prove causality;
 2. conclusions are local to this scenario;
@@ -116,6 +120,7 @@ The sustainability choices and claims boundary are grounded in `docs/sustainabil
 - Session state is held in memory and is cleared when the server restarts.
 - The interface does not request direct identifiers.
 - Free-text statements are excluded from the research-data export.
+- Exported records include exact stimuli, decision trails, model source, and returned API token usage when available. There are no API price estimates.
 - When Muse is enabled, study inputs and derived reports may be sent to the configured Meta endpoint.
 - The local server has no authentication, encrypted persistence, retention controls, or multi-user isolation. It is not a production deployment.
 

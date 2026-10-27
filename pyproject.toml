@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -16,4 +16,7 @@ choicegap = "choicegap.server:main"
 
 [tool.setuptools]
 packages = ["choicegap"]
+
+[tool.setuptools.data-files]
+"share/choicegap/static" = ["static/index.html", "static/app.js", "static/styles.css", "static/modes.css"]
 

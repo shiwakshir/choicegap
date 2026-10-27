@@ -32,21 +32,29 @@
         <button id="design-study" class="primary">Compile study with Muse</button>
         <div id="design-result" class="design-result" aria-live="polite"></div>
       </div>
+      <div class="researcher-only study-builder">
+        <div class="scenario-kicker">Completed sessions</div>
+        <h2>Review the evidence</h2>
+        <p>Open a participant's completed report after collection. Records remain available until this server restarts.</p>
+        <button id="refresh-results" class="secondary" type="button">Load completed sessions</button>
+        <div id="completed-results" class="design-result" aria-live="polite"></div>
+      </div>
       <div class="scenario-card">
         <div class="scenario-kicker">Live study · 2 minutes</div>
         <h2 id="scenario-title">Choose a grocery delivery option</h2>
         <p id="scenario-prompt">Imagine this is your real weekly shop. Before seeing any options, rate how important each factor is to you.</p>
         <div id="drivers" class="drivers rating-grid" aria-label="Importance ratings"></div>
-        <p id="rating-hint" class="microcopy">Move at least one importance rating away from the midpoint to continue.</p>
+        <p id="rating-hint" class="microcopy">Rate each factor from 1 (not important) to 5 (very important). Equal ratings are welcome.</p>
+        <label class="ratings-confirm"><input id="ratings-reviewed" type="checkbox"> These ratings reflect my priorities, including any ties.</label>
         <div class="intention-item">
-          <label for="intention-score">“When a lower-impact delivery option is available, I try to choose it.”</label>
+          <label for="intention-score" id="intention-label">“When a lower-impact delivery option is available, I try to choose it.”</label>
           <div class="scale-labels"><span>Strongly disagree</span><span>Strongly agree</span></div>
           <input id="intention-score" type="range" min="1" max="5" value="3" step="1">
         </div>
         <div class="comprehension-item practice-item">
           <div class="scenario-kicker">Before you begin · Practice example</div>
           <p>Compare every line, just as you would during an online checkout.</p>
-          <div class="practice-options" aria-hidden="true">
+          <div class="practice-options">
             <div><strong>Option A</strong><span>£1 delivery fee</span><span>Two-hour window</span><span>0.4 kg CO₂e estimate</span></div>
             <div><strong>Option B</strong><span>£1 delivery fee</span><span>All-day window</span><span>0.8 kg CO₂e estimate</span></div>
           </div>
@@ -68,7 +76,7 @@
 
     <section id="study" class="screen">
       <div class="study-head">
-        <div><div class="eyebrow">Controlled choice <span id="round">1</span> of 4</div><h1 id="experiment-title">Choose one.</h1></div>
+        <div><div class="eyebrow" id="progress-label">Choice 1 of 4</div><h1 id="experiment-title">Choose one.</h1></div>
         <div class="uncertainty researcher-only"><span>uncertainty</span><div class="meter"><i id="uncertainty-bar"></i></div></div>
       </div>
       <div id="agent-note" class="agent-note researcher-only"><span class="spark">M</span><div><strong>Muse experiment selection</strong><p id="plan-reason"></p><div id="hypothesis-duel" class="duel"></div><p id="falsification-rule" class="falsifier"></p></div></div>
@@ -85,17 +93,23 @@
       <div id="participant-complete" class="participant-copy completion">
         <div class="eyebrow">Study complete</div>
         <h1>Thank you.</h1>
-        <p class="lede">Your four choices have been recorded. This study does not diagnose you or assign a permanent preference.</p>
+        <p class="lede">Your responses have been recorded. Thank you for taking part.</p>
       </div>
       <div id="research-report" class="researcher-only">
         <div class="eyebrow">Researcher debrief · Evidence report</div>
         <h1 id="report-headline"></h1>
         <p id="report-summary" class="lede"></p>
+        <p id="report-context" class="report-context"></p>
         <div class="report-grid">
           <article class="panel"><h2>What the choices support</h2><div id="final-posterior"></div></article>
           <article class="panel"><h2>Recommended next test</h2><p id="next-step"></p><div class="stamp">Decision support, not causal proof</div></article>
         </div>
         <button id="export-data" class="secondary">Export de-identified research data</button>
+        <article class="limitations">
+          <h2>Decision trail</h2>
+          <p>Each plan was recorded before its response. Probabilities refer to the model's canonical A option; the displayed order is recorded separately.</p>
+          <div id="decision-trace"></div>
+        </article>
         <article class="limitations"><h2>Limits before action</h2><ul id="limitations"></ul></article>
         <button id="restart-study" class="secondary" type="button">Run another participant</button>
       </div>

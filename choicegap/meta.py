@@ -6,7 +6,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from .engine import DRIVER_COPY, DRIVERS
+from .engine import DRIVER_COPY, DRIVERS, GAP_PROBABILITY_THRESHOLD
 
 
 META_BASE_URL = "https://api.meta.ai/v1"
@@ -18,6 +18,7 @@ class MetaClient:
     def __init__(self) -> None:
         self.api_key = os.getenv("MODEL_API_KEY", "").strip()
         self.model = os.getenv("META_MODEL", "muse-spark-1.3").strip()
+        self.usage: list[dict[str, Any]] = []
 
     @property
     def enabled(self) -> bool:
@@ -27,13 +28,25 @@ class MetaClient:
     def fallback_plan(candidates: list[dict[str, Any]], posterior: dict[str, float]) -> dict[str, Any]:
         ranked_accounts = sorted(posterior, key=posterior.get, reverse=True)
         leader, rival = ranked_accounts[:2]
+        candidate = candidates[0]
+        predictions = candidate.get("predictions", {})
+        leader_p = predictions.get(leader, 0.5)
+        rival_p = predictions.get(rival, 0.5)
         return {
-            "experiment_id": candidates[0]["id"],
+            "experiment_id": candidate["id"],
             "objective": "separate_leaders",
             "leading_account": leader,
             "rival_account": rival,
-            "predicted_split": f"A controlled trade-off should make {leader} and {rival} predict different choices.",
-            "falsification_rule": f"A choice favored by {rival} would count against the current {leader} account.",
+            "predicted_split": (
+                f"P(canonical A): {leader}={leader_p:.0%}; {rival}={rival_p:.0%}."
+            ),
+            "falsification_rule": (
+                "Canonical B favors the rival relative to the leader."
+                if leader_p > rival_p else
+                "Canonical A favors the rival relative to the leader."
+                if leader_p < rival_p else
+                "This pair makes the same prediction for both current leaders."
+            ),
             "reason": "Maximum expected information gain.",
             "source": "local",
         }
@@ -57,12 +70,16 @@ class MetaClient:
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
                 payload = json.loads(response.read().decode("utf-8"))
-            return json.loads(payload["choices"][0]["message"]["content"])
-        except (urllib.error.URLError, TimeoutError, KeyError, ValueError, json.JSONDecodeError) as exc:
+            result = json.loads(payload["choices"][0]["message"]["content"])
+            if not isinstance(result, dict):
+                raise ValueError("Expected a structured object")
+            self.usage.append({"task": name, "model": self.model, "usage": payload.get("usage", {})})
+            return result
+        except (urllib.error.URLError, TimeoutError, KeyError, IndexError, TypeError, ValueError) as exc:
             raise RuntimeError(f"Meta Model API request failed: {exc}") from exc
 
     def parse_statement(self, statement: str, fallback: str) -> dict[str, Any]:
-        if not self.enabled:
+        if not self.enabled or not statement.strip():
             return {"driver": fallback, "reason": "Selected directly by the respondent.", "source": "local"}
         schema = {
             "type": "object",
@@ -157,6 +174,7 @@ class MetaClient:
                 "You are a falsification agent for an adaptive UX study. Treat the two strongest accounts as rivals, "
                 "then select exactly one validated candidate that makes them predict meaningfully different choices. "
                 "Prefer expected information gain. State the predicted disagreement and, before observing the answer, "
+                "The predictions field gives computed P(canonical A | account); use those numbers rather than inventing predictions. "
                 "the result that would count against the current leader. Never invent an experiment, diagnose a person, "
                 "or claim causality. Keep each explanation under 30 words."
             )},
@@ -168,11 +186,21 @@ class MetaClient:
                 "validated_candidates": candidates,
             })},
         ], "falsification_plan", schema)
+        if result.get("experiment_id") not in ids:
+            raise RuntimeError("Model selected an experiment outside the validated candidate set")
+        if result.get("leading_account") != leader or result.get("rival_account") != rival:
+            raise RuntimeError("Model plan does not use the two leading computed accounts")
+        for field in ("predicted_split", "falsification_rule", "reason"):
+            if not isinstance(result.get(field), str) or not result[field].strip():
+                raise RuntimeError(f"Model plan is missing {field}")
         result["source"] = self.model
         return result
 
     def narrate_report(self, report: dict[str, Any]) -> dict[str, Any]:
-        if report.get("evidence_quality") == "low":
+        if (
+            report.get("evidence_quality") == "low"
+            or report.get("confidence", 1.0) < GAP_PROBABILITY_THRESHOLD
+        ):
             return {
                 "summary": report["headline"],
                 "next_step": "Repeat the task or collect more responses before interpreting the pattern.",

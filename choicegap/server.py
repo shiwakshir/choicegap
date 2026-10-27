@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import math
 import mimetypes
 import os
 import secrets
 import threading
+import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -17,12 +20,76 @@ from .meta import MetaClient
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "static"
+if not STATIC.is_dir():
+    STATIC = Path(sys.prefix) / "share" / "choicegap" / "static"
 SESSIONS: dict[str, Session | DynamicSession] = {}
 STUDIES: dict[str, StudySpec] = {}
 COMPLETED: list[dict[str, Any]] = []
+PENDING: dict[str, dict[str, Any]] = {}
+TRACES: dict[str, list[dict[str, Any]]] = {}
+USAGE: dict[str, list[dict[str, Any]]] = {}
+SESSION_STUDIES: dict[str, str] = {}
 LOCK = threading.Lock()
 MAX_REQUEST_BYTES = 1_000_000
 ADAPTIVE_ROUNDS = 4
+
+
+def issue_experiment(
+    token: str, experiment: dict[str, Any], plan: dict[str, Any],
+    candidates: list[dict[str, Any]],
+) -> str:
+    answer_token = secrets.token_urlsafe(18)
+    candidate = next((item for item in candidates if item["id"] == experiment["id"]), {})
+    encoded = json.dumps(experiment, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    with LOCK:
+        PENDING[token] = {
+            "answer_token": answer_token,
+            "experiment": experiment,
+            "plan": plan,
+            "predictions": candidate.get("predictions", {}),
+            "stimulus_sha256": hashlib.sha256(encoded).hexdigest(),
+        }
+    return answer_token
+
+
+def consume_answer(token: str, payload: dict[str, Any]) -> tuple[Any, dict[str, Any]]:
+    """Validate the issued question and consume its nonce before updating any evidence."""
+    choice = payload.get("choice")
+    if choice not in ("a", "b", "outside"):
+        raise ValueError("Choice must be a, b, or outside")
+    with LOCK:
+        session = SESSIONS.get(token)
+        pending = PENDING.get(token)
+        if session is None:
+            raise ValueError("Session expired")
+        if pending is None:
+            raise ValueError("A response is already being processed")
+        if payload.get("answer_token") != pending["answer_token"]:
+            raise ValueError("This question has already been answered or is out of date")
+        experiment = pending["experiment"]
+        if payload.get("experiment_id") != experiment["id"]:
+            raise ValueError("Response does not match the issued experiment")
+        PENDING.pop(token)
+        before = dict(session.posterior)
+        if experiment.get("holdout"):
+            session.observe_holdout(choice, experiment["flipped"])
+        else:
+            session.observe(experiment["id"], choice, experiment["flipped"])
+        entropy = lambda p: -sum(value * math.log2(value) for value in p.values() if value)
+        TRACES.setdefault(token, []).append({
+            "step": len(TRACES.get(token, [])) + 1,
+            "holdout": bool(experiment.get("holdout")),
+            "plan_before_response": pending["plan"],
+            "stimulus": experiment,
+            "stimulus_sha256": pending["stimulus_sha256"],
+            "p_canonical_a_by_hypothesis": pending["predictions"],
+            "displayed_choice": choice,
+            "posterior_before": before,
+            "posterior_after": dict(session.posterior),
+            "uncertainty_before_bits": round(entropy(before), 4),
+            "uncertainty_after_bits": round(entropy(session.posterior), 4),
+        })
+        return session, experiment
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -42,9 +109,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def _body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
-        if length > MAX_REQUEST_BYTES:
+        if length < 0 or length > MAX_REQUEST_BYTES:
             raise ValueError("Request too large")
-        return json.loads(self.rfile.read(length) or b"{}")
+        payload = json.loads(self.rfile.read(length) or b"{}")
+        if not isinstance(payload, dict):
+            raise ValueError("Request body must be a JSON object")
+        return payload
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
@@ -56,10 +126,20 @@ class Handler(BaseHTTPRequestHandler):
             with LOCK:
                 records = list(COMPLETED)
             self._json(200, {
-                "schema_version": 1,
+                "schema_version": 2,
                 "description": "De-identified ChoiceGap session records; no free-text statements are included.",
                 "records": records,
             })
+            return
+        if path == "/api/study":
+            from urllib.parse import parse_qs
+            study_id = parse_qs(urlparse(self.path).query).get("id", [""])[0]
+            with LOCK:
+                study = STUDIES.get(study_id)
+            if study is None:
+                self._json(404, {"error": "Study unavailable. It may have expired after a server restart."})
+            else:
+                self._json(200, {"study_id": study_id, "study": study.to_public()})
             return
         requested = "index.html" if path == "/" else path.lstrip("/")
         target = (STATIC / requested).resolve()
@@ -118,8 +198,12 @@ class Handler(BaseHTTPRequestHandler):
         statement = str(payload.get("statement", "")).strip()[:1000]
         study_id = str(payload.get("study_id", ""))
         study = STUDIES.get(study_id) if study_id else None
+        if study_id and study is None:
+            raise ValueError("Study unavailable. Ask the researcher for a new study link.")
         valid_drivers = study.driver_ids if study else DRIVERS
         raw_ratings = payload.get("ratings") or {}
+        if not isinstance(raw_ratings, dict):
+            raise ValueError("Ratings must be an object")
         if raw_ratings:
             ratings = {key: int(raw_ratings.get(key, 0)) for key in valid_drivers}
             if any(value < 1 or value > 5 for value in ratings.values()):
@@ -168,6 +252,10 @@ class Handler(BaseHTTPRequestHandler):
         token = secrets.token_urlsafe(18)
         with LOCK:
             SESSIONS[token] = session
+            TRACES[token] = []
+            USAGE[token] = list(meta.usage)
+            SESSION_STUDIES[token] = study_id
+        answer_token = issue_experiment(token, experiment, plan, candidates)
         self._json(200, {
             "session_id": token,
             "intake": intake,
@@ -177,22 +265,13 @@ class Handler(BaseHTTPRequestHandler):
             "driver_copy": driver_copy,
             "study_title": study.title if study else "Sustainable grocery delivery",
             "meta_enabled": meta.enabled,
+            "answer_token": answer_token,
         })
 
     def _answer(self, payload: dict[str, Any]) -> None:
         token = str(payload["session_id"])
-        choice = str(payload["choice"])
-        if choice not in ("a", "b", "outside"):
-            raise ValueError("Choice must be a, b, or outside")
-        with LOCK:
-            session = SESSIONS.get(token)
-            if session is None:
-                raise ValueError("Session expired")
-            is_holdout = bool(payload.get("holdout"))
-            if is_holdout:
-                session.observe_holdout(choice, bool(payload.get("flipped")))
-            else:
-                session.observe(str(payload["experiment_id"]), choice, bool(payload.get("flipped")))
+        session, issued = consume_answer(token, payload)
+        is_holdout = bool(issued.get("holdout"))
 
         meta = MetaClient()
         response: dict[str, Any] = {"posterior": session.posterior, "rounds": session.rounds, "done": False}
@@ -223,10 +302,22 @@ class Handler(BaseHTTPRequestHandler):
                 plan = MetaClient.fallback_plan(candidates, session.posterior)
                 plan.update({"reason": str(exc), "source": "local-fallback"})
             response.update({"plan": plan, "experiment": session.next_experiment(plan["experiment_id"])})
+        if not response["done"]:
+            next_candidates = session.candidates() if not response.get("holdout") else []
+            response["answer_token"] = issue_experiment(
+                token, response["experiment"], response["plan"], next_candidates,
+            )
+        with LOCK:
+            if token in USAGE:
+                USAGE[token].extend(meta.usage)
         self._json(200, response)
 
     def _finish(self, token: str, session: Session | DynamicSession, meta: MetaClient, response: dict[str, Any]) -> None:
         report = session.report()
+        report["decision_trace"] = TRACES.get(token, [])
+        report["driver_labels"] = (
+            session.study.driver_copy if isinstance(session, DynamicSession) else DRIVER_COPY
+        )
         try:
             narrative = meta.narrate_report(report)
         except RuntimeError as exc:
@@ -241,10 +332,21 @@ class Handler(BaseHTTPRequestHandler):
             "holdout_consistent": report.get("holdout_consistent"),
             "informative_choices": report.get("informative_choices"),
             "evidence_quality": report.get("evidence_quality"),
+            "study_id": SESSION_STUDIES.get(token, ""),
+            "stated_priorities": report["stated_priorities"],
+            "decision_trace": report["decision_trace"],
+            "driver_labels": report["driver_labels"],
+            "api_usage": USAGE.get(token, []) + meta.usage,
+            "report": report,
+            "narrative": narrative,
         }
         with LOCK:
             COMPLETED.append(record)
             SESSIONS.pop(token, None)
+            PENDING.pop(token, None)
+            TRACES.pop(token, None)
+            USAGE.pop(token, None)
+            SESSION_STUDIES.pop(token, None)
         response.update({"done": True, "report": report, "narrative": narrative})
 
 

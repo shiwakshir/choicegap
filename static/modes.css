@@ -218,6 +218,25 @@
   margin: .5rem 0 0;
 }
 
+.scenario-card .ratings-confirm {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: .6rem;
+}
+
+.trace-entry {
+  border-top: 1px solid var(--line);
+  padding: 1rem 0;
+}
+
+.trace-entry summary { cursor: pointer; font-weight: 700; }
+.trace-entry p { line-height: 1.5; font-size: .85rem; }
+.trace-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.trace-options ul { columns: 1; padding-left: 1.2rem; }
+.trace-hash { overflow-wrap: anywhere; color: var(--muted); }
+.report-context { max-width: 900px; line-height: 1.6; color: var(--muted); margin-bottom: 2rem; }
+
 .app-error {
   border: 1px solid var(--red);
   background: #fff;

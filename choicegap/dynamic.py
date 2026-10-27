@@ -64,8 +64,10 @@ class StudySpec:
             "drivers": [
                 {
                     "id": item["id"],
-                    "label": item["hypothesis_label"],
-                    "description": item["hypothesis_description"],
+                    "label": item["label"],
+                    "description": f"{item['low_label']} / {item['high_label']}",
+                    "low_label": item["low_label"],
+                    "high_label": item["high_label"],
                 }
                 for item in self.attributes
             ],
@@ -121,15 +123,29 @@ def audit_study(study: StudySpec) -> dict[str, Any]:
     pairs = {tuple(sorted(exp.varies)) for exp in study.experiments}
     expected = set(itertools.combinations(study.driver_ids, 2))
     controlled = all(
-        sum(exp.a["levels"][key] != exp.b["levels"][key] for key in study.driver_ids) == 2
+        {key for key in study.driver_ids if exp.a["levels"][key] != exp.b["levels"][key]}
+        == set(exp.varies) and len(set(exp.varies)) == 2
         for exp in study.experiments
     )
+    binary_levels = all(
+        set(option["levels"]) == set(study.driver_ids)
+        and all(value in (0, 1) for value in option["levels"].values())
+        for exp in study.experiments for option in (exp.a, exp.b)
+    )
+    exact_copy = all(
+        option["facts"] == [
+            f"{item['label']}: {item['high_label'] if option['levels'][item['id']] else item['low_label']}"
+            for item in study.attributes
+        ]
+        for exp in study.experiments for option in (exp.a, exp.b)
+    )
     checks = {
-        "four_competing_accounts": len(study.driver_ids) == 4,
-        "complete_pairwise_coverage": pairs == expected,
+        "four_competing_accounts": len(set(study.driver_ids)) == 4,
+        "complete_pairwise_coverage": pairs == expected and len(study.experiments) == 6,
         "two_factors_vary_per_test": controlled,
-        "shared_copy_for_held_constants": True,
-        "position_randomization_enabled": True,
+        "binary_factor_levels": binary_levels,
+        "stimulus_copy_matches_levels": exact_copy,
+        "unique_experiment_ids": len({exp.id for exp in study.experiments}) == len(study.experiments),
     }
     return {"passed": all(checks.values()), "checks": checks, "experiment_count": len(study.experiments)}
 
@@ -220,7 +236,15 @@ class DynamicSession:
         return sorted(values, key=lambda item: (-item[1], item[0].id))
 
     def candidates(self, limit: int = 3) -> list[dict[str, Any]]:
-        return [_public(exp, score, False) for exp, score in self._ranked()[:limit]]
+        candidates = []
+        for experiment, score in self._ranked()[:limit]:
+            candidate = _public(experiment, score, False)
+            candidate["predictions"] = {
+                driver: round(choice_probability(self.study, experiment, driver), 4)
+                for driver in self.study.driver_ids
+            }
+            candidates.append(candidate)
+        return candidates
 
     def next_experiment(self, selected_id: str | None = None) -> dict[str, Any] | None:
         ranked = self._ranked()
@@ -275,14 +299,17 @@ class DynamicSession:
         labels = self.study.driver_copy
         informative_choices = sum(item["choice"] in ("a", "b") for item in self.history)
         evidence_quality = assess_evidence_quality(informative_choices, self.holdout_consistent)
+        highest_rating = max(self.stated_ratings.values())
+        stated_priorities = [key for key, value in self.stated_ratings.items() if value == highest_rating]
         gap = (
-            leader != self.stated_driver
+            leader not in stated_priorities
             and probability >= GAP_PROBABILITY_THRESHOLD
             and evidence_quality != "low"
         )
         return {
             "study_title": self.study.title,
             "stated_driver": self.stated_driver,
+            "stated_priorities": stated_priorities,
             "stated_ratings": self.stated_ratings,
             "intention_score": self.intention_score,
             "opt_out_count": sum(item["choice"] == "outside" for item in self.history),
@@ -300,6 +327,7 @@ class DynamicSession:
                 leading_driver=leader,
                 gap_detected=gap,
                 evidence_quality=evidence_quality,
+                probability=probability,
             ),
             "evidence": list(self.history),
             "limitations": [

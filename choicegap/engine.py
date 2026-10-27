@@ -205,9 +205,12 @@ def report_headline(
     leading_driver: str,
     gap_detected: bool,
     evidence_quality: str,
+    probability: float,
 ) -> str:
     if evidence_quality == "low":
         return "The evidence is inconclusive because the response-quality threshold was not met."
+    if probability < GAP_PROBABILITY_THRESHOLD:
+        return "The choices do not yet distinguish clearly between the candidate explanations."
     if gap_detected:
         return (
             f"Choices lean toward {labels[leading_driver]['label'].lower()}, despite stating "
@@ -256,7 +259,14 @@ class Session:
         return {item["experiment_id"] for item in self.history}
 
     def candidates(self, limit: int = 3) -> list[dict[str, Any]]:
-        return [experiment_public(exp, score) for exp, score in ranked_experiments(self.posterior, self.used)[:limit]]
+        candidates = []
+        for experiment, score in ranked_experiments(self.posterior, self.used)[:limit]:
+            candidate = experiment_public(experiment, score)
+            candidate["predictions"] = {
+                driver: round(choice_probability(experiment, driver), 4) for driver in DRIVERS
+            }
+            candidates.append(candidate)
+        return candidates
 
     def next_experiment(self, selected_id: str | None = None) -> dict[str, Any] | None:
         ranked = ranked_experiments(self.posterior, self.used)
@@ -311,13 +321,16 @@ class Session:
         leader, probability = ranked[0]
         informative_choices = sum(item["choice"] in ("a", "b") for item in self.history)
         evidence_quality = assess_evidence_quality(informative_choices, self.holdout_consistent)
+        highest_rating = max(self.stated_ratings.values())
+        stated_priorities = [key for key, value in self.stated_ratings.items() if value == highest_rating]
         gap = (
-            leader != self.stated_driver
+            leader not in stated_priorities
             and probability >= GAP_PROBABILITY_THRESHOLD
             and evidence_quality != "low"
         )
         return {
             "stated_driver": self.stated_driver,
+            "stated_priorities": stated_priorities,
             "stated_ratings": self.stated_ratings,
             "intention_score": self.intention_score,
             "opt_out_count": sum(item["choice"] == "outside" for item in self.history),
@@ -335,6 +348,7 @@ class Session:
                 leading_driver=leader,
                 gap_detected=gap,
                 evidence_quality=evidence_quality,
+                probability=probability,
             ),
             "evidence": [
                 {"experiment_id": item["experiment_id"], "choice": item["choice"], "round": item["round"]}

@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import replace
 
 from choicegap.dynamic import DynamicSession, audit_study, compile_study
 
@@ -37,6 +38,20 @@ class DynamicStudyTests(unittest.TestCase):
         broken["attributes"][3]["id"] = "c"
         with self.assertRaises(ValueError):
             compile_study(broken)
+
+    def test_audit_detects_stimulus_copy_that_disagrees_with_levels(self):
+        study = compile_study(DESIGN)
+        first = study.experiments[0]
+        changed = replace(first, a={**first.a, 'facts': ['Uncontrolled claim']})
+        damaged = replace(study, experiments=(changed, *study.experiments[1:]))
+        audit = audit_study(damaged)
+        self.assertFalse(audit['passed'])
+        self.assertFalse(audit['checks']['stimulus_copy_matches_levels'])
+
+    def test_audit_rejects_duplicate_experiments_despite_pair_coverage(self):
+        study = compile_study(DESIGN)
+        damaged = replace(study, experiments=(*study.experiments, study.experiments[0]))
+        self.assertFalse(audit_study(damaged)['passed'])
 
 
 if __name__ == "__main__":
