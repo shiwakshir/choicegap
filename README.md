@@ -11,8 +11,11 @@ Open <http://127.0.0.1:8000/?mode=researcher> and use **Resolve a research decis
 1. Enter the product decision and paste one evidence excerpt per line using `type | source label | excerpt`. Supported types are `statement`, `observed` (a researcher-reported action), and `hypothetical`.
 2. Select **Map evidence and draft follow-ups**. With Muse enabled, the model maps sources to explanations and identifies missing or contradictory evidence. Without an API key, sources are preserved without automatic semantic assignments; the researcher assigns relationships manually.
 3. Review each source relationship, explanation, missing-evidence note, and exact factor level. Source IDs and verbatim quotations are validated; their interpretation and provenance are not independently verified.
+   Optionally select **Challenge this design with Muse**. The model reviews competing explanations and semantic confounds. A PNG/JPEG prototype screenshot under 1 MB can be included to inspect visible defaults, prominence, and wording. This call requires a configured Meta key. The screenshot is sent only for that review; its bytes are not saved in the workspace. Model findings require researcher verification.
 4. Approve the design. Its source map and blueprint are locked, hashed, and saved. Drafts cannot be used for participant collection. Create a new draft for changes to an approved design.
 5. Open the participant link and collect responses. Return to the workbench to refresh the decision brief, inspect individual cases, and export the research packet.
+
+Muse review is advisory and does not approve a design. Its input digest is checked when the researcher approves or exports the design; later edits are labelled as not covered by the saved review. The model's source, findings, and optional screenshot digest are included in the decision brief. See `docs/meta-model-role.md` for the capability mapping and submission rationale.
 
 **Load fictional example** supplies clearly labelled demonstration data, so the workflow can be evaluated without recruiting researchers or participants. It does not provide evidence of real product demand, model interpretation quality, or time savings.
 
@@ -127,6 +130,7 @@ choicegap/meta.py       Meta Model API structured-output client
 choicegap/server.py     dependency-free local web server and API
 choicegap/benchmark.py  objective simulated-participant evaluation
 choicegap/research.py   source validation, approval, decision briefs, SQLite workspaces
+choicegap/review.py     validated Muse review of semantic and visual confounds
 static/                 participant and researcher web interfaces
 tests/                  deterministic unit and benchmark checks
 docs/                   research basis, validation protocol, benchmark, and submission plan

@@ -1,6 +1,31 @@
 let researchWorkspace = null;
 let researchBrief = null;
 let fictionalEvidence = false;
+let prototypeImage = null;
+
+function renderDesignReview(review, current = true) {
+  if (!review) {
+    $('#design-review').textContent = 'No Muse design review has been run for this draft.';
+    return;
+  }
+  $('#design-review').innerHTML = `
+    <p><strong>${escapeHtml(review.source)} · ${review.prototype ? 'Evidence + screenshot review' : 'Evidence + design review'}</strong></p>
+    <p id="review-current">${current ? 'Review matches the saved design inputs.' : 'The design has changed since this review. Review the revised inputs again.'}</p>
+    <p>${escapeHtml(review.summary)}</p>
+    ${review.findings.map(finding => `
+      <article class="review-finding">
+        <p><strong>Basis: ${escapeHtml(finding.basis)}</strong>${finding.source_ids.length ? ` · ${escapeHtml(finding.source_ids.join(', '))}` : ''}</p>
+        <p><strong>Observation:</strong> ${escapeHtml(finding.observation)}</p>
+        ${finding.quote ? `<blockquote>${escapeHtml(finding.quote)}</blockquote>` : ''}
+        <p><strong>Competing explanation:</strong> ${escapeHtml(finding.alternative_explanation)}</p>
+        <p><strong>Suggested control:</strong> ${escapeHtml(finding.suggested_control)}</p>
+      </article>
+    `).join('')}
+    <ul>${review.unresolved.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+    <p>${escapeHtml(review.scope)}</p>
+    ${review.prototype ? `<p class="trace-hash">Reviewed screenshot digest: ${escapeHtml(review.prototype.sha256)}</p>` : ''}
+  `;
+}
 
 async function researchGet(url) {
   const response = await fetch(url);
@@ -21,6 +46,12 @@ function participantLink(identifier) {
 }
 
 function renderWorkspace(workspace) {
+  if (researchWorkspace?.id !== workspace.id) {
+    prototypeImage = null;
+    $('#prototype-image').value = '';
+    $('#prototype-preview').hidden = true;
+    $('#prototype-preview').removeAttribute('src');
+  }
   researchWorkspace = workspace;
   researchBrief = null;
   $('#evidence-decision').value = workspace.decision;
@@ -75,6 +106,8 @@ function renderWorkspace(workspace) {
     input.disabled = approved;
   });
   $('#approve-workspace').disabled = approved;
+  $('#challenge-design').disabled = approved;
+  renderDesignReview(workspace.design_review, workspace.design_review_current !== false);
   $('#approve-workspace').textContent = approved ? 'Approved design is locked' : 'Approve design and create participant link';
   $('#workspace-link').innerHTML = approved
     ? `<strong>Approved version ${workspace.version}</strong>
@@ -145,9 +178,7 @@ $('#load-workspaces').addEventListener('click', async () => {
   } catch (error) { showError(error.message); }
 });
 
-$('#approve-workspace').addEventListener('click', async () => {
-  clearError();
-  if (!researchWorkspace) return;
+function readWorkspaceEditor() {
   const blueprint = structuredClone(researchWorkspace.blueprint);
   blueprint.title = $('#workspace-title').value;
   blueprint.decision_prompt = $('#workspace-prompt').value;
@@ -167,6 +198,67 @@ $('#approve-workspace').addEventListener('click', async () => {
     });
     mapping.accounts.push({ id, explanation: field('explanation'), missing_evidence: field('missing_evidence'), references });
   });
+  return { blueprint, mapping };
+}
+
+$('#prototype-image').addEventListener('change', async event => {
+  prototypeImage = null;
+  $('#prototype-preview').hidden = true;
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!['image/png', 'image/jpeg'].includes(file.type) || file.size > 1_000_000) {
+    event.target.value = '';
+    showError('Choose a PNG or JPEG screenshot smaller than 1 MB.');
+    return;
+  }
+  try {
+    prototypeImage = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Could not read the selected screenshot.'));
+      reader.readAsDataURL(file);
+    });
+    $('#prototype-preview').src = prototypeImage;
+    $('#prototype-preview').hidden = false;
+    if ($('#review-current')) $('#review-current').textContent = 'A screenshot is selected. Run Muse review to include it.';
+  } catch (error) { showError(error.message); }
+});
+
+$('#workspace-review').addEventListener('input', event => {
+  if (event.target.id === 'prototype-image' || event.target.id === 'workspace-approved') return;
+  if ($('#review-current')) $('#review-current').textContent = 'Design inputs have been edited. The saved review may be out of date; run it again before relying on it.';
+  $('#workspace-approved').checked = false;
+});
+
+$('#challenge-design').addEventListener('click', async () => {
+  clearError();
+  if (!researchWorkspace) return;
+  const { blueprint, mapping } = readWorkspaceEditor();
+  const button = $('#challenge-design');
+  button.disabled = true;
+  button.textContent = 'Muse is checking competing explanations…';
+  $('#approve-workspace').disabled = true;
+  $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => { input.disabled = true; });
+  try {
+    const reviewed = await api('/api/research/review', {
+      id: researchWorkspace.id, blueprint, mapping, prototype_image: prototypeImage,
+    });
+    renderWorkspace(reviewed);
+    $('#workspace-approved').checked = false;
+  } catch (error) { showError(error.message); }
+  finally {
+    const approved = researchWorkspace.status === 'approved';
+    button.disabled = approved;
+    button.textContent = 'Challenge this design with Muse';
+    $('#approve-workspace').disabled = approved;
+    $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => { input.disabled = approved; });
+  }
+});
+
+$('#approve-workspace').addEventListener('click', async () => {
+  clearError();
+  if (!researchWorkspace) return;
+  const { blueprint, mapping } = readWorkspaceEditor();
   const button = $('#approve-workspace');
   button.disabled = true;
   try {
@@ -256,6 +348,21 @@ function briefMarkdown(brief) {
     account.references.forEach(ref => lines.push(`- ${ref.source_id}: ${ref.relation} (${ref.source_kind})`, `  > ${ref.quote.replace(/\n/g, '\n  > ')}`, ''));
   });
   lines.push('## Other explanations and unresolved questions', '', ...brief.mapping.unresolved.map(item => `- ${item}`), '');
+  if (brief.design_review) {
+    const review = brief.design_review;
+    lines.push('## Muse critical design review', '',
+      `Reviewer: ${review.source}. Review matches current design: ${brief.design_review_current ? 'yes' : 'no; inputs changed'}.`, '',
+      review.summary, '', review.scope, '');
+    review.findings.forEach(finding => lines.push(
+      `### ${finding.basis}${finding.source_ids.length ? ': ' + finding.source_ids.join(', ') : ''}`, '',
+      `Observation: ${finding.observation}`, '',
+      ...(finding.quote ? [`> ${finding.quote.replace(/\n/g, '\n> ')}`, ''] : []),
+      `Competing explanation: ${finding.alternative_explanation}`, '',
+      `Suggested control: ${finding.suggested_control}`, '',
+    ));
+    lines.push(...review.unresolved.map(item => `- ${item}`), '');
+    if (review.prototype) lines.push(`Reviewed screenshot digest: ${review.prototype.sha256}`, '');
+  }
   lines.push('## Proposed field contrasts — not executed', '');
   brief.field_tests.forEach(test => {
     lines.push(`### ${test.factor}`, '', test.prediction, '', '| Factor | Baseline focal option | Intervention focal option |', '|---|---|---|');

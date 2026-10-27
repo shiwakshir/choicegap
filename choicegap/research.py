@@ -61,6 +61,11 @@ def default_blueprint() -> dict[str, Any]:
     }
 
 
+def design_input_digest(blueprint: dict[str, Any], mapping: dict[str, Any]) -> str:
+    encoded = json.dumps({"blueprint": blueprint, "mapping": mapping}, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(encoded.encode('utf-8')).hexdigest()
+
+
 def validate_map(mapping: dict[str, Any], sources: list[dict[str, str]]) -> dict[str, Any]:
     """Check source IDs and verbatim grounding; interpretation still requires human review."""
     if not isinstance(mapping, dict):
@@ -177,6 +182,10 @@ def approve_workspace(draft: dict[str, Any], blueprint: dict[str, Any], mapping:
     approved = {**draft, "status": "approved", "blueprint": blueprint, "mapping": mapping,
                 "audit": audit, "approved_at": datetime.now(timezone.utc).isoformat(),
                 "field_tests": distinguishing_tests(blueprint)}
+    review = draft.get('design_review')
+    approved['design_review_current'] = bool(
+        review and review.get('reviewed_input_sha256') == design_input_digest(blueprint, mapping)
+    )
     packet = {key: approved[key] for key in ("decision", "sources", "mapping", "blueprint", "version")}
     approved["design_sha256"] = hashlib.sha256(
         json.dumps(packet, sort_keys=True, ensure_ascii=False).encode("utf-8")
@@ -202,6 +211,11 @@ def decision_report(workspace: dict[str, Any], records: list[dict[str, Any]]) ->
         "approved_at": workspace.get("approved_at"),
         "blueprint": workspace["blueprint"], "audit": workspace.get("audit"),
         "mapping_source": workspace["source"],
+        "design_review": workspace.get('design_review'),
+        "design_review_current": bool(
+            workspace.get('design_review') and workspace['design_review'].get('reviewed_input_sha256')
+            == design_input_digest(workspace['blueprint'], workspace['mapping'])
+        ),
         "evidence_origin": workspace.get("evidence_origin", "researcher-supplied-unverified"),
         "response_checks_passed": len(usable), "inconclusive_response_checks": len(eligible) - len(usable),
         "weak_model_separation": unresolved,

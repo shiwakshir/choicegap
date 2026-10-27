@@ -19,6 +19,7 @@ from .meta import MetaClient
 from .research import (
     ResearchStore, EXAMPLE_EVIDENCE, draft_workspace, approve_workspace, decision_report,
 )
+from .review import review_workspace
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -33,7 +34,7 @@ TRACES: dict[str, list[dict[str, Any]]] = {}
 USAGE: dict[str, list[dict[str, Any]]] = {}
 SESSION_STUDIES: dict[str, str] = {}
 LOCK = threading.Lock()
-MAX_REQUEST_BYTES = 1_000_000
+MAX_REQUEST_BYTES = 2_000_000
 ADAPTIVE_ROUNDS = 4
 STORE = ResearchStore(Path(os.getenv("CHOICEGAP_DATA_DIR", str(Path.cwd() / "work" / "choicegap-data"))) / "research.sqlite3")
 
@@ -218,6 +219,13 @@ class Handler(BaseHTTPRequestHandler):
                 STORE.put("workspace", workspace["id"], workspace)
                 with LOCK:
                     STUDIES[workspace["id"]] = compile_study(workspace["blueprint"])
+                self._json(200, workspace)
+            elif self.path == "/api/research/review":
+                draft = STORE.get("workspace", str(payload.get("id", "")))
+                workspace = review_workspace(
+                    draft, payload['blueprint'], payload['mapping'], payload.get('prototype_image'), MetaClient(),
+                )
+                STORE.put('workspace', workspace['id'], workspace)
                 self._json(200, workspace)
             elif self.path == "/api/start":
                 self._start(payload)

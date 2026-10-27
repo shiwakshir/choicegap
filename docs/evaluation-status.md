@@ -23,7 +23,19 @@ Run all automated checks with:
 python -m unittest discover -s tests -v
 ```
 
-The implementation pass completed 43 automated tests successfully, including the existing choice-engine tests. This is a regression-check count, not a research-quality score.
+The current implementation completes 51 automated tests successfully, including the existing choice-engine tests. This is a regression-check count, not a research-quality score.
+
+The Muse design-review integration additionally checks:
+
+- Native image content is sent in a user message alongside the evidence and proposed design.
+- Strict structured output and high reasoning effort are set on the review request.
+- Image findings are rejected if no image was supplied.
+- Text findings require valid source IDs and verbatim quotations.
+- Image bytes are absent from persisted review records; only metadata and a digest are saved.
+- Changes to the design invalidate the saved review's current-input flag.
+- Offline mode reports that a Meta key is required rather than fabricating a review.
+
+The review display and stale-input behavior were checked in the browser using findings explicitly labelled as a test fixture, not a live model response. This verifies presentation and state handling only.
 
 ## Browser walkthrough
 
@@ -43,6 +55,7 @@ The walkthrough produced no JavaScript console errors. The deliberately uninform
 ## What remains unmeasured
 
 - Live Muse evidence-mapping accuracy, especially whether support and challenge relationships are interpreted correctly.
+- Live Muse visual-review accuracy and whether its suggested controls improve a researcher's study design.
 - Researcher planning time and methodological quality relative to their usual tools.
 - Researcher willingness to use or pay for the product.
 - Human comprehension and realism of the default or revised stimuli.

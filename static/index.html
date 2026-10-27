@@ -45,6 +45,16 @@
           <textarea id="workspace-prompt" rows="2"></textarea>
           <div id="evidence-sources"></div>
           <div id="research-accounts" class="account-grid"></div>
+          <div class="brief-section">
+            <h3>Challenge the explanation with Muse</h3>
+            <p>Muse reviews the source evidence and proposed tests for competing explanations and semantic confounds. Add a prototype screenshot to check whether visible defaults, prominence, or wording could explain the result.</p>
+            <label for="prototype-image">Optional prototype screenshot (PNG or JPEG, under 1 MB)</label>
+            <input id="prototype-image" type="file" accept="image/png,image/jpeg">
+            <p class="privacy-note">The screenshot is sent to Meta only when you request this review. Its bytes are not saved in the workspace; the image digest and model findings are saved. Use a prototype without personal information.</p>
+            <img id="prototype-preview" alt="Prototype screenshot selected for the Muse review" hidden>
+            <button id="challenge-design" class="secondary" type="button">Challenge this design with Muse</button>
+            <div id="design-review" aria-live="polite"></div>
+          </div>
           <label for="unresolved-questions">Other explanations and unresolved questions (one per line)</label>
           <textarea id="unresolved-questions" rows="3"></textarea>
           <p>The adaptive tasks compare trade-offs between two factors. The decision brief separately proposes single-factor field contrasts; those experiments are not run by this app.</p>

@@ -176,6 +176,31 @@ class ServerWorkflowTests(unittest.TestCase):
         self.assertEqual(self.response['response_checks_passed'], 0)
         self.assertEqual(len(self.response['field_tests']), 4)
 
+    def test_design_review_endpoint_persists_only_validated_review(self):
+        from choicegap.research import draft_workspace
+        from test_review import fixture_review
+
+        class Reviewer:
+            enabled = True
+            model = 'test-only-reviewer'
+            usage = []
+
+            def challenge_research_design(self, *args):
+                return fixture_review()
+
+        draft = draft_workspace('Which delivery change should we test?', EXAMPLE_EVIDENCE, server.MetaClient())
+        server.STORE.put('workspace', draft['id'], draft)
+        self.handler.path = '/api/research/review'
+        self.handler._body = lambda: {
+            'id': draft['id'], 'blueprint': draft['blueprint'], 'mapping': draft['mapping'],
+        }
+        with patch.object(server, 'MetaClient', return_value=Reviewer()):
+            self.handler.do_POST()
+        self.assertEqual(self.response['design_review']['source'], 'test-only-reviewer')
+        saved = server.STORE.get('workspace', draft['id'])
+        self.assertTrue(saved['design_review_current'])
+        self.assertEqual(saved['status'], 'draft')
+
 
 if __name__ == '__main__':
     unittest.main()
