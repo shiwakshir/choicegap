@@ -237,6 +237,20 @@
 .trace-hash { overflow-wrap: anywhere; color: var(--muted); }
 .report-context { max-width: 900px; line-height: 1.6; color: var(--muted); margin-bottom: 2rem; }
 
+.evidence-workbench { background: var(--card); border-color: var(--ink); }
+.evidence-workbench input[type="text"] { width: 100%; padding: .8rem; border: 1px solid var(--line); font: inherit; }
+.account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.account-card { border: 1px solid var(--line); background: #fff; padding: 1rem; }
+.account-card h3 { margin-top: 0; }
+.account-card label { text-transform: none; letter-spacing: 0; }
+.account-card select { width: 100%; padding: .5rem; font: inherit; border: 1px solid var(--line); }
+.account-card .source-reference { font-size: .78rem; line-height: 1.5; border-top: 1px solid var(--line); padding-top: .6rem; margin-top: .6rem; }
+.source-list { padding: 1rem; border: 1px solid var(--line); margin-top: 1rem; }
+.source-list p { line-height: 1.5; font-size: .85rem; }
+.brief-section { padding-top: 1rem; margin-top: 1rem; border-top: 1px solid var(--line); }
+.brief-section p, .brief-section li { font-size: .85rem; line-height: 1.6; }
+.field-contrast { overflow-wrap: anywhere; }
+
 .app-error {
   border: 1px solid var(--red);
   background: #fff;

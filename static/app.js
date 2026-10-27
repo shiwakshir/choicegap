@@ -27,6 +27,8 @@ function showError(message) {
   const error = $('#app-error');
   error.textContent = message;
   error.hidden = false;
+  error.focus({ preventScroll: true });
+  error.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
 function clearError() {
@@ -45,6 +47,7 @@ $('#ratings-reviewed').addEventListener('change', updateEligibility);
 $('#researcher-toggle').addEventListener('click', () => {
   const url = new URL(window.location.href);
   url.searchParams.delete('mode');
+  url.searchParams.delete('workspace');
   if (state.studyId) url.searchParams.set('study', state.studyId);
   window.location.href = url.href;
 });

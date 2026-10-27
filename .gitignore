@@ -8,4 +8,6 @@ work/
 build/
 dist/
 *.egg-info/
+*.sqlite3
+*.sqlite3-*
 

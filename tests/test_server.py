@@ -2,15 +2,21 @@
 
 import unittest
 from unittest.mock import patch
+from tempfile import TemporaryDirectory
+from pathlib import Path
 
 from choicegap import server
 from choicegap.engine import Session
 from test_dynamic import DESIGN
 from choicegap.dynamic import compile_study
+from choicegap.research import EXAMPLE_EVIDENCE
 
 
 class ServerWorkflowTests(unittest.TestCase):
     def setUp(self):
+        self.temp = TemporaryDirectory()
+        self.store_patch = patch.object(server, 'STORE', server.ResearchStore(Path(self.temp.name) / 'research.sqlite3'))
+        self.store_patch.start()
         self.environment = patch.dict('os.environ', {'MODEL_API_KEY': ''})
         self.environment.start()
         for registry in (
@@ -24,6 +30,8 @@ class ServerWorkflowTests(unittest.TestCase):
 
     def tearDown(self):
         self.environment.stop()
+        self.store_patch.stop()
+        self.temp.cleanup()
 
     def start(self, **overrides):
         payload = {'ratings': {'impact': 5, 'price': 3, 'convenience': 3, 'trust': 3}}
@@ -133,6 +141,40 @@ class ServerWorkflowTests(unittest.TestCase):
         client.api_key = 'test-only'
         narrative = client.narrate_report(report)
         self.assertEqual(narrative['source'], 'quality-guardrail')
+
+    def test_research_routes_publish_and_restore_approved_workspace(self):
+        self.handler.path = '/api/research/draft'
+        self.handler._body = lambda: {
+            'decision': 'Which change should we test for lower-impact delivery adoption?',
+            'evidence': EXAMPLE_EVIDENCE, 'example': True,
+        }
+        self.handler.do_POST()
+        draft = self.response
+        self.assertEqual(draft['status'], 'draft')
+        self.assertEqual(draft['evidence_origin'], 'fictional-example')
+        self.handler.path = '/api/study?id=' + draft['id']
+        self.handler.do_GET()
+        self.assertIn('error', self.response)
+        self.handler.path = '/api/research/approve'
+        self.handler._body = lambda: {
+            'id': draft['id'], 'blueprint': draft['blueprint'],
+            'mapping': draft['mapping'], 'confirmed': True,
+        }
+        self.handler.do_POST()
+        self.assertEqual(self.response['status'], 'approved')
+        server.STUDIES.clear()
+        self.handler.path = '/api/study?id=' + draft['id']
+        self.handler.do_GET()
+        self.assertEqual(self.response['study']['title'], 'Sustainable grocery delivery')
+        data = self.start(study_id=draft['id'], ratings={key: 3 for key in 'abcd'})
+        self.token = data['session_id']
+        for _ in range(4):
+            data = self.answer(data, 'outside')
+        self.handler.path = '/api/research/report?id=' + draft['id']
+        self.handler.do_GET()
+        self.assertEqual(self.response['completed_sessions'], 1)
+        self.assertEqual(self.response['response_checks_passed'], 0)
+        self.assertEqual(len(self.response['field_tests']), 4)
 
 
 if __name__ == '__main__':

@@ -25,7 +25,7 @@ One complete respondent uses six small Muse Spark calls: intake, four planning t
 - [x] Tests and reproducible seed
 - [x] Three-minute demo outline
 - [x] Add `MODEL_API_KEY` locally and run the live Meta smoke test
-- [ ] Validate with 5–10 humans and record qualitative failure cases
+- [ ] Collect independent UXR feedback if available; external recruitment is not a prerequisite for continuing development
 - [ ] Publish this repository publicly
 - [ ] Record a three-minute demo
 - [ ] Submit before 4 November 2026, 9:00 PM ET
@@ -37,6 +37,8 @@ One complete respondent uses six small Muse Spark calls: intake, four planning t
 3. 0:55–1:45: Complete the four choices and repeated choice without showing research signals to the participant.
 4. 1:45–2:30: Reopen the completed report in the researcher console. Expand one decision-trail entry: show the prediction, recorded challenge, actual response, and probability update.
 5. 2:30–3:00: Show the in-model and misspecified-model benchmarks together. State that they evaluate deterministic selection, and identify human validation and a Muse-versus-EIG ablation as remaining work.
+
+The evidence-workbench demonstration can start with the labelled fictional corpus, map and review its sources, approve a study, and export a decision brief without external recruitment. Describe it as a workflow demonstration rather than customer validation.
 
 Do not script a guaranteed gap: an inconclusive result should remain visible when the evidence is weak.
 

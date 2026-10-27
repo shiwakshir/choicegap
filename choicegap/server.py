@@ -11,11 +11,14 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 from .dynamic import DynamicSession, StudySpec, audit_study, compile_study
 from .engine import DRIVER_COPY, DRIVERS, Session
 from .meta import MetaClient
+from .research import (
+    ResearchStore, EXAMPLE_EVIDENCE, draft_workspace, approve_workspace, decision_report,
+)
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,6 +35,25 @@ SESSION_STUDIES: dict[str, str] = {}
 LOCK = threading.Lock()
 MAX_REQUEST_BYTES = 1_000_000
 ADAPTIVE_ROUNDS = 4
+STORE = ResearchStore(Path(os.getenv("CHOICEGAP_DATA_DIR", str(Path.cwd() / "work" / "choicegap-data"))) / "research.sqlite3")
+
+
+def load_study(study_id: str) -> StudySpec | None:
+    if study_id in STUDIES:
+        return STUDIES[study_id]
+    try:
+        workspace = STORE.get("workspace", study_id)
+        if workspace["status"] != "approved":
+            return None
+        study = compile_study(workspace["blueprint"])
+    except ValueError:
+        try:
+            study = compile_study(STORE.get("study", study_id))
+        except ValueError:
+            return None
+    with LOCK:
+        STUDIES[study_id] = study
+    return study
 
 
 def issue_experiment(
@@ -118,6 +140,27 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
+        if path.startswith("/api/research/"):
+            try:
+                query = parse_qs(urlparse(self.path).query)
+                identifier = query.get("id", [""])[0]
+                if path == "/api/research/example":
+                    self._json(200, {"evidence": EXAMPLE_EVIDENCE, "decision": "Which change should we test to improve lower-impact grocery-delivery adoption: cost, timing, or claim verification?"})
+                elif path == "/api/research/workspaces":
+                    self._json(200, {"workspaces": [
+                        {key: workspace.get(key) for key in ("id", "decision", "status", "created_at", "evidence_origin")}
+                        for workspace in STORE.list("workspace")
+                    ]})
+                elif path == "/api/research/workspace":
+                    self._json(200, STORE.get("workspace", identifier))
+                elif path == "/api/research/report":
+                    workspace = STORE.get("workspace", identifier)
+                    self._json(200, decision_report(workspace, STORE.list("session")))
+                else:
+                    self._json(404, {"error": "Unknown research endpoint"})
+            except ValueError as exc:
+                self._json(404, {"error": str(exc)})
+            return
         if path == "/api/health":
             meta = MetaClient()
             self._json(200, {"ok": True, "meta_enabled": meta.enabled, "model": meta.model if meta.enabled else None})
@@ -132,12 +175,10 @@ class Handler(BaseHTTPRequestHandler):
             })
             return
         if path == "/api/study":
-            from urllib.parse import parse_qs
             study_id = parse_qs(urlparse(self.path).query).get("id", [""])[0]
-            with LOCK:
-                study = STUDIES.get(study_id)
+            study = load_study(study_id)
             if study is None:
-                self._json(404, {"error": "Study unavailable. It may have expired after a server restart."})
+                self._json(404, {"error": "Study unavailable or not yet approved."})
             else:
                 self._json(200, {"study_id": study_id, "study": study.to_public()})
             return
@@ -161,6 +202,23 @@ class Handler(BaseHTTPRequestHandler):
             payload = self._body()
             if self.path == "/api/design":
                 self._design(payload)
+            elif self.path == "/api/research/draft":
+                meta = MetaClient()
+                workspace = draft_workspace(payload.get("decision", ""), payload.get("evidence", ""), meta)
+                workspace["evidence_origin"] = (
+                    "fictional-example" if payload.get("example") is True else "researcher-supplied-unverified"
+                )
+                STORE.put("workspace", workspace["id"], workspace)
+                self._json(200, workspace)
+            elif self.path == "/api/research/approve":
+                draft = STORE.get("workspace", str(payload.get("id", "")))
+                workspace = approve_workspace(
+                    draft, payload["blueprint"], payload["mapping"], payload.get("confirmed"),
+                )
+                STORE.put("workspace", workspace["id"], workspace)
+                with LOCK:
+                    STUDIES[workspace["id"]] = compile_study(workspace["blueprint"])
+                self._json(200, workspace)
             elif self.path == "/api/start":
                 self._start(payload)
             elif self.path == "/api/answer":
@@ -184,6 +242,7 @@ class Handler(BaseHTTPRequestHandler):
         if not audit["passed"]:
             raise ValueError("The generated study did not pass the controlled-design audit")
         token = secrets.token_urlsafe(12)
+        STORE.put("study", token, blueprint)
         with LOCK:
             STUDIES[token] = study
         self._json(200, {
@@ -197,7 +256,7 @@ class Handler(BaseHTTPRequestHandler):
         fallback_driver = str(payload.get("driver", ""))
         statement = str(payload.get("statement", "")).strip()[:1000]
         study_id = str(payload.get("study_id", ""))
-        study = STUDIES.get(study_id) if study_id else None
+        study = load_study(study_id) if study_id else None
         if study_id and study is None:
             raise ValueError("Study unavailable. Ask the researcher for a new study link.")
         valid_drivers = study.driver_ids if study else DRIVERS
@@ -340,6 +399,7 @@ class Handler(BaseHTTPRequestHandler):
             "report": report,
             "narrative": narrative,
         }
+        STORE.put("session", token, record)
         with LOCK:
             COMPLETED.append(record)
             SESSIONS.pop(token, None)
@@ -351,6 +411,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:
+    with LOCK:
+        COMPLETED[:] = STORE.list("session")
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"ChoiceGap running at http://{host}:{port}")
     print("Muse Spark enabled" if MetaClient().enabled else "Local mode: set MODEL_API_KEY to enable Muse Spark")

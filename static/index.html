@@ -15,7 +15,7 @@
   </header>
 
   <main>
-    <p id="app-error" class="app-error" role="alert" hidden></p>
+    <p id="app-error" class="app-error" role="alert" tabindex="-1" hidden></p>
     <section id="intro" class="screen active">
       <div class="eyebrow participant-copy">Short product study</div>
       <div class="eyebrow researcher-only">Researcher console</div>
@@ -23,8 +23,42 @@
       <h1 class="researcher-only">Compare stated priorities<br><em>with controlled choices.</em></h1>
       <p class="lede participant-copy">Help us understand how people make everyday sustainability trade-offs. There are no right answers, and it takes about two minutes.</p>
       <p class="lede researcher-only">ChoiceGap represents possible explanations as competing models, then selects controlled follow-up choices that can distinguish between them.</p>
+      <div class="study-builder researcher-only evidence-workbench">
+        <div class="scenario-kicker">Evidence → explanations → follow-up study</div>
+        <h2>Resolve a research decision</h2>
+        <p>Start with an adoption question and existing evidence. This first workflow focuses on grocery delivery: impact, cost, timing, and verification. Review the explanations and exact test levels before publishing.</p>
+        <label for="evidence-decision">What product decision does this research need to inform?</label>
+        <textarea id="evidence-decision" rows="2" placeholder="Should we reduce the green-slot fee, improve its delivery window, or invest in independent verification?"></textarea>
+        <label for="evidence-text">Existing evidence</label>
+        <p class="microcopy">One excerpt per line: type | source label | excerpt. Types: statement, observed (reported action), hypothetical. Source labels do not imply participant matching.</p>
+        <textarea id="evidence-text" rows="7" placeholder="statement | interview-01 | I want lower-impact delivery, but I need a precise time window."></textarea>
+        <p class="privacy-note">Use de-identified excerpts. Workspaces and completed reports are saved locally in an unencrypted database. With Muse enabled, these excerpts are sent to Meta for mapping.</p>
+        <button id="example-evidence" class="secondary" type="button">Load fictional example</button>
+        <button id="draft-workspace" class="primary" type="button">Map evidence and draft follow-ups</button>
+        <button id="load-workspaces" class="secondary" type="button">Open saved workspaces</button>
+        <div id="workspace-list" class="design-result"></div>
+        <div id="workspace-review" hidden>
+          <p id="workspace-meta" class="report-context"></p>
+          <label for="workspace-title">Study title</label>
+          <input id="workspace-title" type="text" maxlength="100">
+          <label for="workspace-prompt">Participant choice question</label>
+          <textarea id="workspace-prompt" rows="2"></textarea>
+          <div id="evidence-sources"></div>
+          <div id="research-accounts" class="account-grid"></div>
+          <label for="unresolved-questions">Other explanations and unresolved questions (one per line)</label>
+          <textarea id="unresolved-questions" rows="3"></textarea>
+          <p>The adaptive tasks compare trade-offs between two factors. The decision brief separately proposes single-factor field contrasts; those experiments are not run by this app.</p>
+          <label class="ratings-confirm"><input id="workspace-approved" type="checkbox"> I reviewed the source interpretations, missing evidence, wording, and realism of every factor level.</label>
+          <button id="approve-workspace" class="primary" type="button">Approve design and create participant link</button>
+          <div id="workspace-link" class="design-result"></div>
+          <button id="workspace-report" class="secondary" type="button">Refresh study decision brief</button>
+          <button id="export-brief" class="secondary" type="button">Download decision brief (.md)</button>
+          <button id="export-brief-data" class="secondary" type="button">Download research packet (.json)</button>
+          <div id="workspace-summary"></div>
+        </div>
+      </div>
       <div class="study-builder researcher-only">
-        <div class="scenario-kicker">Muse study compiler</div>
+        <div class="scenario-kicker">Advanced · standalone study without imported evidence</div>
         <h2>Configure a controlled study</h2>
         <p>Describe a sustainability decision and the intention–behaviour gap you want to understand. Muse proposes testable individual and structural frictions; the compiler—not the model—builds and audits every stimulus.</p>
         <label for="design-context">Research context</label>
@@ -35,7 +69,7 @@
       <div class="researcher-only study-builder">
         <div class="scenario-kicker">Completed sessions</div>
         <h2>Review the evidence</h2>
-        <p>Open a participant's completed report after collection. Records remain available until this server restarts.</p>
+        <p>Open a participant's completed report after collection. Completed records are saved locally.</p>
         <button id="refresh-results" class="secondary" type="button">Load completed sessions</button>
         <div id="completed-results" class="design-result" aria-live="polite"></div>
       </div>
@@ -118,6 +152,7 @@
 
   <footer><span class="participant-copy">No direct identifiers requested</span><span class="researcher-only">Meta Muse Spark integration</span><span class="researcher-only">Controlled stimuli · Documented uncertainty · Reproducible benchmark</span></footer>
   <script src="/app.js"></script>
+  <script src="/research.js"></script>
 </body>
 </html>
 
