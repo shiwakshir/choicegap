@@ -1,16 +1,16 @@
-# Hackathon execution plan
+# Submission plan
 
-## Judge-facing thesis
+## Project thesis
 
 ChoiceGap targets one of sustainability research's hardest failures: treating green intention as revealed behaviour. The preset isolates impact, affordability, convenience, and claim credibility in grocery delivery, while Muse can compile the same falsification workflow for food, mobility, energy, packaging, fashion, and circular consumption.
 
-## Scoring alignment
+## Evaluation mapping
 
 | Criterion | Weight | Evidence in this repository |
 |---|---:|---|
 | Impact | 30% | Finds decision tensions earlier than a static survey; reusable across product choices. |
 | Meta tooling | 25% | Muse Spark performs bounded intake, experiment orchestration, and cautious synthesis through structured outputs. |
-| Demo | 25% | One clear two-minute participant journey plus an evidence report; resilient local fallback. |
+| Demo | 25% | One participant journey followed by an evidence report; deterministic operation without an API key. |
 | Technical depth | 20% | Bayesian updating, expected information gain, position randomization, constrained agent actions, an in-model benchmark, and a misspecified robustness benchmark. |
 
 ## Credit budget

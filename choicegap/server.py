@@ -21,6 +21,8 @@ SESSIONS: dict[str, Session | DynamicSession] = {}
 STUDIES: dict[str, StudySpec] = {}
 COMPLETED: list[dict[str, Any]] = []
 LOCK = threading.Lock()
+MAX_REQUEST_BYTES = 1_000_000
+ADAPTIVE_ROUNDS = 4
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -40,7 +42,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
-        if length > 1_000_000:
+        if length > MAX_REQUEST_BYTES:
             raise ValueError("Request too large")
         return json.loads(self.rfile.read(length) or b"{}")
 
@@ -87,8 +89,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(404, {"error": "Unknown endpoint"})
         except (ValueError, KeyError, StopIteration) as exc:
             self._json(400, {"error": str(exc)})
-        except Exception as exc:  # keep demo usable if an optional model call fails
-            self._json(500, {"error": str(exc)})
+        except Exception as exc:
+            self.log_error("Unhandled request error: %s", exc)
+            self._json(500, {"error": "Internal server error"})
 
     def _design(self, payload: dict[str, Any]) -> None:
         context = str(payload.get("context", "")).strip()
@@ -111,7 +114,7 @@ class Handler(BaseHTTPRequestHandler):
         })
 
     def _start(self, payload: dict[str, Any]) -> None:
-        fallback = str(payload.get("driver", ""))
+        fallback_driver = str(payload.get("driver", ""))
         statement = str(payload.get("statement", "")).strip()[:1000]
         study_id = str(payload.get("study_id", ""))
         study = STUDIES.get(study_id) if study_id else None
@@ -121,27 +124,38 @@ class Handler(BaseHTTPRequestHandler):
             ratings = {key: int(raw_ratings.get(key, 0)) for key in valid_drivers}
             if any(value < 1 or value > 5 for value in ratings.values()):
                 raise ValueError("Rate every factor from 1 to 5")
-            fallback = max(valid_drivers, key=lambda key: (ratings[key], -valid_drivers.index(key)))
+            fallback_driver = max(
+                valid_drivers,
+                key=lambda key: (ratings[key], -valid_drivers.index(key)),
+            )
         else:
-            if fallback not in valid_drivers:
+            if fallback_driver not in valid_drivers:
                 raise ValueError("Rate the factors before starting")
-            ratings = {key: (5 if key == fallback else 3) for key in valid_drivers}
+            ratings = {key: (5 if key == fallback_driver else 3) for key in valid_drivers}
         intention_score = int(payload.get("intention_score", 3))
         if intention_score < 1 or intention_score > 5:
             raise ValueError("Intention rating must be from 1 to 5")
         meta = MetaClient()
         if study:
-            intake = {"driver": fallback, "reason": "Selected from the Muse-compiled study axes.", "source": meta.model}
-            stated_driver = fallback
+            intake = {
+                "driver": fallback_driver,
+                "reason": "Selected from the Muse-compiled study axes.",
+                "source": meta.model,
+            }
+            stated_driver = fallback_driver
             session = DynamicSession.create(study, stated_driver, statement, stated_ratings=ratings, intention_score=intention_score)
             driver_copy = study.driver_copy
         else:
             try:
-                intake = meta.parse_statement(statement, fallback)
+                intake = meta.parse_statement(statement, fallback_driver)
             except RuntimeError as exc:
-                intake = {"driver": fallback, "reason": str(exc), "source": "local-fallback"}
+                intake = {
+                    "driver": fallback_driver,
+                    "reason": str(exc),
+                    "source": "local-fallback",
+                }
             # The structured ratings—not Muse's interpretation—define the stated profile.
-            stated_driver = fallback
+            stated_driver = fallback_driver
             session = Session.create(stated_driver, statement, stated_ratings=ratings, intention_score=intention_score)
             driver_copy = DRIVER_COPY
         candidates = session.candidates()
@@ -184,7 +198,7 @@ class Handler(BaseHTTPRequestHandler):
         response: dict[str, Any] = {"posterior": session.posterior, "rounds": session.rounds, "done": False}
         if is_holdout:
             self._finish(token, session, meta, response)
-        elif session.rounds >= 4:
+        elif session.rounds >= ADAPTIVE_ROUNDS:
             holdout = session.holdout_experiment()
             if holdout:
                 response.update({
@@ -246,6 +260,10 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
         server.server_close()
 
 
-if __name__ == "__main__":
+def main() -> None:
     run(port=int(os.getenv("PORT", "8000")))
+
+
+if __name__ == "__main__":
+    main()
 

@@ -30,12 +30,21 @@ class ParticipantBlindnessTests(unittest.TestCase):
         self.assertIn('id="design-context"', html)
         self.assertIn("api('/api/design'", script)
 
+    def test_interface_avoids_prototype_only_handlers(self):
+        html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+        self.assertNotIn("onclick=", html)
+        self.assertNotIn("alert(", script)
+        self.assertNotIn("✦", html + script)
+        self.assertIn('role="alert"', html)
+
     def test_intake_uses_ratings_and_choices_use_neutral_labels(self):
         html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
         self.assertIn('id="intention-score"', html)
         self.assertIn("ratings: state.ratings", script)
-        self.assertIn("<h2>Option ${index ? 'B' : 'A'}</h2>", script)
+        self.assertIn("const optionLabel = index ? 'B' : 'A'", script)
+        self.assertIn("<h2>Option ${optionLabel}</h2>", script)
         self.assertIn('id="comprehension"', html)
         self.assertNotIn("Quick check:", html)
         self.assertIn("Practice example", html)

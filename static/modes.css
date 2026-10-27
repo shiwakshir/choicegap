@@ -218,6 +218,15 @@
   margin: .5rem 0 0;
 }
 
+.app-error {
+  border: 1px solid var(--red);
+  background: #fff;
+  color: var(--ink);
+  margin: 1rem 0 0;
+  padding: .8rem 1rem;
+  font-size: .82rem;
+}
+
 .scale-labels {
   display: flex;
   justify-content: space-between;

@@ -4,4 +4,8 @@ __pycache__/
 .coverage
 benchmark-results.json
 outputs/
+work/
+build/
+dist/
+*.egg-info/
 

@@ -7,6 +7,9 @@ from typing import Any
 
 
 DRIVERS = ("impact", "price", "convenience", "trust")
+GAP_PROBABILITY_THRESHOLD = 0.45
+MIN_INFORMATIVE_CHOICES = 3
+EXPECTED_INFORMATIVE_CHOICES = 4
 
 DRIVER_COPY = {
     "impact": {
@@ -140,13 +143,6 @@ def normalized(values: dict[str, float]) -> dict[str, float]:
     return {key: value / total for key, value in values.items()}
 
 
-def prior_from_stated(driver: str | None, confidence: float = 0.48) -> dict[str, float]:
-    if driver not in DRIVERS:
-        return {key: 0.25 for key in DRIVERS}
-    remainder = (1.0 - confidence) / (len(DRIVERS) - 1)
-    return {key: confidence if key == driver else remainder for key in DRIVERS}
-
-
 def update_posterior(
     posterior: dict[str, float], experiment: Experiment, choice: str
 ) -> dict[str, float]:
@@ -192,6 +188,32 @@ def experiment_public(experiment: Experiment, score: float | None = None, flip: 
 
 def find_experiment(experiment_id: str) -> Experiment:
     return next(item for item in EXPERIMENTS if item.id == experiment_id)
+
+
+def assess_evidence_quality(informative_choices: int, holdout_consistent: bool | None) -> str:
+    if informative_choices < MIN_INFORMATIVE_CHOICES or holdout_consistent is not True:
+        return "low"
+    if informative_choices >= EXPECTED_INFORMATIVE_CHOICES:
+        return "high"
+    return "moderate"
+
+
+def report_headline(
+    *,
+    labels: dict[str, dict[str, str]],
+    stated_driver: str,
+    leading_driver: str,
+    gap_detected: bool,
+    evidence_quality: str,
+) -> str:
+    if evidence_quality == "low":
+        return "The evidence is inconclusive because the response-quality threshold was not met."
+    if gap_detected:
+        return (
+            f"Choices lean toward {labels[leading_driver]['label'].lower()}, despite stating "
+            f"{labels[stated_driver]['label'].lower()}."
+        )
+    return f"Choices are most consistent with {labels[leading_driver]['label'].lower()}."
 
 
 @dataclass
@@ -288,9 +310,12 @@ class Session:
         ranked = sorted(self.posterior.items(), key=lambda item: -item[1])
         leader, probability = ranked[0]
         informative_choices = sum(item["choice"] in ("a", "b") for item in self.history)
-        quality_reliable = informative_choices >= 3 and self.holdout_consistent is True
-        evidence_quality = "high" if informative_choices == 4 and quality_reliable else ("moderate" if quality_reliable else "low")
-        gap = leader != self.stated_driver and probability >= 0.45 and quality_reliable
+        evidence_quality = assess_evidence_quality(informative_choices, self.holdout_consistent)
+        gap = (
+            leader != self.stated_driver
+            and probability >= GAP_PROBABILITY_THRESHOLD
+            and evidence_quality != "low"
+        )
         return {
             "stated_driver": self.stated_driver,
             "stated_ratings": self.stated_ratings,
@@ -304,12 +329,12 @@ class Session:
             "gap_detected": gap,
             "posterior": {key: round(value, 4) for key, value in self.posterior.items()},
             "rounds": self.rounds,
-            "headline": ("The evidence is inconclusive because the response-quality threshold was not met."
-                if not quality_reliable else
-                f"Choices lean toward {DRIVER_COPY[leader]['label'].lower()}, despite stating "
-                f"{DRIVER_COPY[self.stated_driver]['label'].lower()}."
-                if gap else
-                f"Choices are most consistent with {DRIVER_COPY[leader]['label'].lower()}."
+            "headline": report_headline(
+                labels=DRIVER_COPY,
+                stated_driver=self.stated_driver,
+                leading_driver=leader,
+                gap_detected=gap,
+                evidence_quality=evidence_quality,
             ),
             "evidence": [
                 {"experiment_id": item["experiment_id"], "choice": item["choice"], "round": item["round"]}
@@ -323,33 +348,4 @@ class Session:
                 "A failed or skipped holdout makes the individual result inconclusive.",
             ],
         }
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "stated_driver": self.stated_driver,
-            "statement": self.statement,
-            "posterior": self.posterior,
-            "seed": self.seed,
-            "stated_ratings": self.stated_ratings,
-            "intention_score": self.intention_score,
-            "rounds": self.rounds,
-            "history": self.history,
-            "holdout_source": self.holdout_source,
-            "holdout_consistent": self.holdout_consistent,
-        }
-
-    @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "Session":
-        return cls(
-            stated_driver=payload["stated_driver"],
-            statement=payload.get("statement", ""),
-            posterior={key: float(value) for key, value in payload["posterior"].items()},
-            seed=int(payload["seed"]),
-            stated_ratings={key: int(value) for key, value in payload.get("stated_ratings", {}).items()},
-            intention_score=int(payload.get("intention_score", 3)),
-            rounds=int(payload.get("rounds", 0)),
-            history=list(payload.get("history", [])),
-            holdout_source=payload.get("holdout_source"),
-            holdout_consistent=payload.get("holdout_consistent"),
-        )
 

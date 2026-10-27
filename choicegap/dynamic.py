@@ -6,6 +6,8 @@ import random
 from dataclasses import dataclass, field
 from typing import Any
 
+from .engine import GAP_PROBABILITY_THRESHOLD, assess_evidence_quality, report_headline
+
 
 ATTRIBUTE_IDS = ("a", "b", "c", "d")
 
@@ -272,9 +274,12 @@ class DynamicSession:
         leader, probability = ranked[0]
         labels = self.study.driver_copy
         informative_choices = sum(item["choice"] in ("a", "b") for item in self.history)
-        quality_reliable = informative_choices >= 3 and self.holdout_consistent is True
-        evidence_quality = "high" if informative_choices == 4 and quality_reliable else ("moderate" if quality_reliable else "low")
-        gap = leader != self.stated_driver and probability >= 0.45 and quality_reliable
+        evidence_quality = assess_evidence_quality(informative_choices, self.holdout_consistent)
+        gap = (
+            leader != self.stated_driver
+            and probability >= GAP_PROBABILITY_THRESHOLD
+            and evidence_quality != "low"
+        )
         return {
             "study_title": self.study.title,
             "stated_driver": self.stated_driver,
@@ -289,10 +294,12 @@ class DynamicSession:
             "gap_detected": gap,
             "posterior": {key: round(value, 4) for key, value in self.posterior.items()},
             "rounds": self.rounds,
-            "headline": ("The evidence is inconclusive because the response-quality threshold was not met."
-                if not quality_reliable else
-                f"Choices lean toward {labels[leader]['label'].lower()}, despite stating {labels[self.stated_driver]['label'].lower()}."
-                if gap else f"Choices are most consistent with {labels[leader]['label'].lower()}."
+            "headline": report_headline(
+                labels=labels,
+                stated_driver=self.stated_driver,
+                leading_driver=leader,
+                gap_detected=gap,
+                evidence_quality=evidence_quality,
             ),
             "evidence": list(self.history),
             "limitations": [
