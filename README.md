@@ -22,7 +22,7 @@ stated preference → competing hypotheses → adaptive controlled choice
 - **Deterministic evidence layer:** compiles a complete six-pair design, audits controls and coverage, then owns choice likelihoods, posterior updates, side randomization, and information gain.
 - **Muse Spark 1.3 synthesis:** turns computed evidence into a concise report under an explicit no-causality schema.
 - **Safe fallback:** the full study works without an API key, making the demo resilient.
-- **Research quality layer:** comprehension gate, genuine outside option, reversed-side holdout, and de-identified JSON export.
+- **Research quality layer:** neutral practice example, genuine outside option, reversed-side holdout, and de-identified JSON export.
 
 The stated-attitude measurement and behavioural inference are intentionally separate. Participants rate every factor plus a general lower-impact intention item; the behavioural posterior still begins uniform. Muse may interpret optional free text, but it cannot overwrite the structured ratings or probability update.
 

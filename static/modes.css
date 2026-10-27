@@ -160,6 +160,42 @@
   font: inherit;
 }
 
+.practice-item {
+  background: #f7f5ee;
+  padding: 1.25rem;
+}
+
+.practice-item > p {
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.practice-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  margin: 1rem 0;
+}
+
+.practice-options > div {
+  display: grid;
+  gap: .35rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: .85rem;
+  font-size: .74rem;
+}
+
+.practice-options strong {
+  margin-bottom: .2rem;
+}
+
+@media (max-width: 650px) {
+  .practice-options {
+    grid-template-columns: 1fr;
+  }
+}
+
 .outside {
   grid-column: 1 / -1;
   border: 1px solid var(--line);

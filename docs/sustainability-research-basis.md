@@ -27,7 +27,7 @@ The six preset experiments cover every pair of these four explanations once. Eac
 
 The participant no longer selects one forced “most important” factor. Before the choice tasks, they rate all four factors on the same five-point importance scale and separately respond to a lower-impact-delivery intention item. The behavioural model starts uniform: stated ratings do **not** seed its posterior. This prevents the analysis from manufacturing alignment with the survey response. Product names and trade-off-revealing titles are hidden; participants see neutral Option A/Option B profiles, while the researcher view preserves the target contrast and falsification rule.
 
-The four adaptive choices are intentionally a rapid diagnostic rather than a conventional DCE claiming population preference weights. Production use should add comprehension testing, a dominant-choice attention check, a repeated holdout task, an opt-out/current-choice alternative, larger samples, and hierarchical or mixed-logit estimation.
+The four adaptive choices are intentionally a rapid diagnostic rather than a conventional DCE claiming population preference weights. The app includes a neutral practice check, repeated holdout, and opt-out/current-choice alternative. Production use still needs cognitive interviewing, a defensible dominant-choice check where realistic, larger samples, and hierarchical or mixed-logit estimation.
 
 ## Claims boundary
 

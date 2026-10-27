@@ -6,7 +6,7 @@ let descriptions = { impact: 'A materially lower estimated footprint', price: 'A
 function updateEligibility() {
   const values = Object.values(state.ratings);
   const differentiated = values.length > 0 && Math.max(...values) > Math.min(...values);
-  const understood = $('#comprehension').value === 'held';
+  const understood = $('#comprehension').value === 'fee';
   $('#start').disabled = !(differentiated && understood);
 }
 
@@ -22,8 +22,8 @@ $('#open-debrief').addEventListener('click', () => {
 });
 
 $('#comprehension').addEventListener('change', () => {
-  const correct = $('#comprehension').value === 'held';
-  $('#comprehension-feedback').textContent = correct ? 'Correct—the unchanged detail is controlled in that comparison.' : ($('#comprehension').value ? 'Not quite. Look for what changes and what stays the same.' : '');
+  const correct = $('#comprehension').value === 'fee';
+  $('#comprehension-feedback').textContent = correct ? 'That’s right. You’re ready for the study choices.' : ($('#comprehension').value ? 'Take another look at the two example options.' : '');
   updateEligibility();
 });
 

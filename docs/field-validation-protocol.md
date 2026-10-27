@@ -16,7 +16,7 @@ Include the outside option (“keep my usual choice”), avoid moralized wording
 
 ## 4. Quality controls
 
-- Use the pre-task comprehension check.
+- Use the neutral pre-task practice example to confirm participants can compare profile details.
 - Repeat one task with sides reversed as a holdout consistency check.
 - Add one preregistered dominant-choice attention check only if a clearly dominant profile is realistic.
 - Do not automatically exclude an inconsistent respondent; report results with and without the quality filter.

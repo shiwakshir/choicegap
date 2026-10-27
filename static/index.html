@@ -36,22 +36,28 @@
         <h2 id="scenario-title">Choose a grocery delivery option</h2>
         <p id="scenario-prompt">Imagine this is your real weekly shop. Before seeing any options, rate how important each factor is to you.</p>
         <div id="drivers" class="drivers rating-grid" aria-label="Importance ratings"></div>
+        <p id="rating-hint" class="microcopy">Move at least one importance rating away from the midpoint to continue.</p>
         <div class="intention-item">
           <label for="intention-score">“When a lower-impact delivery option is available, I try to choose it.”</label>
           <div class="scale-labels"><span>Strongly disagree</span><span>Strongly agree</span></div>
           <input id="intention-score" type="range" min="1" max="5" value="3" step="1">
         </div>
-        <div class="comprehension-item">
-          <label for="comprehension">Quick check: if a detail is identical in Option A and Option B, what does that mean?</label>
+        <div class="comprehension-item practice-item">
+          <div class="scenario-kicker">Before you begin · Practice example</div>
+          <p>Compare every line, just as you would during an online checkout.</p>
+          <div class="practice-options" aria-hidden="true">
+            <div><strong>Option A</strong><span>£1 delivery fee</span><span>Two-hour window</span><span>0.4 kg CO₂e estimate</span></div>
+            <div><strong>Option B</strong><span>£1 delivery fee</span><span>All-day window</span><span>0.8 kg CO₂e estimate</span></div>
+          </div>
+          <label for="comprehension">Which detail is the same in both options?</label>
           <select id="comprehension">
             <option value="">Choose an answer</option>
-            <option value="ignore">The detail should be ignored in every decision</option>
-            <option value="held">The detail is held constant in that comparison</option>
-            <option value="better">Both options are environmentally better</option>
+            <option value="fee">The delivery fee</option>
+            <option value="window">The delivery window</option>
+            <option value="emissions">The emissions estimate</option>
           </select>
           <p id="comprehension-feedback" class="microcopy"></p>
         </div>
-        <p id="rating-hint" class="microcopy">Move at least one importance rating away from the midpoint to continue.</p>
         <label for="statement">What shaped those ratings? <span>optional</span></label>
         <textarea id="statement" rows="3" placeholder="For grocery delivery, I care most about… because…"></textarea>
         <button id="start" class="primary" disabled>Continue to choices <span>→</span></button>
