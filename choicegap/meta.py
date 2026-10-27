@@ -172,6 +172,12 @@ class MetaClient:
         return result
 
     def narrate_report(self, report: dict[str, Any]) -> dict[str, Any]:
+        if report.get("evidence_quality") == "low":
+            return {
+                "summary": report["headline"],
+                "next_step": "Repeat the task or collect more responses before interpreting the pattern.",
+                "source": "quality-guardrail",
+            }
         if not self.enabled:
             return {"summary": report["headline"], "next_step": "Repeat with more respondents and one preregistered manipulation.", "source": "local"}
         schema = {

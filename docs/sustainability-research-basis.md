@@ -29,6 +29,8 @@ The participant no longer selects one forced “most important” factor. Before
 
 The four adaptive choices are intentionally a rapid diagnostic rather than a conventional DCE claiming population preference weights. The app includes a neutral practice check, repeated holdout, and opt-out/current-choice alternative. Production use still needs cognitive interviewing, a defensible dominant-choice check where realistic, larger samples, and hierarchical or mixed-logit estimation.
 
+Individual gap language is suppressed unless at least three choices are informative and the reversed-side holdout is consistent. A skipped or failed holdout yields an inconclusive report rather than an alignment or gap claim.
+
 ## Claims boundary
 
 The demo detects which simple account best predicts choices **under its model and stimuli**. It does not measure actual emissions, establish causal effects, diagnose hypocrisy, or imply that responsibility lies only with consumers. For production research, connect the final choice to a real or incentive-compatible action, preregister the primary contrast, recruit an adequately powered sample, and analyze structural constraints such as availability and access.

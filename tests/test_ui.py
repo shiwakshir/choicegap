@@ -17,11 +17,12 @@ class ParticipantBlindnessTests(unittest.TestCase):
         self.assertIn('class="hypotheses researcher-only"', html)
         self.assertIn('class="uncertainty researcher-only"', html)
 
-    def test_debrief_requires_explicit_action(self):
+    def test_researcher_controls_are_absent_from_participant_mode(self):
         html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
         script = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
-        self.assertIn('id="open-debrief"', html)
-        self.assertIn("$('#open-debrief').addEventListener", script)
+        self.assertNotIn('id="open-debrief"', html)
+        self.assertIn('mode-toggle researcher-only', html)
+        self.assertIn("get('mode') === 'researcher'", script)
 
     def test_researcher_can_compile_a_new_study(self):
         html = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
@@ -38,6 +39,7 @@ class ParticipantBlindnessTests(unittest.TestCase):
         self.assertIn('id="comprehension"', html)
         self.assertNotIn("Quick check:", html)
         self.assertIn("Practice example", html)
+        self.assertIn("study inputs and derived results may be processed", html)
         self.assertIn("=== 'fee'", script)
         self.assertIn('data-choice="outside"', script)
         self.assertIn("Boolean(state.experiment.holdout)", script)

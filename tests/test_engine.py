@@ -74,6 +74,27 @@ class EngineTests(unittest.TestCase):
         self.assertTrue(session.holdout_consistent)
         self.assertEqual(session.posterior, after_choice)
 
+    def test_failed_holdout_suppresses_gap_claim(self):
+        session = Session.create("price", "", seed=14)
+        experiment = find_experiment("impact-v-price")
+        for _ in range(4):
+            session.observe(experiment.id, "a", False)
+        session.holdout_consistent = False
+        report = session.report()
+        self.assertEqual(report["evidence_quality"], "low")
+        self.assertFalse(report["gap_detected"])
+        self.assertIn("inconclusive", report["headline"].lower())
+
+    def test_low_quality_report_bypasses_model_narration(self):
+        client = MetaClient()
+        client.api_key = "would-enable-model"
+        narrative = client.narrate_report({
+            "evidence_quality": "low",
+            "headline": "The evidence is inconclusive because the response-quality threshold was not met.",
+        })
+        self.assertEqual(narrative["source"], "quality-guardrail")
+        self.assertIn("inconclusive", narrative["summary"].lower())
+
 
 if __name__ == "__main__":
     unittest.main()

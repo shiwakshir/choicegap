@@ -11,7 +11,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="/" aria-label="ChoiceGap home"><span class="brandmark">CG</span> ChoiceGap</a>
-    <button id="researcher-toggle" class="mode-toggle" type="button">Researcher view</button>
+    <button id="researcher-toggle" class="mode-toggle researcher-only" type="button">Exit researcher view</button>
   </header>
 
   <main>
@@ -60,6 +60,7 @@
         </div>
         <label for="statement">What shaped those ratings? <span>optional</span></label>
         <textarea id="statement" rows="3" placeholder="For grocery delivery, I care most about… because…"></textarea>
+        <p class="privacy-note">Avoid personal information. When AI features are enabled, study inputs and derived results may be processed by the configured Meta model.</p>
         <button id="start" class="primary" disabled>Continue to choices <span>→</span></button>
       </div>
     </section>
@@ -84,7 +85,6 @@
         <div class="eyebrow">Study complete</div>
         <h1>Thank you.</h1>
         <p class="lede">Your four choices have been recorded. This study does not diagnose you or assign a permanent preference.</p>
-        <button id="open-debrief" class="primary">Open researcher debrief <span>→</span></button>
       </div>
       <div id="research-report" class="researcher-only">
         <div class="eyebrow">Researcher debrief · Evidence report</div>

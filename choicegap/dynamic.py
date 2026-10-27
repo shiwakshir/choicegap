@@ -271,7 +271,10 @@ class DynamicSession:
         ranked = sorted(self.posterior.items(), key=lambda item: -item[1])
         leader, probability = ranked[0]
         labels = self.study.driver_copy
-        gap = leader != self.stated_driver and probability >= 0.45
+        informative_choices = sum(item["choice"] in ("a", "b") for item in self.history)
+        quality_reliable = informative_choices >= 3 and self.holdout_consistent is True
+        evidence_quality = "high" if informative_choices == 4 and quality_reliable else ("moderate" if quality_reliable else "low")
+        gap = leader != self.stated_driver and probability >= 0.45 and quality_reliable
         return {
             "study_title": self.study.title,
             "stated_driver": self.stated_driver,
@@ -279,12 +282,15 @@ class DynamicSession:
             "intention_score": self.intention_score,
             "opt_out_count": sum(item["choice"] == "outside" for item in self.history),
             "holdout_consistent": self.holdout_consistent,
+            "informative_choices": informative_choices,
+            "evidence_quality": evidence_quality,
             "leading_driver": leader,
             "confidence": round(probability, 4),
             "gap_detected": gap,
             "posterior": {key: round(value, 4) for key, value in self.posterior.items()},
             "rounds": self.rounds,
-            "headline": (
+            "headline": ("The evidence is inconclusive because the response-quality threshold was not met."
+                if not quality_reliable else
                 f"Choices lean toward {labels[leader]['label'].lower()}, despite stating {labels[self.stated_driver]['label'].lower()}."
                 if gap else f"Choices are most consistent with {labels[leader]['label'].lower()}."
             ),
@@ -294,6 +300,7 @@ class DynamicSession:
                 "Four hypothetical choices from one person cannot establish causality.",
                 "Muse-generated explanations may omit an important driver.",
                 "The compiler controls factor changes, but the chosen factor levels still require human review.",
+                "A failed or skipped holdout makes the individual result inconclusive.",
             ],
         }
 

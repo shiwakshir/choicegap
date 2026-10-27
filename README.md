@@ -55,6 +55,8 @@ python -m choicegap.server
 
 Open <http://127.0.0.1:8000>. Set `META_MODEL` to override the default `muse-spark-1.3`. Without `MODEL_API_KEY`, the app runs in deterministic local mode and clearly labels that state.
 
+Participant mode is the default and contains no researcher controls or debrief access. Open <http://127.0.0.1:8000/?mode=researcher> explicitly for the researcher console and hackathon demonstration.
+
 Meta Model API configuration follows the official OpenAI-compatible endpoint:
 
 - Base URL: `https://api.meta.ai/v1`
@@ -81,7 +83,7 @@ The benchmark generates simulated participants with known latent drivers and noi
 
 The adaptive policy gains **10.50 percentage points** over the fixed sequence in this seeded sustainability simulation. The committed raw result is in `docs/benchmark-results.json`.
 
-This benchmark validates the inference mechanism under its own stated data-generating assumptions. It does **not** establish external validity with humans.
+That headline is an in-model diagnostic. A harder misspecified simulation—with continuous mixed preferences, variable noise, 8% attention lapses, and 6% left-side bias—produces **60.3%** adaptive recovery versus **55.0%** fixed, a **5.3-point lift**. This robustness result is less flattering and more decision-relevant. Neither simulation establishes external validity with humans.
 
 Generated studies receive a structural design audit, not automatic domain validation. A human researcher must still review whether Muse selected the right explanations and realistic factor levels before recruiting participants.
 

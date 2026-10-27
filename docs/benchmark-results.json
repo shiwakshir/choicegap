@@ -19,5 +19,26 @@
       "mean_probability_on_true_driver": 0.7215
     }
   },
-  "adaptive_accuracy_lift_vs_fixed_pp": 10.5
+  "adaptive_accuracy_lift_vs_fixed_pp": 10.5,
+  "robustness": {
+    "description": "Continuous mixed weights with variable noise, 8% lapses, and 6% left-side bias.",
+    "strategies": {
+      "adaptive": {
+        "top1_accuracy": 0.603,
+        "mean_brier": 0.1554,
+        "mean_probability_on_true_driver": 0.5578
+      },
+      "fixed": {
+        "top1_accuracy": 0.55,
+        "mean_brier": 0.1673,
+        "mean_probability_on_true_driver": 0.5082
+      },
+      "random": {
+        "top1_accuracy": 0.55,
+        "mean_brier": 0.1705,
+        "mean_probability_on_true_driver": 0.5103
+      }
+    },
+    "adaptive_accuracy_lift_vs_fixed_pp": 5.3
+  }
 }

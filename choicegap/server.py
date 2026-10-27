@@ -225,6 +225,8 @@ class Handler(BaseHTTPRequestHandler):
             "posterior": report["posterior"],
             "opt_out_count": report.get("opt_out_count", 0),
             "holdout_consistent": report.get("holdout_consistent"),
+            "informative_choices": report.get("informative_choices"),
+            "evidence_quality": report.get("evidence_quality"),
         }
         with LOCK:
             COMPLETED.append(record)

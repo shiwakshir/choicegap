@@ -211,6 +211,13 @@
   color: var(--ink);
 }
 
+.privacy-note {
+  color: var(--muted);
+  font-size: .7rem;
+  line-height: 1.45;
+  margin: .5rem 0 0;
+}
+
 .scale-labels {
   display: flex;
   justify-content: space-between;

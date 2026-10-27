@@ -2,6 +2,8 @@ const $ = (selector) => document.querySelector(selector);
 const state = { driver: null, ratings: {}, sessionId: null, studyId: null, experiment: null, posterior: null, decisionPrompt: 'Which delivery option would you choose?' };
 let labels = { impact: 'Environmental impact', price: 'Affordability', convenience: 'Convenience', trust: 'Claim credibility' };
 let descriptions = { impact: 'A materially lower estimated footprint', price: 'A lower delivery fee', convenience: 'A precise delivery window', trust: 'Independent evidence behind the claim' };
+const researcherMode = new URLSearchParams(window.location.search).get('mode') === 'researcher';
+if (researcherMode) document.body.classList.add('researcher-mode');
 
 function updateEligibility() {
   const values = Object.values(state.ratings);
@@ -11,14 +13,7 @@ function updateEligibility() {
 }
 
 $('#researcher-toggle').addEventListener('click', () => {
-  const enabled = document.body.classList.toggle('researcher-mode');
-  $('#researcher-toggle').textContent = enabled ? 'Participant view' : 'Researcher view';
-});
-
-$('#open-debrief').addEventListener('click', () => {
-  document.body.classList.add('researcher-mode');
-  $('#researcher-toggle').textContent = 'Participant view';
-  window.scrollTo({top: 0, behavior: 'smooth'});
+  window.location.href = window.location.pathname;
 });
 
 $('#comprehension').addEventListener('change', () => {
@@ -107,7 +102,7 @@ function renderExperiment(experiment, plan, round) {
   $('#experiment-rationale').textContent = experiment.rationale;
   $('#plan-reason').textContent = plan.reason;
   $('#agent-note strong').textContent = plan.source?.startsWith('muse') ? 'Muse falsification loop' : 'Local falsification loop';
-  $('#hypothesis-duel').innerHTML = `<span>${labels[plan.leading_account] || plan.leading_account}</span><b>vs</b><span>${labels[plan.rival_account] || plan.rival_account}</span>`;
+  $('#hypothesis-duel').innerHTML = `<span>${escapeHtml(labels[plan.leading_account] || plan.leading_account)}</span><b>vs</b><span>${escapeHtml(labels[plan.rival_account] || plan.rival_account)}</span>`;
   $('#falsification-rule').textContent = `Pre-registered challenge: ${plan.falsification_rule}`;
   $('#choices').innerHTML = ['a','b'].map((key, index) => {
     const option = experiment[key];
@@ -129,12 +124,12 @@ async function answer(choice) {
 function renderPosterior(posterior, target = '#posterior') {
   const entropy = -Object.values(posterior).reduce((sum,p) => sum + (p ? p*Math.log2(p) : 0), 0);
   if ($('#uncertainty-bar')) $('#uncertainty-bar').style.width = `${Math.min(100, entropy/2*100)}%`;
-  $(target).innerHTML = Object.entries(posterior).sort((a,b) => b[1]-a[1]).map(([key,value]) => `<div class="posterior-row"><span>${labels[key]}</span><div class="posterior-track"><i style="width:${value*100}%"></i></div><strong>${Math.round(value*100)}%</strong></div>`).join('');
+  $(target).innerHTML = Object.entries(posterior).sort((a,b) => b[1]-a[1]).map(([key,value]) => `<div class="posterior-row"><span>${escapeHtml(labels[key] || key)}</span><div class="posterior-track"><i style="width:${value*100}%"></i></div><strong>${Math.round(value*100)}%</strong></div>`).join('');
 }
 
 function renderReport(report, narrative) {
   show('report');
-  $('#report-headline').textContent = report.gap_detected ? 'The trade-off pattern differs from the stated priority.' : 'Stated and observed signals broadly align.';
+  $('#report-headline').textContent = report.evidence_quality === 'low' ? 'The result is inconclusive.' : (report.gap_detected ? 'The trade-off pattern differs from the stated priority.' : 'Stated and observed signals broadly align.');
   $('#report-summary').textContent = narrative.summary;
   $('#next-step').textContent = narrative.next_step;
   $('#limitations').innerHTML = report.limitations.map(item => `<li>${escapeHtml(item)}</li>`).join('');

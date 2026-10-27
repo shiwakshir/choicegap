@@ -287,19 +287,25 @@ class Session:
     def report(self) -> dict[str, Any]:
         ranked = sorted(self.posterior.items(), key=lambda item: -item[1])
         leader, probability = ranked[0]
-        gap = leader != self.stated_driver and probability >= 0.45
+        informative_choices = sum(item["choice"] in ("a", "b") for item in self.history)
+        quality_reliable = informative_choices >= 3 and self.holdout_consistent is True
+        evidence_quality = "high" if informative_choices == 4 and quality_reliable else ("moderate" if quality_reliable else "low")
+        gap = leader != self.stated_driver and probability >= 0.45 and quality_reliable
         return {
             "stated_driver": self.stated_driver,
             "stated_ratings": self.stated_ratings,
             "intention_score": self.intention_score,
             "opt_out_count": sum(item["choice"] == "outside" for item in self.history),
             "holdout_consistent": self.holdout_consistent,
+            "informative_choices": informative_choices,
+            "evidence_quality": evidence_quality,
             "leading_driver": leader,
             "confidence": round(probability, 4),
             "gap_detected": gap,
             "posterior": {key: round(value, 4) for key, value in self.posterior.items()},
             "rounds": self.rounds,
-            "headline": (
+            "headline": ("The evidence is inconclusive because the response-quality threshold was not met."
+                if not quality_reliable else
                 f"Choices lean toward {DRIVER_COPY[leader]['label'].lower()}, despite stating "
                 f"{DRIVER_COPY[self.stated_driver]['label'].lower()}."
                 if gap else
@@ -314,6 +320,7 @@ class Session:
                 "A small number of hypothetical choices cannot establish a causal effect.",
                 "The candidate explanations are deliberately incomplete; unmeasured factors may matter.",
                 "Results depend on the utility model and the exact wording and levels shown.",
+                "A failed or skipped holdout makes the individual result inconclusive.",
             ],
         }
 
