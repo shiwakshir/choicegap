@@ -1,5 +1,19 @@
 # Evidence workbench: evaluation status
 
+## Integrated adaptive UX study, 28 October
+
+The current suite passes 96 Python tests plus the Node source-quote editor check and JavaScript syntax checks. The new integrated path covers survey context, adaptive tasks, a task-anchored bounded interview, one tentative Muse interpretation, participant corrections, two approved single-detail variations, final reflection and an evidence-linked report. Old choice-only sessions remain supported without participant model calls.
+
+The scripted integrated-flow benchmark passes 400 exact single-fact audits and 400 known switch-label checks across 200 synthetic sessions, preserves 100 supplied corrections, leaves 100 unresolved interpretations unadopted, and checks 200 all-neither/skip branches. These are objective software checks of supplied responses, not recovery of latent human motives or measurement of research validity. Results: `adaptive-interview-benchmark-results.json`.
+
+One new actual Muse call on explicitly fictional interview text passed the strict schema and exact-quotation checks. This is a smoke test, not an estimate of semantic accuracy, neutral moderation, reliability or model superiority. The output is `outputs/adaptive-interview-live-smoke.json`.
+
+A browser walkthrough completed the survey, five baseline/repeat choices, two optional interview answers, an interpretation correction, both condition comparisons and a final reflection. The participant saw a neutral thank-you. A separate actual HTTP check completed two fictional automated sessions in an approved dynamic study, including unresolved/skip responses. The researcher UI showed per-case corrections, exact condition edits, conditional switch counts and stage-specific issued/answered denominators. Markdown export completed. No browser console errors were observed in that walkthrough. These checks use isolated fictional data and do not establish product demand, human usability, or time saved.
+
+Baseline choice sessions remain memory-only. Interview-stage state is durable with atomic nonce consumption and final report storage. Tests cover restart/replay/concurrency, invalid quote fallback, correction precedence, neutral unresolved branches, consent and prevention of participant-enabled interviews on an unapproved protocol.
+
+The remaining sections describe earlier revisions and evaluations; their older suite counts and zero-call participant claims apply to the legacy choice-only path.
+
 ## Current revision: 28 October
 
 The application now runs separate design and visual reviews, removes rating-mismatch wording from per-session headlines, randomizes opening EIG ties, and samples the repeat uniformly from completed informative tasks independently of the inferred leader. Repeat disagreement is descriptive and never excludes a session. The brief leads with per-task canonical counts, separate recorded-response denominators and conditional shares; model leader counts are secondary and cannot estimate interactions.

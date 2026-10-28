@@ -5,6 +5,7 @@ const state = {
   studyId: null,
   experiment: null,
   answerToken: null,
+  experienceEnabled: !new URLSearchParams(window.location.search).has('study'),
   studyReady: !new URLSearchParams(window.location.search).has('study'),
   decisionPrompt: 'Which delivery option would you choose?',
 };
@@ -39,10 +40,12 @@ function clearError() {
 
 function updateEligibility() {
   const understood = $('#comprehension').value === 'fee';
-  $('#start').disabled = !(state.studyReady && $('#ratings-reviewed').checked && understood);
+  $('#interview-notice').hidden = !state.experienceEnabled;
+  $('#start').disabled = !(state.studyReady && $('#ratings-reviewed').checked && understood && (!state.experienceEnabled || $('#interview-consent').checked));
 }
 
 $('#ratings-reviewed').addEventListener('change', updateEligibility);
+$('#interview-consent').addEventListener('change', updateEligibility);
 
 $('#researcher-toggle').addEventListener('click', () => {
   const url = new URL(window.location.href);
@@ -110,6 +113,7 @@ function applyStudy(data) {
   document.body.classList.add('configured-study');
   state.studyReady = true;
   state.studyId = data.study_id;
+  state.experienceEnabled = data.experience_enabled === true;
   state.decisionPrompt = data.study.decision_prompt;
   $('#scenario-title').textContent = data.study.title;
   $('#scenario-prompt').textContent = 'Consider the options in this study. Rate each factor before continuing.';
@@ -205,6 +209,8 @@ $('#start').addEventListener('click', async () => {
       intention_score: Number($('#intention-score').value),
       statement: $('#statement').value,
       study_id: state.studyId,
+      experience_enabled: state.experienceEnabled,
+      interview_consent: $('#interview-consent').checked,
     });
     state.sessionId = data.session_id;
     state.answerToken = data.answer_token;
@@ -288,7 +294,9 @@ async function answer(choice) {
     });
     renderPosterior(data.posterior);
     state.answerToken = data.answer_token;
-    if (data.done) {
+    if (data.interview) {
+      renderInterview(data.interview);
+    } else if (data.done) {
       renderReport(data.report, data.narrative);
     } else {
       const nextRound = data.holdout ? 'check' : data.rounds + 1;
@@ -320,6 +328,8 @@ function renderPosterior(posterior, target = '#posterior') {
 
 function renderReport(report, narrative) {
   show('report');
+  $('#ux-analysis').innerHTML = report.ux_analysis ? uxAnalysisHtml(report.ux_analysis) : '';
+  $('#model-diagnostics').open = !report.ux_analysis;
   if (report.evidence_quality === 'low') {
     $('#report-headline').textContent = 'The result is inconclusive.';
   } else {

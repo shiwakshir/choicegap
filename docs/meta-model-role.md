@@ -13,7 +13,7 @@ Muse Spark connects a researcher's source material to competing explanations, co
 3. Optionally inspect a prototype screenshot alongside the evidence and design to flag visible defaults, hierarchy, wording, or availability as competing explanations.
 4. Return observations, competing explanations, and proposed controls in a schema that code validates before displaying it for researcher review.
 
-The workbench maps evidence into four predefined editable grocery-delivery categories; it does not autonomously discover an unrestricted hypothesis space. Task selection and report completion are computed locally and make no model calls.
+The workbench maps evidence into four predefined editable grocery-delivery categories; it does not autonomously discover an unrestricted hypothesis space. Task selection and numerical reporting are computed locally. In the integrated study, Muse additionally interprets two optional participant responses once using a strict schema: tentative summary, exact quotation, candidate factor and rival (or unresolved). Code rejects unsupported quote spans or unknown factors. Participants can confirm, correct or leave that interpretation unresolved; rejected interpretations cannot silently steer task ordering. This does not independently validate semantic accuracy.
 
 The screenshot review does not infer clicks, attention, motives, or real purchases from a static image. Visual findings are model interpretations requiring researcher verification.
 

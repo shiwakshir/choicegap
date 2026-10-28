@@ -21,6 +21,7 @@ from .research import (
 )
 from .review import review_workspace
 from .config import load_env_file
+from . import mechanisms, explore
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -34,6 +35,7 @@ PENDING: dict[str, dict[str, Any]] = {}
 TRACES: dict[str, list[dict[str, Any]]] = {}
 USAGE: dict[str, list[dict[str, Any]]] = {}
 SESSION_STUDIES: dict[str, str] = {}
+EXPERIENCES: set[str] = set()
 LOCK = threading.Lock()
 MAX_REQUEST_BYTES = 2_000_000
 ADAPTIVE_ROUNDS = 4
@@ -142,6 +144,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
+        if path.startswith('/api/mechanisms/'):
+            try:
+                self._mechanism_get(path, parse_qs(urlparse(self.path).query))
+            except ValueError as exc:
+                self._json(404, {'error': str(exc)})
+            return
         if path.startswith("/api/research/"):
             try:
                 query = parse_qs(urlparse(self.path).query)
@@ -157,7 +165,9 @@ class Handler(BaseHTTPRequestHandler):
                     self._json(200, STORE.get("workspace", identifier))
                 elif path == "/api/research/report":
                     workspace = STORE.get("workspace", identifier)
-                    self._json(200, decision_report(workspace, STORE.list("session")))
+                    report = decision_report(workspace, STORE.list("session"))
+                    report['ux_research']['collection_progress'] = explore.collection_progress(STORE.list('exploration'), workspace['id'])
+                    self._json(200, report)
                 else:
                     self._json(404, {"error": "Unknown research endpoint"})
             except ValueError as exc:
@@ -172,7 +182,7 @@ class Handler(BaseHTTPRequestHandler):
                 records = list(COMPLETED)
             self._json(200, {
                 "schema_version": 2,
-                "description": "De-identified ChoiceGap session records; no free-text statements are included.",
+                "description": "ChoiceGap session records. Integrated interviews include participant free text and corrections; review for identifying information before sharing.",
                 "records": records,
             })
             return
@@ -182,7 +192,11 @@ class Handler(BaseHTTPRequestHandler):
             if study is None:
                 self._json(404, {"error": "Study unavailable or not yet approved."})
             else:
-                self._json(200, {"study_id": study_id, "study": study.to_public()})
+                try:
+                    enhanced = STORE.get('workspace', study_id)['blueprint'].get('experience_version') == 1
+                except ValueError:
+                    enhanced = False
+                self._json(200, {"study_id": study_id, "study": study.to_public(), 'experience_enabled': enhanced})
             return
         requested = "index.html" if path == "/" else path.lstrip("/")
         target = (STATIC / requested).resolve()
@@ -202,7 +216,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         try:
             payload = self._body()
-            if self.path == "/api/design":
+            if self.path.startswith('/api/mechanisms/'):
+                self._mechanism_post(self.path, payload)
+            elif self.path == "/api/design":
                 self._design(payload)
             elif self.path == "/api/research/draft":
                 meta = MetaClient()
@@ -232,6 +248,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._start(payload)
             elif self.path == "/api/answer":
                 self._answer(payload)
+            elif self.path in ('/api/explore', '/api/explore/resume'):
+                self._explore(payload, resume=self.path.endswith('/resume'))
             else:
                 self._json(404, {"error": "Unknown endpoint"})
         except (ValueError, KeyError, StopIteration) as exc:
@@ -239,6 +257,62 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             self.log_error("Unhandled request error: %s", exc)
             self._json(500, {"error": "Internal server error"})
+
+    def _mechanism_get(self, path, query):
+        identifier = query.get('id', [''])[0]
+        if path == '/api/mechanisms/catalog':
+            self._json(200, {'mechanisms': [mechanisms.protocol(key) for key in mechanisms.CATALOG],
+                             'deferred': 'Present bias is not inferred here: it needs a separate credible timing/incentive design.'})
+        elif path == '/api/mechanisms/plan':
+            workspace = STORE.get('workspace', identifier)
+            try:
+                plan = STORE.get('mechanism_plan', identifier)
+            except ValueError:
+                plan = mechanisms.manual_plan(workspace)
+            self._json(200, plan)
+        elif path == '/api/mechanisms/studies':
+            studies = sorted((s for s in STORE.list('mechanism_study') if s['workspace_id'] == identifier), key=lambda s: (s['created_at'], s['id']))
+            self._json(200, {'studies': [{'id': s['id'], 'label': s['protocol']['label'], 'workspace_id': s['workspace_id'], 'created_at': s['created_at']} for s in studies]})
+        elif path == '/api/mechanisms/participant':
+            study = STORE.get('mechanism_study', identifier)
+            self._json(200, {'question': study['protocol']['question'], 'context': study['protocol']['context'],
+                             'notice': 'One hypothetical choice; no purchase or real delivery will be made. Responses are stored locally.'})
+        elif path == '/api/mechanisms/report':
+            study = STORE.get('mechanism_study', identifier)
+            self._json(200, mechanisms.report(study, STORE.list('mechanism_assignment')))
+        else:
+            raise ValueError('Unknown behavioural research endpoint')
+
+    def _mechanism_post(self, path, payload):
+        if path == '/api/mechanisms/plan':
+            workspace = STORE.get('workspace', str(payload.get('workspace_id', '')))
+            plan = mechanisms.make_plan(workspace, MetaClient())
+            STORE.put('mechanism_plan', workspace['id'], plan)
+            self._json(200, plan)
+        elif path == '/api/mechanisms/approve':
+            workspace = STORE.get('workspace', str(payload.get('workspace_id', '')))
+            try:
+                origin = STORE.get('mechanism_plan', workspace['id'])
+            except ValueError:
+                origin = mechanisms.manual_plan(workspace)
+            plan = payload.get('plan', origin)
+            plan['source'] = origin['source']
+            plan['advisory_review_context'] = origin.get('advisory_review_context')
+            study = mechanisms.approve_study(workspace, plan, str(payload.get('mechanism_id', '')), payload.get('confirmed'))
+            STORE.put('mechanism_study', study['id'], study)
+            self._json(200, study)
+        elif path == '/api/mechanisms/start':
+            if payload.get('consent') is not True:
+                raise ValueError('Acknowledge the hypothetical study before starting')
+            study = STORE.get('mechanism_study', str(payload.get('study_id', '')))
+            assigned = mechanisms.assignment(study)
+            STORE.put('mechanism_assignment', assigned['id'], assigned)
+            self._json(200, {key: assigned[key] for key in ('id', 'answer_token', 'stimulus', 'stimulus_sha256')})
+        elif path == '/api/mechanisms/answer':
+            STORE.answer_mechanism(str(payload.get('id', '')), payload.get('answer_token'), payload.get('choice'))
+            self._json(200, {'done': True, 'message': 'Thank you. Your choice has been recorded.'})
+        else:
+            raise ValueError('Unknown behavioural research endpoint')
 
     def _design(self, payload: dict[str, Any]) -> None:
         context = str(payload.get("context", "")).strip()
@@ -264,10 +338,20 @@ class Handler(BaseHTTPRequestHandler):
     def _start(self, payload: dict[str, Any]) -> None:
         fallback_driver = str(payload.get("driver", ""))
         statement = str(payload.get("statement", "")).strip()[:1000]
-        study_id = str(payload.get("study_id", ""))
+        study_id = str(payload.get("study_id") or "")
         study = load_study(study_id) if study_id else None
         if study_id and study is None:
             raise ValueError("Study unavailable. Ask the researcher for a new study link.")
+        enhanced = payload.get('experience_enabled') is True
+        if enhanced:
+            if payload.get('interview_consent') is not True:
+                raise ValueError('Please review the interview and data-sharing notice before continuing')
+            if study_id:
+                workspace = STORE.get('workspace', study_id)
+                if workspace['blueprint'].get('experience_version') != 1:
+                    raise ValueError('This study was not approved for adaptive interviews')
+                if workspace['blueprint'].get('experience_policy') != explore.policy():
+                    raise ValueError('The approved follow-up protocol differs from this version. Ask the researcher for a newly approved study.')
         valid_drivers = study.driver_ids if study else DRIVERS
         raw_ratings = payload.get("ratings") or {}
         if not isinstance(raw_ratings, dict):
@@ -307,6 +391,8 @@ class Handler(BaseHTTPRequestHandler):
             TRACES[token] = []
             USAGE[token] = list(meta.usage)
             SESSION_STUDIES[token] = study_id
+            if enhanced:
+                EXPERIENCES.add(token)
         answer_token = issue_experiment(token, experiment, plan, candidates)
         self._json(200, {
             "session_id": token,
@@ -350,7 +436,7 @@ class Handler(BaseHTTPRequestHandler):
             driver_copy = session.study.driver_copy if isinstance(session, DynamicSession) else DRIVER_COPY
             plan = MetaClient.fallback_plan(candidates, session.posterior)
             response.update({"plan": plan, "experiment": session.next_experiment(plan["experiment_id"])})
-        if not response["done"]:
+        if not response["done"] and not response.get('interview'):
             next_candidates = session.candidates() if not response.get("holdout") else []
             response["answer_token"] = issue_experiment(
                 token, response["experiment"], response["plan"], next_candidates,
@@ -385,15 +471,59 @@ class Handler(BaseHTTPRequestHandler):
             "report": report,
             "narrative": narrative,
         }
-        STORE.put("session", token, record)
+        enhanced = token in EXPERIENCES
+        if enhanced:
+            state = explore.begin(session, report)
+            state['record'] = record
+            STORE.put('exploration', token, state)
+        else:
+            STORE.put("session", token, record)
         with LOCK:
-            COMPLETED.append(record)
+            if not enhanced:
+                COMPLETED.append(record)
+            EXPERIENCES.discard(token)
             SESSIONS.pop(token, None)
             PENDING.pop(token, None)
             TRACES.pop(token, None)
             USAGE.pop(token, None)
             SESSION_STUDIES.pop(token, None)
-        response.update({"done": True, "report": report, "narrative": narrative})
+        if enhanced:
+            response.update(done=False, interview=explore.public_step(state))
+        else:
+            response.update({"done": True, "report": report, "narrative": narrative})
+
+    def _explore(self, payload, resume=False):
+        token = str(payload.get('session_id', ''))
+        with explore.lock_for(token):
+            state = STORE.get('exploration', token)
+            if state['phase'] == 'complete':
+                if not resume:
+                    raise ValueError('This study is complete')
+                record = state['record']
+                self._json(200, {'done': True, 'report': record['report'], 'narrative': record['narrative']})
+                return
+            if resume:
+                self._json(200, {'done': False, 'interview': explore.public_step(state)})
+                return
+            old_token = state['pending']['answer_token']
+            explore.advance(state, payload, MetaClient())
+            record = None
+            if state['phase'] == 'complete':
+                record = state['record']
+                record['report']['ux_analysis'] = explore.synthesis(state)
+                comparable = [c for c in state['contrasts'] if c['response'] and c['response']['switched'] is not None]
+                switches = sum(c['response']['switched'] for c in comparable)
+                record['report']['headline'] = 'Which details mattered in this study?'
+                record['narrative']['summary'] = f'{switches} of {len(comparable)} comparable single-detail follow-ups coincided with a different selected option. Review the exact conditions and the participant explanation below; these are descriptive study responses.'
+                record['api_usage'] += state['api_usage']
+                record['narrative']['next_step'] = 'Review participant corrections, both single-detail comparisons and rival explanations before deciding what to test in the field.'
+            STORE.save_exploration(token, old_token, state, record)
+            if record:
+                with LOCK:
+                    COMPLETED.append(record)
+                self._json(200, {'done': True, 'report': record['report'], 'narrative': record['narrative']})
+            else:
+                self._json(200, {'done': False, 'interview': explore.public_step(state)})
 
 
 def run(host: str = "127.0.0.1", port: int = 8000) -> None:

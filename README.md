@@ -1,6 +1,10 @@
 # ChoiceGap
 
-ChoiceGap is a research prototype for comparing stated sustainability priorities with choices made under controlled trade-offs. The default study examines grocery-delivery decisions across environmental impact, price, convenience, and claim credibility.
+ChoiceGap is an adaptive UX research prototype. Its product direction is to combine surveys, text interviews and choice tasks, then give researchers an evidence-linked analysis of stated priorities, study responses, possible explanations and practical next steps. Sustainability is the first context.
+
+The current implementation combines a short survey, adaptive controlled choices, a bounded text interview, participant corrections, and up to two single-detail condition comparisons. The researcher report links statements, task responses, corrections, rival explanations and proposed next tests. See [the product direction](docs/product-direction.md) and [the integrated study guide](docs/adaptive-interviews.md). Separate behavioural experiments are an advanced option.
+
+To try the full flow, restart the server and open the default participant page. To publish a customized study, open Researcher view, create a workspace, review the follow-up protocol and enable its checkbox before approving the design. Previously approved studies retain their original flow; create a new draft to add interviews.
 
 The researcher workbench now supports an evidence-to-follow-up workflow: import source excerpts, review competing explanations, approve exact factor levels, collect adaptive choice responses, and export a study decision brief with proposed field contrasts.
 
@@ -43,7 +47,7 @@ stated preference → competing hypotheses → adaptive controlled choice
 - **Deterministic operation:** the fixed study works without an API key.
 - **Research quality layer:** neutral practice example, genuine outside option, reversed-side holdout, and de-identified JSON export.
 
-Participants rate every factor plus a general lower-impact intention item; the choice-model posterior begins uniform. Optional participant free text is retained without a model interpretation. The participant loop, including report completion, makes zero API calls.
+Participants rate every factor plus a general lower-impact intention item; the choice-model posterior begins uniform. Choice task selection and numerical analysis make no model calls. In the integrated flow, Muse may interpret two optional interview responses once, with an exact quoted span. The participant can confirm, correct or reject that interpretation before follow-up comparisons. Local mode uses a literal response echo rather than claiming semantic interpretation. Free text and corrections appear in the integrated research export.
 
 The repeat samples a completed informative task uniformly using a seeded draw independent of the inferred leader, then reverses its sides. Agreement is descriptive: it does not filter sessions or update probabilities. Outside selections also leave probabilities unchanged.
 
@@ -89,7 +93,7 @@ Meta Model API configuration follows the official OpenAI-compatible endpoint:
 - Auth: `Authorization: Bearer $MODEL_API_KEY`
 - Structured output: `response_format.type = json_schema`
 
-Research data is stored in `work/choicegap-data/research.sqlite3` relative to the server's starting directory. Set `CHOICEGAP_DATA_DIR` to a fixed directory to keep the same store when starting the server from another location. The store is local and unencrypted. Active, unfinished participant sessions are still held in memory.
+Research data is stored in `work/choicegap-data/research.sqlite3` relative to the server's starting directory. Set `CHOICEGAP_DATA_DIR` to a fixed directory to keep the same store when starting the server from another location. The store is local and unencrypted. Baseline choice sessions remain memory-only. The integrated interview is persisted once the baseline finishes and can reopen in the same browser tab after refresh or restart.
 
 ## Test
 
@@ -150,11 +154,11 @@ The sustainability choices and claims boundary are grounded in `docs/sustainabil
 
 ## Data handling and deployment boundary
 
-- Unfinished session state is held in memory and is cleared when the server restarts. Workspaces, published studies, and completed reports are saved in SQLite.
+- Baseline choice sessions are memory-only; workspaces, published studies, issued interview follow-ups and completed reports are saved in SQLite.
 - The interface does not request direct identifiers.
-- Free-text statements are excluded from the research-data export.
+- Integrated interview exports include survey free text, interview answers and corrections. Review for identifying information before sharing. Legacy choice-only records exclude the intake comment.
 - App exports include exact stimuli, decision trails, model source, and returned API token usage when available. Separate evaluation reports estimate token cost using explicitly documented published rates.
-- Muse receives imported excerpts and draft study inputs for researcher-requested mapping/review, plus the optional screenshot when a review is requested. Participant sessions make zero model API calls.
+- Muse receives imported excerpts and draft study inputs for researcher-requested mapping/review, plus the optional screenshot when a review is requested. An enabled integrated interview makes at most one interpretation call containing the two interview responses and approved factor definitions. Skipping both responses makes no call. API failure or invalid quotations fall back to literal local text.
 - Imported excerpts are persisted and may appear in the decision-brief export. Use de-identified material you are authorized to process.
 - The local server has no authentication, encrypted storage, retention controls, or multi-user isolation. It is not a production deployment.
 

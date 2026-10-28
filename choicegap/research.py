@@ -48,6 +48,7 @@ def parse_evidence(raw: str) -> list[dict[str, str]]:
 
 def default_blueprint() -> dict[str, Any]:
     return {
+        "experience_version": 1,
         "title": "Sustainable grocery delivery",
         "decision_prompt": "Which delivery option would you choose for your weekly grocery shop?",
         "attributes": [
@@ -62,37 +63,44 @@ def default_blueprint() -> dict[str, Any]:
 
 
 def design_input_digest(blueprint: dict[str, Any], mapping: dict[str, Any]) -> str:
+    if blueprint.get('experience_version') == 1:
+        from .explore import policy
+        blueprint = {**blueprint, 'experience_policy': policy()}
     encoded = json.dumps({"blueprint": blueprint, "mapping": mapping}, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(encoded.encode('utf-8')).hexdigest()
+
+
+def validate_references(refs, sources):
+    """Validate exact source spans and attach trusted source types."""
+    if not isinstance(refs, list):
+        raise ValueError('References must be a list')
+    by_id = {source['id']: source for source in sources}
+    for ref in refs:
+        if not isinstance(ref, dict):
+            raise ValueError('Each reference must be an object')
+        source = by_id.get(ref.get('source_id'))
+        if source is None:
+            raise ValueError('Evidence map contains an unknown source ID')
+        quote = ref.get('quote')
+        if not isinstance(quote, str) or not quote.strip() or quote not in source['text']:
+            raise ValueError('Every quoted excerpt must occur verbatim in its cited source')
+        if ref.get('relation') not in ('supports', 'challenges', 'context'):
+            raise ValueError('Unknown evidence relationship')
+        ref['source_kind'] = source['kind']
+    return refs
 
 
 def validate_map(mapping: dict[str, Any], sources: list[dict[str, str]]) -> dict[str, Any]:
     """Check source IDs and verbatim grounding; interpretation still requires human review."""
     if not isinstance(mapping, dict):
         raise ValueError("Evidence map must be an object")
-    by_id = {item["id"]: item for item in sources}
     accounts = mapping.get("accounts")
     if not isinstance(accounts, list) or any(not isinstance(item, dict) for item in accounts) or [item.get("id") for item in accounts] != list("abcd"):
         raise ValueError("Evidence mapping must contain accounts a, b, c, d in order")
     for account in accounts:
         if not isinstance(account.get("explanation"), str) or not account["explanation"].strip():
             raise ValueError("Each explanation must contain text")
-        refs = account.get("references")
-        if not isinstance(refs, list):
-            raise ValueError("References must be a list")
-        for ref in refs:
-            if not isinstance(ref, dict):
-                raise ValueError("Each reference must be an object")
-            source = by_id.get(ref.get("source_id"))
-            if source is None:
-                raise ValueError("Evidence map contains an unknown source ID")
-            quote = ref.get("quote")
-            if not isinstance(quote, str) or not quote.strip() or quote not in source["text"]:
-                raise ValueError("Every quoted excerpt must occur verbatim in its cited source")
-            if ref.get("relation") not in ("supports", "challenges", "context"):
-                raise ValueError("Unknown evidence relationship")
-            # Attach the trusted type from the source, never the model's representation.
-            ref["source_kind"] = source["kind"]
+        account['references'] = validate_references(account.get('references'), sources)
         if not isinstance(account.get("missing_evidence"), str) or not account["missing_evidence"].strip():
             raise ValueError("Each account must specify missing evidence")
     if not isinstance(mapping.get("unresolved"), list) or any(not isinstance(item, str) for item in mapping["unresolved"]):
@@ -171,6 +179,11 @@ def approve_workspace(draft: dict[str, Any], blueprint: dict[str, Any], mapping:
     for key, maximum in (("title", 100), ("decision_prompt", 240)):
         if not isinstance(blueprint.get(key), str) or not 1 <= len(blueprint[key].strip()) <= maximum:
             raise ValueError(f"Study {key} must contain 1–{maximum} characters")
+    if blueprint.get('experience_version', 0) not in (0, 1):
+        raise ValueError('Unsupported interview protocol version')
+    if blueprint.get('experience_version') == 1:
+        from .explore import policy
+        blueprint = {**blueprint, 'experience_policy': policy()}
     attributes = blueprint.get("attributes", [])
     if len(attributes) != 4 or len({item.get("label", "").strip().casefold() for item in attributes}) != 4:
         raise ValueError("Use four distinct factor names")
@@ -194,6 +207,7 @@ def approve_workspace(draft: dict[str, Any], blueprint: dict[str, Any], mapping:
 
 
 def decision_report(workspace: dict[str, Any], records: list[dict[str, Any]]) -> dict[str, Any]:
+    from .explore import aggregate
     eligible = [record for record in records if record.get("study_id") == workspace["id"]]
     usable = [record for record in eligible if (
         record.get('informative_choices', record.get('report', {}).get('informative_choices',
@@ -231,6 +245,7 @@ def decision_report(workspace: dict[str, Any], records: list[dict[str, Any]]) ->
             counts[report["leading_driver"]] += 1
     return {
         "decision": workspace["decision"], "completed_sessions": len(eligible),
+        "ux_research": aggregate(eligible),
         "study_title": workspace["blueprint"]["title"],
         "status": workspace["status"], "version": workspace["version"],
         "approved_at": workspace.get("approved_at"),
@@ -313,7 +328,7 @@ class ResearchStore:
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             previous = connection.execute("SELECT payload FROM documents WHERE kind=? AND id=?", (kind, identifier)).fetchone()
-            if previous and kind == "workspace" and json.loads(previous[0]).get("status") == "approved":
+            if previous and kind in ("workspace", "mechanism_study") and json.loads(previous[0]).get("status") == "approved":
                 raise ValueError("Approved designs are immutable")
             connection.execute("INSERT OR REPLACE INTO documents VALUES (?,?,?)", (kind, identifier, json.dumps(payload)))
 
@@ -324,7 +339,38 @@ class ResearchStore:
             raise ValueError("Research workspace unavailable")
         return json.loads(row[0])
 
+    def save_exploration(self, identifier, previous_token, state, record=None):
+        """Commit the consumed interview nonce and final report together."""
+        with self._connect() as connection:
+            connection.execute('BEGIN IMMEDIATE')
+            row = connection.execute("SELECT payload FROM documents WHERE kind='exploration' AND id=?", (identifier,)).fetchone()
+            previous = json.loads(row[0]) if row else None
+            if not previous or not previous.get('pending') or previous['pending']['answer_token'] != previous_token:
+                raise ValueError('This follow-up has already been answered or is out of date')
+            connection.execute("UPDATE documents SET payload=? WHERE kind='exploration' AND id=?", (json.dumps(state), identifier))
+            if record is not None:
+                connection.execute('INSERT OR REPLACE INTO documents VALUES (?,?,?)', ('session', identifier, json.dumps(record)))
+
     def list(self, kind: str) -> list[dict[str, Any]]:
         with self._connect() as connection:
             rows = connection.execute("SELECT payload FROM documents WHERE kind=? ORDER BY rowid", (kind,)).fetchall()
         return [json.loads(row[0]) for row in rows]
+
+    def answer_mechanism(self, identifier, answer_token, choice):
+        """One durable answer per randomized assignment, including concurrent/restart retries."""
+        if choice not in ('a', 'b', 'outside'):
+            raise ValueError('Choose one option or neither')
+        with self._connect() as connection:
+            connection.execute('BEGIN IMMEDIATE')
+            row = connection.execute("SELECT payload FROM documents WHERE kind='mechanism_assignment' AND id=?", (identifier,)).fetchone()
+            if row is None:
+                raise ValueError('Unknown participant assignment')
+            assigned = json.loads(row[0])
+            if assigned['status'] != 'pending' or not isinstance(answer_token, str) or not secrets.compare_digest(assigned['answer_token'].encode(), answer_token.encode()):
+                raise ValueError('This answer token is invalid or has already been used')
+            canonical = ('b' if choice == 'a' else 'a') if assigned['flipped'] and choice != 'outside' else choice
+            assigned.update(status='completed', choice=canonical, displayed_choice=choice,
+                            completed_at=datetime.now(timezone.utc).isoformat())
+            assigned.pop('answer_token')
+            connection.execute("UPDATE documents SET payload=? WHERE kind='mechanism_assignment' AND id=?", (json.dumps(assigned), identifier))
+        return assigned

@@ -1,0 +1,13 @@
+{
+  "scope": "Scripted synthetic sessions verify state transitions, exact stimulus changes, identity normalization and correction handling. No human participants or model semantic accuracy are evaluated.",
+  "sessions": 200,
+  "condition_tasks": 400,
+  "checks_passed": {
+    "single_fact_audits": 400,
+    "switch_labels_correct": 400,
+    "corrections_preserved": 100,
+    "unresolved_interpretations_not_adopted": 100,
+    "skip_branches_correct": 200
+  },
+  "all_checks_passed": true
+}

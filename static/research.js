@@ -109,9 +109,10 @@ function renderWorkspace(workspace) {
     `;
   }).join('');
   $('#unresolved-questions').value = workspace.mapping.unresolved.join('\n');
+  $('#experience-enabled').checked = workspace.blueprint.experience_version === 1;
   $('#workspace-approved').checked = approved;
   $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => {
-    input.disabled = approved;
+    if (!input.closest('#mechanism-workbench')) input.disabled = approved;
   });
   $('#approve-workspace').disabled = approved;
   $('#challenge-design').disabled = approved;
@@ -121,7 +122,7 @@ function renderWorkspace(workspace) {
     ? `<strong>Approved version ${workspace.version}</strong>
        <a href="${escapeHtml(participantLink(workspace.id))}" target="_blank" rel="noopener">Open approved participant study →</a>
        <span>Design digest: ${escapeHtml(workspace.design_sha256)}</span>`
-    : '<span>Drafts cannot be used for participant collection. Review the plan and approve it first.</span>';
+    : '<span>This trade-off study needs approval before collection. Behavioural experiments have their own approval above.</span>';
   $('#workspace-summary').replaceChildren();
   $('#export-brief').disabled = true;
   $('#export-brief-data').disabled = true;
@@ -130,6 +131,7 @@ function renderWorkspace(workspace) {
   if (approved) url.searchParams.set('study', workspace.id);
   else url.searchParams.delete('study');
   window.history.replaceState({}, '', url);
+  document.dispatchEvent(new CustomEvent('choicegap-workspace', { detail: workspace }));
 }
 
 $('#example-evidence').addEventListener('click', async () => {
@@ -188,6 +190,8 @@ $('#load-workspaces').addEventListener('click', async () => {
 
 function readWorkspaceEditor() {
   const blueprint = structuredClone(researchWorkspace.blueprint);
+  blueprint.experience_version = $('#experience-enabled').checked ? 1 : 0;
+  delete blueprint.experience_policy;
   blueprint.title = $('#workspace-title').value;
   blueprint.decision_prompt = $('#workspace-prompt').value;
   const mapping = { accounts: [], unresolved: $('#unresolved-questions').value.split('\n').filter(Boolean) };
@@ -237,6 +241,7 @@ $('#prototype-image').addEventListener('change', async event => {
 });
 
 $('#workspace-review').addEventListener('input', event => {
+  if (event.target.closest('#mechanism-workbench')) return;
   if (event.target.id === 'prototype-image' || event.target.id === 'workspace-approved') return;
   if ($('#review-current')) $('#review-current').textContent = 'Design inputs have been edited. The saved review may be out of date; run it again before relying on it.';
   $('#workspace-approved').checked = false;
@@ -249,7 +254,7 @@ $('#challenge-design').addEventListener('click', async () => {
   button.disabled = true;
   button.textContent = 'Muse is reviewing the design in three runs…';
   $('#approve-workspace').disabled = true;
-  $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => { input.disabled = true; });
+  $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => { if (!input.closest('#mechanism-workbench')) input.disabled = true; });
   try {
     const { blueprint, mapping } = readWorkspaceEditor();
     const reviewed = await api('/api/research/review', {
@@ -263,7 +268,7 @@ $('#challenge-design').addEventListener('click', async () => {
     button.disabled = approved;
     button.textContent = 'Challenge this design with Muse';
     $('#approve-workspace').disabled = approved;
-    $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => { input.disabled = approved; });
+    $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => { if (!input.closest('#mechanism-workbench')) input.disabled = approved; });
   }
 });
 
@@ -299,6 +304,7 @@ $('#workspace-report').addEventListener('click', async () => {
     $('#workspace-summary').innerHTML = `
       <section class="brief-section">
         <h3>Decision brief</h3>
+        ${typeof uxAggregateHtml === 'function' ? uxAggregateHtml(brief.ux_research) : ''}
         <p>${escapeHtml(brief.decision)}</p>
         <p>${brief.completed_sessions} completed sessions · ${brief.response_checks_passed} with sufficient choice coverage ·
           ${brief.inconclusive_response_checks} with insufficient choice coverage · ${brief.weak_model_separation} with weak model separation.</p>
@@ -366,6 +372,7 @@ function briefMarkdown(brief) {
       `${brief.inconclusive_response_checks} with insufficient choice coverage; ${brief.weak_model_separation} with weak model separation.`, '',
     brief.next_step, '',
   ];
+  if (typeof uxAggregateMarkdown === 'function' && brief.ux_research) lines.push(uxAggregateMarkdown(brief.ux_research));
   lines.push('## Choices by exact task (primary descriptive output)', '',
     'Task-specific denominators reflect adaptive assignment and recorded answers. Repeats are excluded; do not pool shares or infer population preferences.', '');
   (brief.pairwise_choices || []).forEach(task => lines.push(`### ${task.experiment_id}`, '',

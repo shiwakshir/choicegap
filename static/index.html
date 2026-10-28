@@ -20,11 +20,11 @@
       <div class="eyebrow participant-copy">Short product study</div>
       <div class="eyebrow researcher-only">Researcher console</div>
       <h1 class="participant-copy">Choose what works<br><em>for you.</em></h1>
-      <h1 class="researcher-only">Challenge the explanation.<br><em>Before fieldwork.</em></h1>
-      <p class="lede participant-copy">Help us understand how people make everyday sustainability trade-offs. There are no right answers, and it takes about two minutes.</p>
-      <p class="lede researcher-only">Review source evidence, rival explanations, and your prototype together. Check Muse's proposed controls, approve exact test levels, then collect a short, auditable choice study.</p>
+      <h1 class="researcher-only">Understand what people say.<br><em>Explore what they choose.</em></h1>
+      <p class="lede participant-copy">Help us understand how people make everyday sustainability trade-offs. Choose between options, explain what mattered, and correct anything we misunderstood. There are no right answers.</p>
+      <p class="lede researcher-only">Bring interview or survey evidence, collect an adaptive choice study, and review what agrees, what differs, and what still needs explaining.</p>
       <div class="study-builder researcher-only evidence-workbench">
-        <div class="scenario-kicker">Evidence → explanations → follow-up study</div>
+        <div class="scenario-kicker">Study setup → participant responses → research analysis</div>
         <h2>Resolve a research decision</h2>
         <p>Start with an adoption question and existing evidence. This first workflow focuses on grocery delivery: impact, cost, timing, and verification. Review the explanations and exact test levels before publishing.</p>
         <label for="evidence-decision">What product decision does this research need to inform?</label>
@@ -44,6 +44,28 @@
           <label for="workspace-prompt">Participant choice question</label>
           <textarea id="workspace-prompt" rows="2"></textarea>
           <div id="evidence-sources"></div>
+          <details id="mechanism-workbench" class="brief-section" hidden>
+            <summary>Advanced: separate behavioural experiments</summary>
+            <h3>Test a specific explanation</h3>
+            <p>Develop rival mechanisms from these sources, then approve a separate randomized experiment. These tests measure prototype responses to specific manipulations; they do not diagnose people.</p>
+            <button id="mechanism-plan-button" class="secondary" type="button">Develop behavioural explanations with Muse</button>
+            <p id="mechanism-plan-status" aria-live="polite"></p>
+            <label for="mechanism-select">Mechanism to investigate</label>
+            <select id="mechanism-select"></select>
+            <div id="mechanism-editor"></div>
+            <label class="ratings-confirm"><input id="mechanism-approved" type="checkbox"> I reviewed the exact experimental arms, rival explanations, source interpretations and planned aggregate contrast.</label>
+            <button id="mechanism-publish" class="primary" type="button">Approve this mechanism experiment</button>
+            <div id="mechanism-studies" class="design-result"></div>
+            <div id="mechanism-results"></div>
+            <p class="microcopy">Present bias needs a different timing/incentive design and is not inferred from these delivery choices. Capability, access and affordability may be structural constraints.</p>
+          </details>
+          <details class="brief-section" open><summary>Adaptive study design and analysis</summary>
+          <label class="ratings-confirm"><input id="experience-enabled" type="checkbox"> Include the bounded interview and condition comparisons described below.</label>
+          <details><summary>Review the participant follow-up protocol</summary>
+            <p>After four adaptive choices and an optional reversed repeat, participants can explain one choice, describe circumstances that might change it, and confirm, correct or reject a tentative interpretation. Two variations each change one detail from that same task using these approved levels. A final optional question explores the choices across versions.</p>
+            <p>Questions: “What mattered when you made this choice? You can also describe anything the options missed.” “What circumstances, if any, could lead you to choose differently? It is fine if none would.” “Does this description reflect your reasoning? You can correct it or leave it unresolved.” “What, if anything, explains your choices across these versions? You can also describe something we missed.”</p>
+            <p>Review both levels for every factor below: any differing factor may be varied in one of the two follow-up comparisons. Changing a choice here is descriptive; order, learning and repeated exposure prevent a causal claim. Muse can tentatively interpret the two open responses with one exact quote; the participant can reject it. Free text is stored and included in research exports. With Muse enabled the two interview responses and approved factor definitions are sent to Meta.</p>
+          </details>
           <div id="research-accounts" class="account-grid"></div>
           <div class="brief-section">
             <h3>Challenge the explanation with Muse</h3>
@@ -57,14 +79,15 @@
           </div>
           <label for="unresolved-questions">Other explanations and unresolved questions (one per line)</label>
           <textarea id="unresolved-questions" rows="3"></textarea>
-          <p>The adaptive tasks compare trade-offs between two factors. The decision brief separately proposes single-factor field contrasts; those experiments are not run by this app.</p>
-          <label class="ratings-confirm"><input id="workspace-approved" type="checkbox"> I reviewed the source interpretations, missing evidence, wording, and realism of every factor level.</label>
+          <p>The baseline tasks compare trade-offs between two factors. If enabled, the interview adds single-detail within-session comparisons. The brief also proposes separate randomized field experiments; those are not run by this app.</p>
+          <label class="ratings-confirm"><input id="workspace-approved" type="checkbox"> I reviewed the source interpretations, missing evidence, wording, realism of every factor level, and the follow-up protocol if enabled.</label>
           <button id="approve-workspace" class="primary" type="button">Approve design and create participant link</button>
           <div id="workspace-link" class="design-result"></div>
           <button id="workspace-report" class="secondary" type="button">Refresh study decision brief</button>
           <button id="export-brief" class="secondary" type="button">Download decision brief (.md)</button>
           <button id="export-brief-data" class="secondary" type="button">Download research packet (.json)</button>
           <div id="workspace-summary"></div>
+          </details>
         </div>
       </div>
       <div class="study-builder researcher-only legacy-workflow">
@@ -84,7 +107,7 @@
         <div id="completed-results" class="design-result" aria-live="polite"></div>
       </div>
       <div class="scenario-card">
-        <div class="scenario-kicker">Live study · 2 minutes</div>
+        <div class="scenario-kicker">Short product study</div>
         <h2 id="scenario-title">Choose a grocery delivery option</h2>
         <p id="scenario-prompt">Imagine this is your real weekly shop. Before seeing any options, rate how important each factor is to you.</p>
         <div id="drivers" class="drivers rating-grid" aria-label="Importance ratings"></div>
@@ -114,6 +137,10 @@
         <label for="statement">What shaped those ratings? <span>optional</span></label>
         <textarea id="statement" rows="3" placeholder="For grocery delivery, I care most about… because…"></textarea>
         <p class="privacy-note">Your ratings and choices are stored locally for this study. Avoid personal information in the optional comment.</p>
+        <div id="interview-notice">
+          <p class="privacy-note">This study includes optional written follow-ups and up to two more choices. You may skip questions. Your comments and any corrections are stored and included in researcher exports. If AI interpretation is enabled, your two initial interview answers and the study factor definitions are sent to Meta. Avoid identifying or sensitive information. No purchase is made.</p>
+          <label class="ratings-confirm"><input id="interview-consent" type="checkbox"> I have read this notice and agree to take part.</label>
+        </div>
         <button id="start" class="primary" disabled>Continue to choices <span>→</span></button>
       </div>
     </section>
@@ -133,6 +160,25 @@
       </div>
     </section>
 
+    <section id="explore" class="screen">
+      <div class="eyebrow">Your experience</div>
+      <h1 id="explore-question" tabindex="-1"></h1>
+      <p id="explore-progress" class="microcopy"></p>
+      <div id="explore-context"></div>
+      <form id="explore-form">
+        <div id="explore-check" hidden>
+          <p id="explore-interpretation"></p>
+          <label for="explore-status">How well does this reflect your reasoning?</label>
+          <select id="explore-status"><option value="unresolved">Leave unresolved / prefer not to say</option><option value="confirmed">This reflects my reasoning</option><option value="corrected">I want to correct it</option></select>
+          <label for="explore-factor">Which detail mattered most here, if any?</label><select id="explore-factor"></select>
+        </div>
+        <label for="explore-text" id="explore-text-label">Your response (optional)</label>
+        <textarea id="explore-text" rows="4" maxlength="2000"></textarea>
+        <button id="explore-submit" class="primary" type="submit">Continue</button>
+      </form>
+      <div id="explore-choices" class="choices"></div>
+      <button id="explore-skip" class="secondary" type="button">Skip this question</button>
+    </section>
     <section id="report" class="screen">
       <div id="participant-complete" class="participant-copy completion">
         <div class="eyebrow">Study complete</div>
@@ -144,11 +190,15 @@
         <h1 id="report-headline"></h1>
         <p id="report-summary" class="lede"></p>
         <p id="report-context" class="report-context"></p>
+        <div id="ux-analysis"></div>
+        <details id="model-diagnostics" open><summary>Choice-model diagnostics and next validation step</summary>
         <div class="report-grid">
           <article class="panel"><h2>What the choices support</h2><div id="final-posterior"></div></article>
           <article class="panel"><h2>Recommended next test</h2><p id="next-step"></p><div class="stamp">Decision support, not causal proof</div></article>
         </div>
-        <button id="export-data" class="secondary">Export de-identified research data</button>
+        </details>
+        <p class="privacy-note">Interview exports contain participant comments. Review them for identifying information before sharing.</p>
+        <button id="export-data" class="secondary">Export research data (.json)</button>
         <article class="limitations">
           <h2>Decision trail</h2>
           <p>Each plan was recorded before its response. Probabilities refer to the model's canonical A option; the displayed order is recorded separately.</p>
@@ -158,11 +208,29 @@
         <button id="restart-study" class="secondary" type="button">Run another participant</button>
       </div>
     </section>
+    <section id="mechanism-participant" class="screen">
+      <div class="eyebrow">Short delivery study</div>
+      <h1 id="mechanism-question">Choose a delivery option.</h1>
+      <p id="mechanism-context" class="lede"></p>
+      <div id="mechanism-intake">
+        <p>One hypothetical choice; no purchase or real delivery will be made. Responses are stored locally.</p>
+        <label class="ratings-confirm"><input id="mechanism-consent" type="checkbox"> I understand this is a hypothetical study and want to take part.</label>
+        <button id="mechanism-begin" class="primary" type="button">Begin</button>
+      </div>
+      <form id="mechanism-choice-form" hidden>
+        <p>Review the available options and confirm your choice. You may change any current selection.</p>
+        <fieldset id="mechanism-choices" class="mechanism-options"><legend>Delivery options</legend></fieldset>
+        <button class="primary" id="mechanism-submit" type="submit">Confirm choice</button>
+      </form>
+      <p id="mechanism-complete" class="lede" hidden>Thank you. Your choice has been recorded.</p>
+    </section>
   </main>
 
   <footer><span class="participant-copy">No direct identifiers requested</span><span class="researcher-only">Meta Muse Spark integration</span><span class="researcher-only">Controlled stimuli · Documented uncertainty · Reproducible benchmark</span></footer>
   <script src="/app.js"></script>
   <script src="/research.js"></script>
+  <script src="/explore.js"></script>
+  <script src="/mechanisms.js"></script>
 </body>
 </html>
 
