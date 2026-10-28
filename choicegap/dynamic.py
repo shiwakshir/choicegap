@@ -233,7 +233,9 @@ class DynamicSession:
 
     def _ranked(self) -> list[tuple[DynamicExperiment, float]]:
         values = [(exp, information_gain(self.study, self.posterior, exp)) for exp in self.study.experiments if exp.id not in self.used]
-        return sorted(values, key=lambda item: (-item[1], item[0].id))
+        return sorted(values, key=lambda item: (
+            -round(item[1], 12), random.Random(f'{self.seed}:tie:{item[0].id}').random(),
+        ))
 
     def candidates(self, limit: int = 3) -> list[dict[str, Any]]:
         candidates = []
@@ -277,8 +279,11 @@ class DynamicSession:
             self.holdout_source = {"experiment_id": experiment_id, "choice": canonical, "flipped": flipped}
 
     def holdout_experiment(self) -> dict[str, Any] | None:
-        if not self.holdout_source:
+        informative = [item for item in self.history if item['choice'] in ('a', 'b')]
+        if not informative:
             return None
+        selected = random.Random(f'{self.seed}:repeat').choice(informative)
+        self.holdout_source = {key: selected[key] for key in ('experiment_id', 'choice', 'flipped')}
         experiment = next(exp for exp in self.study.experiments if exp.id == self.holdout_source["experiment_id"])
         payload = _public(experiment, 0.0, not bool(self.holdout_source["flipped"]))
         payload["holdout"] = True
@@ -339,7 +344,8 @@ class DynamicSession:
                 "Four hypothetical choices from one person cannot establish causality.",
                 "Four researcher-reviewed candidate accounts may omit an important explanation.",
                 "The compiler controls factor changes, but the chosen factor levels still require human review.",
-                "A failed or skipped holdout makes the individual result inconclusive.",
+                "The randomly selected repeat is descriptive; disagreement can reflect indifference or noise and does not exclude the session.",
+                "The additive single-factor analysis cannot estimate interactions such as impact-by-verification.",
             ],
         }
 

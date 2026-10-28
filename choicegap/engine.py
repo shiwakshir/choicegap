@@ -191,7 +191,8 @@ def find_experiment(experiment_id: str) -> Experiment:
 
 
 def assess_evidence_quality(informative_choices: int, holdout_consistent: bool | None) -> str:
-    if informative_choices < MIN_INFORMATIVE_CHOICES or holdout_consistent is not True:
+    # Coverage only. A stochastic repeat is not an attention test or exclusion rule.
+    if informative_choices < MIN_INFORMATIVE_CHOICES:
         return "low"
     if informative_choices >= EXPECTED_INFORMATIVE_CHOICES:
         return "high"
@@ -208,14 +209,9 @@ def report_headline(
     probability: float,
 ) -> str:
     if evidence_quality == "low":
-        return "The evidence is inconclusive because the response-quality threshold was not met."
+        return "The evidence is inconclusive because fewer than three choices were informative."
     if probability < GAP_PROBABILITY_THRESHOLD:
         return "The choices do not yet distinguish clearly between the candidate explanations."
-    if gap_detected:
-        return (
-            f"At the tested levels, the leading candidate model is {labels[leading_driver]['label'].lower()}, "
-            "which differs from the highest importance ratings. This descriptive comparison does not establish a behaviour gap."
-        )
     return f"At the tested levels, hypothetical choices are most consistent with {labels[leading_driver]['label'].lower()}."
 
 
@@ -300,8 +296,11 @@ class Session:
             self.holdout_source = {"experiment_id": experiment_id, "choice": canonical_choice, "flipped": flipped}
 
     def holdout_experiment(self) -> dict[str, Any] | None:
-        if not self.holdout_source:
+        informative = [item for item in self.history if item['choice'] in ('a', 'b')]
+        if not informative:
             return None
+        selected = random.Random(f'{self.seed}:repeat').choice(informative)
+        self.holdout_source = {key: selected[key] for key in ('experiment_id', 'choice', 'flipped')}
         experiment = find_experiment(self.holdout_source["experiment_id"])
         payload = experiment_public(experiment, 0.0, not bool(self.holdout_source["flipped"]))
         payload["holdout"] = True
@@ -361,7 +360,8 @@ class Session:
                 "A small number of hypothetical choices cannot establish a causal effect.",
                 "The candidate explanations are deliberately incomplete; unmeasured factors may matter.",
                 "Results depend on the utility model and the exact wording and levels shown.",
-                "A failed or skipped holdout makes the individual result inconclusive.",
+                "The randomly selected repeated task is descriptive only; disagreement can reflect indifference or noise and does not exclude the session.",
+                "Additive single-factor candidate models cannot represent interactions or reliably identify mixed motivations.",
             ],
         }
 

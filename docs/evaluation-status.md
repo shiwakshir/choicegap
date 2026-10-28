@@ -1,5 +1,17 @@
 # Evidence workbench: evaluation status
 
+## Current revision: 28 October
+
+The application now runs separate design and visual reviews, removes rating-mismatch wording from per-session headlines, randomizes opening EIG ties, and samples the repeat uniformly from completed informative tasks independently of the inferred leader. Repeat disagreement is descriptive and never excludes a session. The brief leads with per-task canonical counts, separate recorded-response denominators and conditional shares; model leader counts are secondary and cannot estimate interactions.
+
+The revised 2,000-session-per-condition simulation has in-model adaptive repeat disagreement of 20.4%, 19.4%, 22.8%, and 21.0% for factors a/b/c/d, with no repeat-based exclusions. Initial task counts span all six pairs (314–349 sessions per pair). This is a software/simulation diagnostic, not a claim of fairness or validity in real people. In-model recovery remains 93.35%; mixed-dominant recovery is 60.8% and no-deliberate-dominant recovery is 34.95%. The weak mixed-model performance remains visible rather than being filtered away.
+
+The current verification suite has 69 Python tests plus the Node quote-editor check. A frozen neutral-instruction evaluation with new feature families is specified in `neutral-review-protocol.md`. All 57 calls completed without API or validation errors. All 36 planted visual calls returned findings and the fixed keyword screen matched 34; all 18 intended-neutral visual calls also returned findings, including common design caveats. These counts are not adjudicated detection or false-alarm rates. All three independent design runs returned findings. Aggregate data is in `neutral-review-results.json`; raw calls and images accompany the archive. All spot checks by this assistant and the supplied Claude review are model-based checks by AI agents, not human adjudication.
+
+A fresh browser check verified primary per-task counts/denominators, secondary model counts and repeat caveats using isolated fictional data. A clearly labelled replay of recorded evaluation responses verified the three design critiques, separate prototype review and topic-frequency language. Console errors were absent. Screenshots of these verification states are included in the output bundle; no new model calls were made by those browser checks.
+
+The sections below document earlier verification and the 27 October methods. Their repeat-based filtering and numerical results are historical, not the current exclusion policy. The revised benchmark is saved separately to preserve that comparison.
+
 The product workflow is evaluated without requiring external UXR recruitment. Automated checks and a browser walkthrough establish specific software properties; they do not establish product demand or replace a study with researchers.
 
 ## Verified software properties

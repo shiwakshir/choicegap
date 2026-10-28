@@ -75,16 +75,17 @@ class EngineTests(unittest.TestCase):
         self.assertTrue(session.holdout_consistent)
         self.assertEqual(session.posterior, after_choice)
 
-    def test_failed_holdout_suppresses_gap_claim(self):
+    def test_repeat_disagreement_does_not_exclude_an_answered_session(self):
         session = Session.create("price", "", seed=14)
         experiment = find_experiment("impact-v-price")
         for _ in range(4):
             session.observe(experiment.id, "a", False)
         session.holdout_consistent = False
         report = session.report()
-        self.assertEqual(report["evidence_quality"], "low")
+        self.assertEqual(report["evidence_quality"], "high")
         self.assertFalse(report["gap_detected"])
-        self.assertIn("inconclusive", report["headline"].lower())
+        self.assertFalse(report['holdout_consistent'])
+        self.assertNotIn('importance ratings', report['headline'])
 
     def test_low_quality_report_bypasses_model_narration(self):
         client = MetaClient()

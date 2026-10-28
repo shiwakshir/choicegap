@@ -195,7 +195,32 @@ def approve_workspace(draft: dict[str, Any], blueprint: dict[str, Any], mapping:
 
 def decision_report(workspace: dict[str, Any], records: list[dict[str, Any]]) -> dict[str, Any]:
     eligible = [record for record in records if record.get("study_id") == workspace["id"]]
-    usable = [record for record in eligible if record.get("evidence_quality") != "low"]
+    usable = [record for record in eligible if (
+        record.get('informative_choices', record.get('report', {}).get('informative_choices',
+                   0 if record.get('evidence_quality') == 'low' else 3)) >= 3
+    )]
+    study = compile_study(workspace['blueprint'])
+    task_counts = {exp.id: {'a': 0, 'b': 0, 'outside': 0} for exp in study.experiments}
+    for record in eligible:
+        seen = set()
+        for item in record.get('choices', record.get('report', {}).get('evidence', [])):
+            if item.get('holdout'):
+                continue
+            identifier, choice = item.get('experiment_id'), item.get('choice')
+            if identifier in task_counts and identifier not in seen and choice in ('a', 'b', 'outside'):
+                task_counts[identifier][choice] += 1
+                seen.add(identifier)
+    pairwise = []
+    for exp in study.experiments:
+        counts_for_task = task_counts[exp.id]
+        answered = sum(counts_for_task.values())
+        informative = counts_for_task['a'] + counts_for_task['b']
+        pairwise.append({
+            'experiment_id': exp.id, 'canonical_a': exp.a['facts'], 'canonical_b': exp.b['facts'],
+            'varies': list(exp.varies), 'exposures_with_recorded_response': answered,
+            'informative_responses': informative, 'counts': counts_for_task,
+            'canonical_a_share_among_ab': counts_for_task['a'] / informative if informative else None,
+        })
     counts = {item["id"]: 0 for item in workspace["blueprint"]["attributes"]}
     unresolved = 0
     for record in usable:
@@ -220,12 +245,22 @@ def decision_report(workspace: dict[str, Any], records: list[dict[str, Any]]) ->
         "response_checks_passed": len(usable), "inconclusive_response_checks": len(eligible) - len(usable),
         "weak_model_separation": unresolved,
         "session_leader_counts": counts,
+        "pairwise_choices": pairwise,
+        "repeat_agreement": {
+            'consistent': sum(r.get('holdout_consistent') is True for r in eligible),
+            'inconsistent': sum(r.get('holdout_consistent') is False for r in eligible),
+            'unavailable': sum(r.get('holdout_consistent') is None for r in eligible),
+            'use': 'Descriptive only; no exclusion or model update.',
+        },
         "next_step": (
             "Collect approved choice-task responses before prioritizing a field experiment."
             if not usable else
             "Review the session evidence and contradictory cases, then select one of the proposed field contrasts."
         ),
         "limitations": [
+            "Task shares describe responses among sessions adaptively assigned that task. Different tasks have different denominators; do not pool them or infer population preference shares.",
+            "Exposure denominators count recorded answers, not impressions or verified unique people. Repeated checks are excluded from task shares.",
+            "Additive single-factor models cannot estimate interactions, including impact-by-verification; model leader counts are secondary diagnostics.",
             "Leader counts describe these sessions under the candidate models; they are not population prevalence or causal effects.",
             "Repeated sessions are not verified as unique participants.",
             "The 0.45 model-separation threshold is an uncalibrated prototype heuristic.",

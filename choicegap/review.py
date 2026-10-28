@@ -6,9 +6,11 @@ import base64
 import hashlib
 from datetime import datetime, timezone
 from typing import Any
+from concurrent.futures import ThreadPoolExecutor
 
 from .dynamic import audit_study, compile_study
 from .research import design_input_digest, validate_map
+from .review_prompts import TOPICS
 
 
 def prototype_metadata(data_url: str | None) -> dict[str, Any] | None:
@@ -79,13 +81,34 @@ def review_workspace(
     audit = audit_study(compile_study(blueprint))
     if not audit['passed']:
         raise ValueError("Correct structural design errors before requesting a semantic review")
-    result = meta.challenge_research_design(workspace['decision'], workspace['sources'], mapping, blueprint, audit, image)
-    result = validate_review(result, workspace['sources'], metadata is not None)
+    def run_stage(job):
+        stage, index = job
+        try:
+            result = meta.review_stage(workspace['decision'], workspace['sources'], mapping, blueprint, audit,
+                                      stage, image if stage == 'screen' else None)
+            result = validate_review(result, workspace['sources'], stage == 'screen')
+            if any(finding.get('topic') not in TOPICS for finding in result['findings']):
+                raise ValueError('Unknown finding topic')
+            return {**result, 'stage': stage, 'run': index + 1, 'status': 'ok'}
+        except (RuntimeError, ValueError) as exc:
+            return {'stage': stage, 'run': index + 1, 'status': 'error', 'error': str(exc)}
+    jobs = [('design', i) for i in range(3)] + ([('screen', 0)] if image else [])
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        runs = list(executor.map(run_stage, jobs))
+    successful = [run for run in runs if run['status'] == 'ok']
+    design_runs = [run for run in successful if run['stage'] == 'design']
+    result = {'summary': 'Independent design review and prototype review; inspect every run and any errors.',
+              'findings': [finding for run in successful for finding in run['findings']],
+              'unresolved': list(dict.fromkeys(item for run in successful for item in run['unresolved']))}
     review = {
         **result, 'source': meta.model, 'created_at': datetime.now(timezone.utc).isoformat(),
         'reviewed_input_sha256': design_input_digest(blueprint, mapping),
         'prototype': metadata,
-        'scope': 'Model advisory review. Visual interpretations require human verification.',
+        'scope': 'AI advisory review. Topic frequencies describe run consistency, not confidence or human validation.',
+        'runs': runs,
+        'status': 'complete' if len(successful) == len(runs) else 'partial' if successful else 'failed',
+        'topic_frequency': [{'topic': topic, 'raised_in': sum(any(f['topic'] == topic for f in run['findings']) for run in design_runs),
+                             'completed_runs': len(design_runs), 'planned_runs': 3} for topic in TOPICS],
     }
     # Persist the observations and image digest, not the image bytes.
     return {**workspace, 'blueprint': blueprint, 'mapping': mapping, 'design_review': review,

@@ -43,11 +43,12 @@ def build_report(root: Path, output: Path):
              '## Scope', '',
              'Six planted defect types on one synthetic grocery checkout template, with affected side reversed; six clean render repeats. Three runs per screen in each of two input conditions. Pilots are stored separately and excluded. These are controlled repeats, not independently sampled real studies.', '',
              '## Recorded outcomes', '',
-             '| Input condition | Calls | Planted calls | Visual-basis screening matches | Clean calls with any finding | Validation failures | API errors | Mean latency |',
-             '|---|---:|---:|---:|---:|---:|---:|---:|']
+             '| Input condition | Calls | Planted calls | Planted calls returning visual findings | Fixed-rule screening matches | Clean calls with any finding | Validation failures | API errors | Mean latency |',
+             '|---|---:|---:|---:|---:|---:|---:|---:|---:|']
     for condition, result in summary['conditions'].items():
         latency = result['mean_latency_seconds']
-        lines.append(f"| {condition} | {result['calls']} | {result['planted_calls']} | {result['proxy_matches']} | {result['clean_calls_with_any_finding']}/{result['clean_calls']} | {result['validation_failures']} | {result['api_errors']} | {latency if latency is not None else 'unmeasured'} s |")
+        visual = sum(any(f['basis'] == 'prototype_image' for f in r.get('review', {}).get('findings', [])) for r in rows if r['condition'] == condition and r['expected'] != 'clean')
+        lines.append(f"| {condition} | {result['calls']} | {result['planted_calls']} | {visual} | {result['proxy_matches']} | {result['clean_calls_with_any_finding']}/{result['clean_calls']} | {result['validation_failures']} | {result['api_errors']} | {latency if latency is not None else 'unmeasured'} s |")
     lines += ['', '### Image-conditioned screening by planted type', '',
               '| Planted issue | Calls | Fixed-rule matches |', '|---|---:|---:|']
     for kind in ('default', 'prominence', 'badge', 'leading_wording', 'availability', 'hidden_fee'):
@@ -70,7 +71,7 @@ def build_report(root: Path, output: Path):
     spot_path = root / 'developer-spotcheck.json'
     if spot_path.exists():
         spot = json.loads(spot_path.read_text(encoding='utf-8'))
-        lines += ['## Developer spot check (separate from primary scoring)', '',
+        lines += ['## Model-based AI-agent check (separate from primary scoring)', '',
                   spot['scope'], '', spot['selection'], '',
                   f"Assessor: {spot['assessor']}. {len(spot['checks'])} examples have individual rationales in developer-spotcheck.json. This is an unblinded development audit and must not be presented as independent or human-validated accuracy.", '']
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -82,11 +83,11 @@ def write_workbench_report(path: Path, output: Path):
     result = json.loads(path.read_text(encoding='utf-8'))
     lines = ['# Workbench engine: simulated-participant benchmark', '',
              f"{result['participants_per_condition']} sessions per population and policy; seed {result['seed']}.", '',
-             '| Simulated population | Policy | Tasks + repeat | Largest-factor recovery | Failed repeat | Null mismatch, all sessions | Null mismatch, passing sessions |',
+             '| Simulated population | Policy | Tasks + repeat | Largest-factor recovery | Repeat disagreement | Null mismatch, all sessions | Null mismatch, sufficient coverage |',
              '|---|---|---:|---:|---:|---:|---:|']
     for population, policies in result['populations'].items():
         for policy, row in policies.items():
-            values = [row[key] for key in ('top1_recovery', 'response_check_inconclusive_rate', 'null_mismatch_rate_all', 'null_mismatch_rate_passing')]
+            values = [row['top1_recovery'], row.get('repeat_disagreement_rate', row['response_check_inconclusive_rate']), row['null_mismatch_rate_all'], row['null_mismatch_rate_passing']]
             formatted = [f'{value:.2%}' if value is not None else 'unavailable' for value in values]
             lines.append(f"| {population} | {policy} | {row['total_questions_including_repeat']} | " + ' | '.join(formatted) + ' |')
     lines += ['', 'All ratings in these null cohorts agree with the generating largest preference weight. A descriptive mismatch is therefore a model/measurement disagreement, not evidence that a participant failed to act on a stated value.', '',
@@ -101,9 +102,9 @@ def main():
     parser.add_argument('--directory', type=Path, default=Path('outputs/muse-review-evaluation-v4'))
     args = parser.parse_args()
     result = build_report(args.directory, Path('outputs/muse-review-evaluation-report.md'))
-    benchmark = Path('outputs/workbench-benchmark.json')
+    benchmark = Path('outputs/workbench-benchmark-revised.json')
     if benchmark.exists():
-        write_workbench_report(benchmark, Path('outputs/workbench-benchmark-report.md'))
+        write_workbench_report(benchmark, Path('outputs/workbench-benchmark-revised-report.md'))
     print(f"Report refreshed: {result['recorded_calls']}/108 recorded calls; {result['status']}.")
 
 

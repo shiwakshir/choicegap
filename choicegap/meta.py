@@ -8,6 +8,7 @@ from typing import Any
 
 from .engine import DRIVER_COPY, DRIVERS, GAP_PROBABILITY_THRESHOLD
 from .dynamic import compile_study
+from .review_prompts import REVIEW_PROMPTS, review_schema
 
 
 META_BASE_URL = "https://api.meta.ai/v1"
@@ -62,7 +63,7 @@ class MetaClient:
                 "json_schema": {"name": name, "schema": schema, "strict": True},
             },
         }
-        if name == 'critical_design_review':
+        if name in ('critical_design_review', 'semantic_design_review', 'visual_context_review'):
             body['reasoning_effort'] = 'high'
         request = urllib.request.Request(
             f"{META_BASE_URL}/chat/completions",
@@ -71,7 +72,7 @@ class MetaClient:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=60 if name == 'critical_design_review' else 30) as response:
+            with urllib.request.urlopen(request, timeout=60 if name in ('critical_design_review', 'semantic_design_review', 'visual_context_review') else 30) as response:
                 payload = json.loads(response.read().decode("utf-8"))
             result = json.loads(payload["choices"][0]["message"]["content"])
             if not isinstance(result, dict):
@@ -250,6 +251,23 @@ class MetaClient:
             )},
             {"role": "user", "content": content},
         ], "critical_design_review", schema)
+
+    def review_stage(self, decision, sources, mapping, blueprint, audit, stage, prototype_image=None):
+        if stage not in REVIEW_PROMPTS:
+            raise ValueError('Unknown review stage')
+        if stage == 'design' and prototype_image is not None:
+            raise ValueError('Design review must not depend on a screenshot')
+        if stage == 'screen' and not prototype_image:
+            raise ValueError('Screen review needs a prototype')
+        study = compile_study(blueprint)
+        context = json.dumps({'decision': decision, 'sources': sources, 'evidence_map': mapping,
+                              'proposed_design': blueprint, 'structural_audit': audit,
+                              'compiled_experiments': [{'id': e.id, 'varies': e.varies, 'a': e.a, 'b': e.b} for e in study.experiments]})
+        content = ([{'type': 'text', 'text': context}, {'type': 'image_url', 'image_url': {'url': prototype_image}}]
+                   if prototype_image else context)
+        return self._structured([{'role': 'system', 'content': REVIEW_PROMPTS[stage]},
+                                 {'role': 'user', 'content': content}],
+                                'semantic_design_review' if stage == 'design' else 'visual_context_review', review_schema(sources))
 
     def choose_experiment(
         self,

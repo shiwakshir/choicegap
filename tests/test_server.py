@@ -196,8 +196,10 @@ class ServerWorkflowTests(unittest.TestCase):
             model = 'test-only-reviewer'
             usage = []
 
-            def challenge_research_design(self, *args):
-                return fixture_review()
+            def review_stage(self, *args):
+                result = fixture_review()
+                result['findings'][0]['topic'] = 'level_wording'
+                return result
 
         draft = draft_workspace('Which delivery change should we test?', EXAMPLE_EVIDENCE, server.MetaClient())
         server.STORE.put('workspace', draft['id'], draft)

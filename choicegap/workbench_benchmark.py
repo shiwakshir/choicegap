@@ -67,6 +67,8 @@ def simulate(strategy: str, population: str, seed: int, threshold: float = .45) 
         'brier': mean((session.posterior[k] - (k == truth)) ** 2 for k in study.driver_ids),
         'passed': passed, 'flag': mismatch, 'probability': report['confidence'],
         'leader_differs': report['leading_driver'] != truth, 'questions': rounds + 1,
+        'repeat_disagreed': report['holdout_consistent'] is False, 'true_factor': truth,
+        'first_task': session.history[0]['experiment_id'],
     }
 
 
@@ -78,6 +80,12 @@ def summarize(rows: list[dict], threshold: float) -> dict:
         'top1_recovery': round(mean(r['correct'] for r in rows), 4),
         'mean_brier': round(mean(r['brier'] for r in rows), 4),
         'response_check_inconclusive_rate': round(1 - len(passing) / len(rows), 4),
+        'repeat_disagreement_rate': round(mean(r.get('repeat_disagreed', False) for r in rows), 4),
+        'repeat_disagreement_by_factor': {
+            key: round(mean(r['repeat_disagreed'] for r in rows if r.get('true_factor') == key), 4)
+            for key in sorted({r['true_factor'] for r in rows if 'true_factor' in r})
+        },
+        'first_task_counts': {key: sum(r.get('first_task') == key for r in rows) for key in sorted({r['first_task'] for r in rows if 'first_task' in r})},
         'weak_separation_among_passing': round(mean(r['probability'] < threshold for r in passing), 4) if passing else None,
         'null_mismatch_rate_all': round(flags / len(rows), 4),
         'null_mismatch_rate_passing': round(flags / len(passing), 4) if passing else None,
@@ -91,7 +99,7 @@ def run_benchmark(participants: int = 2000, seed: int = 2026) -> dict:
         'engine': 'dynamic.DynamicSession with grocery workbench blueprint',
         'participants_per_condition': participants, 'seed': seed,
         'threshold': .45, 'threshold_policy': 'Uncalibrated descriptive heuristic; not tuned on evaluation data.',
-        'design': 'Same participant seeds across policies; independent choice draws after paths diverge. All six uses two extra tasks; each policy adds one reversed repeat.',
+        'design': 'Seeded random EIG tie-breaking. One uniformly sampled completed informative task is repeated with reversed sides; repeat agreement never filters sessions. Same participant seeds across policies; all-six uses two extra tasks.',
         'limitations': [
             'Synthetic diagnostics only; no human or Muse accuracy claim.',
             'All cohorts are null cohorts: stated highest rating matches the generating largest weight.',

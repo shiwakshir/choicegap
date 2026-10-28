@@ -1,5 +1,9 @@
 # Why Meta models matter to ChoiceGap
 
+## Current review workflow (28 October)
+
+The product runs three text-only design critiques and a separate optional prototype review. Screenshot findings cannot suppress the independent design critique. Broad topic frequency across runs is consistency, not confidence or semantic consensus. The legacy combined reviewer below is retained to reproduce v4. The new neutral-instruction evaluation tests previously unused visual features without naming them in the prompts.
+
 ## Product role
 
 Muse Spark connects a researcher's source material to competing explanations, controlled follow-ups, and a reviewable record of how the interpretation changed. It performs semantic work that the numerical choice engine cannot perform:

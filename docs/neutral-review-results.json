@@ -1,0 +1,36 @@
+{
+  "status": "completed",
+  "protocol_sha256": "e06cb462fc1be04a37331d39d711f6eebd8bd2e4f055e629b00d88866ad10544",
+  "calls": 57,
+  "planned_calls": 57,
+  "screen_calls": 54,
+  "planted_calls": 36,
+  "clean_calls": 18,
+  "planted_calls_with_visual_findings": 36,
+  "fixed_rule_matches": 34,
+  "clean_calls_with_any_findings": 18,
+  "api_errors": 0,
+  "validation_errors": 0,
+  "design_runs": [
+    {
+      "run": 1,
+      "status": "ok",
+      "findings": 5
+    },
+    {
+      "run": 2,
+      "status": "ok",
+      "findings": 5
+    },
+    {
+      "run": 3,
+      "status": "ok",
+      "findings": 6
+    }
+  ],
+  "limitations": [
+    "New feature families and neutral instructions; development holdout after v4. One template, two sides per feature, six varied intended-neutral controls. No untouched external validation.",
+    "Fixed keyword screening of visual observations only, not semantic accuracy. Correct side and adequate controls require separate adjudication. Intended-neutral clean differences are not empirically proven harmless.",
+    "Any finding is not automatically a true detection or false alarm. Topic/run frequency is not confidence. Primary independent adjudication is absent."
+  ]
+}

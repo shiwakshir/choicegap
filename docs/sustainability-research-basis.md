@@ -29,7 +29,7 @@ The participant no longer selects one forced “most important” factor. Before
 
 The four adaptive choices are intentionally a rapid diagnostic rather than a conventional DCE claiming population preference weights. The app includes a neutral practice check, repeated holdout, and opt-out/current-choice alternative. Production use still needs cognitive interviewing, a defensible dominant-choice check where realistic, larger samples, and hierarchical or mixed-logit estimation.
 
-The application does not diagnose an individual behaviour gap from hypothetical tasks. A descriptive rating–choice comparison requires at least three informative choices, a consistent repeat and sufficient separation under the candidate models. A skipped or failed repeat yields an inconclusive report. Rating scales and forced trade-offs measure different constructs, and mixed priorities can invalidate a single-factor interpretation even when posterior probability is high.
+The application does not diagnose an individual behaviour gap or put rating-mismatch language in individual headlines. Choice coverage requires three informative answers. The randomly sampled repeat is descriptive; disagreement never excludes a session. EIG ties are randomized reproducibly. Rating scales and trade-offs measure different constructs, and mixed priorities and interactions can invalidate a single-factor interpretation even at high model probability. The brief leads with task-specific choice counts and denominators.
 
 ## Claims boundary
 

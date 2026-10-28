@@ -8,19 +8,24 @@ function renderDesignReview(review, current = true) {
     $('#design-review').textContent = 'No Muse design review has been run for this draft.';
     return;
   }
+  const findingHtml = finding => `
+    <article class="review-finding"><p><strong>Basis: ${escapeHtml(finding.basis)}</strong> · ${escapeHtml(finding.source_ids.join(', '))}</p>
+      <p><strong>Observation:</strong> ${escapeHtml(finding.observation)}</p>
+      ${finding.quote ? `<blockquote>${escapeHtml(finding.quote)}</blockquote>` : ''}
+      <p><strong>Competing explanation:</strong> ${escapeHtml(finding.alternative_explanation)}</p>
+      <p><strong>Proposed control:</strong> ${escapeHtml(finding.suggested_control)}</p></article>`;
+  const stages = review.runs ? `
+    <h4>Design review — independent of screenshot</h4>
+    <p>Each run below is a separate AI response. Broad topic frequency describes consistency, not confidence or identical findings.</p>
+    <ul>${review.topic_frequency.filter(item => item.raised_in).map(item => `<li>${escapeHtml(item.topic)}: raised in ${item.raised_in}/${item.completed_runs} completed runs (${item.planned_runs} planned)</li>`).join('')}</ul>
+    ${review.runs.map(run => `<details class="trace-entry"><summary>${run.stage === 'design' ? 'Design critique' : 'Prototype review'} · run ${run.run} · ${escapeHtml(run.status)}</summary>
+      ${run.status === 'ok' ? `<p>${escapeHtml(run.summary)}</p>${run.findings.map(findingHtml).join('')}${!run.findings.length ? '<p>No findings returned in this run; this is not approval of the overall design.</p>' : ''}` : `<p>${escapeHtml(run.error)}</p>`}</details>`).join('')}
+  ` : review.findings.map(findingHtml).join('');
   $('#design-review').innerHTML = `
     <p><strong>${escapeHtml(review.source)} · ${review.prototype ? 'Evidence + screenshot review' : 'Evidence + design review'}</strong></p>
     <p id="review-current">${current ? 'Review matches the saved design inputs.' : 'The design has changed since this review. Review the revised inputs again.'}</p>
     <p>${escapeHtml(review.summary)}</p>
-    ${review.findings.map(finding => `
-      <article class="review-finding">
-        <p><strong>Basis: ${escapeHtml(finding.basis)}</strong>${finding.source_ids.length ? ` · ${escapeHtml(finding.source_ids.join(', '))}` : ''}</p>
-        <p><strong>Observation:</strong> ${escapeHtml(finding.observation)}</p>
-        ${finding.quote ? `<blockquote>${escapeHtml(finding.quote)}</blockquote>` : ''}
-        <p><strong>Competing explanation:</strong> ${escapeHtml(finding.alternative_explanation)}</p>
-        <p><strong>Suggested control:</strong> ${escapeHtml(finding.suggested_control)}</p>
-      </article>
-    `).join('')}
+    ${stages}
     <ul>${review.unresolved.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
     <p>${escapeHtml(review.scope)}</p>
     ${review.prototype ? `<p class="trace-hash">Reviewed screenshot digest: ${escapeHtml(review.prototype.sha256)}</p>` : ''}
@@ -242,7 +247,7 @@ $('#challenge-design').addEventListener('click', async () => {
   if (!researchWorkspace) return;
   const button = $('#challenge-design');
   button.disabled = true;
-  button.textContent = 'Muse is checking competing explanations…';
+  button.textContent = 'Muse is reviewing the design in three runs…';
   $('#approve-workspace').disabled = true;
   $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => { input.disabled = true; });
   try {
@@ -295,11 +300,18 @@ $('#workspace-report').addEventListener('click', async () => {
       <section class="brief-section">
         <h3>Decision brief</h3>
         <p>${escapeHtml(brief.decision)}</p>
-        <p>${brief.completed_sessions} completed sessions · ${brief.response_checks_passed} passed response checks ·
-          ${brief.inconclusive_response_checks} failed or missing response checks · ${brief.weak_model_separation} with weak model separation.</p>
+        <p>${brief.completed_sessions} completed sessions · ${brief.response_checks_passed} with sufficient choice coverage ·
+          ${brief.inconclusive_response_checks} with insufficient choice coverage · ${brief.weak_model_separation} with weak model separation.</p>
         <p>${escapeHtml(brief.next_step)}</p>
-        <h4>Session leaders within the candidate model set</h4>
-        <ul>${Object.entries(brief.session_leader_counts).map(([id, count]) => `<li>${escapeHtml(labelsById[id])}: ${count} sessions</li>`).join('')}</ul>
+        <h4>Choices by exact task</h4>
+        <p>Each denominator contains recorded responses to that adaptively assigned task. Repeats are excluded. These shares cannot be pooled into population preferences.</p>
+        ${(brief.pairwise_choices || []).map(task => `<details class="trace-entry"><summary>${escapeHtml(task.experiment_id)} · ${task.exposures_with_recorded_response} recorded responses</summary>
+          <div class="trace-options"><div><strong>Canonical A</strong><ul>${task.canonical_a.map(fact => `<li>${escapeHtml(fact)}</li>`).join('')}</ul></div><div><strong>Canonical B</strong><ul>${task.canonical_b.map(fact => `<li>${escapeHtml(fact)}</li>`).join('')}</ul></div></div>
+          <p>A: ${task.counts.a}; B: ${task.counts.b}; neither: ${task.counts.outside}. A share among A/B responses: ${task.canonical_a_share_among_ab === null ? 'unavailable' : `${Math.round(task.canonical_a_share_among_ab * 100)}% (${task.counts.a}/${task.informative_responses})`}.</p></details>`).join('')}
+        <p>Repeated task: ${brief.repeat_agreement?.consistent || 0} same, ${brief.repeat_agreement?.inconsistent || 0} different, ${brief.repeat_agreement?.unavailable || 0} unavailable. Descriptive only; disagreement does not exclude a session.</p>
+        <details><summary>Secondary model diagnostics: session leaders</summary>
+          <ul>${Object.entries(brief.session_leader_counts).map(([id, count]) => `<li>${escapeHtml(labelsById[id])}: ${count} sessions</li>`).join('')}</ul>
+        </details>
         <h4>Compare source interpretations with these sessions</h4>
         ${(brief.account_evidence || []).map(account => `<details class="trace-entry"><summary>${escapeHtml(labelsById[account.account])}: ${account.sessions_led} session leaders</summary>
           <p>Tested levels: ${escapeHtml(account.baseline_level)} versus ${escapeHtml(account.alternative_level)}.</p>
@@ -350,12 +362,18 @@ function briefMarkdown(brief) {
     '## Product decision', '', brief.decision, '',
     `Design version: ${brief.version}. Status: ${brief.status}. Approved: ${brief.approved_at || 'not approved'}.`, '',
     '## Current evidence', '',
-    `${brief.completed_sessions} completed sessions; ${brief.response_checks_passed} passed response checks; ` +
-      `${brief.inconclusive_response_checks} failed or missing response checks; ${brief.weak_model_separation} with weak model separation.`, '',
-    brief.next_step, '', '### Session leaders within the candidate model set', '',
-    ...Object.entries(brief.session_leader_counts).map(([id, count]) => `- ${labelById[id]}: ${count} sessions`), '',
-    '## Competing explanations', '',
+    `${brief.completed_sessions} completed sessions; ${brief.response_checks_passed} with sufficient choice coverage; ` +
+      `${brief.inconclusive_response_checks} with insufficient choice coverage; ${brief.weak_model_separation} with weak model separation.`, '',
+    brief.next_step, '',
   ];
+  lines.push('## Choices by exact task (primary descriptive output)', '',
+    'Task-specific denominators reflect adaptive assignment and recorded answers. Repeats are excluded; do not pool shares or infer population preferences.', '');
+  (brief.pairwise_choices || []).forEach(task => lines.push(`### ${task.experiment_id}`, '',
+    `Canonical A: ${task.canonical_a.join('; ')}`, '', `Canonical B: ${task.canonical_b.join('; ')}`, '',
+    `A: ${task.counts.a}; B: ${task.counts.b}; neither: ${task.counts.outside}. Recorded responses: ${task.exposures_with_recorded_response}; A/B denominator: ${task.informative_responses}.`, ''));
+  lines.push('## Secondary model diagnostics: session leaders', '',
+    ...Object.entries(brief.session_leader_counts).map(([id, count]) => `- ${labelById[id]}: ${count} sessions`), '',
+    '## Competing explanations', '');
   brief.mapping.accounts.forEach(account => {
     lines.push(`### ${labelById[account.id]}`, '', account.explanation, '', `Missing evidence: ${account.missing_evidence}`, '');
     if (!account.references.length) lines.push('No source relationships assigned.', '');
@@ -367,6 +385,12 @@ function briefMarkdown(brief) {
     lines.push('## Muse critical design review', '',
       `Reviewer: ${review.source}. Review matches current design: ${brief.design_review_current ? 'yes' : 'no; inputs changed'}.`, '',
       review.summary, '', review.scope, '');
+    if (review.runs) {
+      lines.push('### Independent review stages', '', 'Topic frequency is run consistency, not confidence or identical findings.', '');
+      review.topic_frequency.forEach(item => lines.push(`- ${item.topic}: ${item.raised_in}/${item.completed_runs} completed design runs (${item.planned_runs} planned)`));
+      review.runs.forEach(run => lines.push('', `#### ${run.stage} run ${run.run}: ${run.status}`, '', run.status === 'ok' ? run.summary : run.error, '',
+        ...(run.findings || []).flatMap(f => [f.observation, '', `Control: ${f.suggested_control}`, ''])));
+    }
     review.findings.forEach(finding => lines.push(
       `### ${finding.basis}${finding.source_ids.length ? ': ' + finding.source_ids.join(', ') : ''}`, '',
       `Observation: ${finding.observation}`, '',

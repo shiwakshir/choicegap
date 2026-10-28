@@ -332,7 +332,7 @@ function renderReport(report, narrative) {
     ? 'consistent' : (report.holdout_consistent === false ? 'inconsistent' : 'unavailable');
   $('#report-context').textContent =
     `Highest stated priorities: ${stated}. ` +
-    `${report.informative_choices}/4 informative choices. Repeated choice: ${consistency}. ` +
+    `${report.informative_choices}/4 informative choices. Repeated choice: ${consistency} (descriptive; no exclusion). ` +
     'Percentages below are probabilities within the candidate model set.';
   $('#next-step').textContent = narrative.next_step;
   $('#limitations').innerHTML = report.limitations

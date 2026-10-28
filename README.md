@@ -6,12 +6,14 @@ The researcher workbench now supports an evidence-to-follow-up workflow: import 
 
 ## Evidence workbench
 
+Updated 28 October: design review runs three times independently of the screenshot, with a separate optional visual review. Broad topic frequency is run consistency, not confidence. The brief leads with per-task counts and separate denominators; model leaders are secondary. Individual headlines contain no rating-mismatch claim. Opening EIG ties and the repeated task are seeded and randomized independently of the inferred leader. Repeat disagreement is descriptive and never excludes a session.
+
 Open <http://127.0.0.1:8000/?mode=researcher> and use **Resolve a research decision**:
 
 1. Enter the product decision and paste one evidence excerpt per line using `type | source label | excerpt`. Supported types are `statement`, `observed` (a researcher-reported action), and `hypothetical`.
 2. Select **Map evidence and draft follow-ups**. With Muse enabled, the model maps sources to explanations and identifies missing or contradictory evidence. Without an API key, sources are preserved without automatic semantic assignments; the researcher assigns relationships manually.
 3. Review each source relationship, explanation, missing-evidence note, and exact factor level. Source IDs and verbatim quotations are validated; their interpretation and provenance are not independently verified.
-   Optionally select **Challenge this design with Muse**. The model reviews competing explanations and semantic confounds. A PNG/JPEG prototype screenshot under 1 MB can be included to inspect visible defaults, prominence, and wording. This call requires a configured Meta key. The screenshot is sent only for that review; its bytes are not saved in the workspace. Model findings require researcher verification.
+   Select **Challenge this design with Muse** for three independent text-only design reviews and, if attached, one separate screenshot review. Broad topics show how many completed design runs raised them; this is consistency, not confidence or identical findings. Results and errors remain visible per run. A local Meta key is required. Image bytes are not saved, and all interpretations need researcher review.
 4. Approve the design. Its source map and blueprint are locked, hashed, and saved. Drafts cannot be used for participant collection. Create a new draft for changes to an approved design.
 5. Open the participant link and collect responses. Return to the workbench to refresh the decision brief, inspect individual cases, and export the research packet.
 
@@ -43,7 +45,7 @@ stated preference → competing hypotheses → adaptive controlled choice
 
 Participants rate every factor plus a general lower-impact intention item; the choice-model posterior begins uniform. Optional participant free text is retained without a model interpretation. The participant loop, including report completion, makes zero API calls.
 
-The repeated holdout is not used to update beliefs. Outside-option selections also leave the posterior unchanged and are reported as possible evidence that the offered explanations or choices are incomplete.
+The repeat samples a completed informative task uniformly using a seeded draw independent of the inferred leader, then reverses its sides. Agreement is descriptive: it does not filter sessions or update probabilities. Outside selections also leave probabilities unchanged.
 
 Muse Image is not used in this prototype because generated visuals would add an uncontrolled stimulus.
 
@@ -119,7 +121,7 @@ Generated studies receive a structural design audit, not automatic domain valida
 
 The candidate set is a small fractional-factorial-style library of paired choices. Each pair either holds all but one attribute constant or presents a clearly disclosed two-attribute trade-off. Product names are neutral, copy is templated, and left/right order is randomized. This reduces obvious wording and position confounds; it does not eliminate hypothetical-choice bias.
 
-The posterior is over four deliberately simple models, not over a person's identity. Tied highest ratings are retained. The 45% separation threshold is an uncalibrated descriptive heuristic. Reports show differences between ratings and the leading candidate model only after three informative choices and a consistent repeat; they do not diagnose a behaviour gap. The legacy `gap_detected` export field is always false in new reports. `rating_choice_mismatch` is descriptive, not a validated diagnostic. Increasing the threshold to 90% did not fix misspecification in the adaptive workbench simulation, so the application removes the diagnostic claim instead of manufacturing a calibration result. The report always discloses:
+The posterior is over four deliberately simple models, not a person's identity. Tied highest ratings are retained. The 45% threshold is an uncalibrated separation heuristic. Individual headlines make no comparison with importance ratings. The legacy `gap_detected` field stays false; `rating_choice_mismatch` is export-only descriptive metadata. Repeat disagreement does not filter sessions. Task shares are conditional on adaptive assignment, have separate denominators, and cannot be pooled into population preferences. Additive single-factor models cannot estimate interactions. The report always discloses:
 
 1. one respondent and four choices cannot prove causality;
 2. conclusions are local to this scenario;

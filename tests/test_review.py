@@ -67,9 +67,12 @@ class ReviewTests(unittest.TestCase):
             model = 'test-only-muse'
             usage = [{'task': 'critical_design_review', 'usage': {'total_tokens': 10}}]
 
-            def challenge_research_design(self, *args):
-                self.received_image = args[-1]
-                return fixture_review()
+            def review_stage(self, *args):
+                if args[-1]:
+                    self.received_image = args[-1]
+                result = fixture_review()
+                result['findings'][0]['topic'] = 'level_wording'
+                return result
 
         reviewer = Reviewer()
         reviewed = review_workspace(workspace, workspace['blueprint'], workspace['mapping'], PNG, reviewer)
