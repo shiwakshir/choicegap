@@ -49,46 +49,123 @@ $('#explore-form').addEventListener('submit', event => {
 });
 $('#explore-skip').addEventListener('click', () => submitInterview({choice: 'skip', text: '', status: 'unresolved', factor: 'unresolved'}));
 
+const uxStageNames = {why:'Choice explanation', clarify:'Possible circumstances', check:'Interpretation check', reflection:'Final explanation', condition0:'First comparison', condition1:'Second comparison'};
+
+function uxFactorName(a, id) {
+  return a.factor_labels?.[id] || a.condition_tests.find(c => c.factor === id)?.factor_label || (typeof labels !== 'undefined' ? labels[id] : null) || id;
+}
+
+function uxChange(c) {
+  // Older records include the factor name in both facts. Show it once, in the heading.
+  const trim = value => value.startsWith(c.factor_label + ': ') ? value.slice(c.factor_label.length + 2) : value;
+  return `${trim(c.changed.before)} → ${trim(c.changed.after)}`;
+}
+
+function uxOutcome(c) {
+  if (c.response?.switched === true) return 'They switched to the other option.';
+  if (c.response?.switched === false) return 'They chose the same option again.';
+  if (c.response?.displayed_choice === 'outside') return 'They chose neither option, so we cannot compare two selected options.';
+  return 'They skipped this comparison.';
+}
+
+function uxReadout(a) {
+  const changed = a.condition_tests.filter(c => c.response?.switched === true);
+  const unchanged = a.condition_tests.filter(c => c.response?.switched === false);
+  const name = list => list.map(c => c.factor_label.toLowerCase()).join(' and ');
+  const summary = changed.length
+    ? `This participant chose differently after ${name(changed)} changed.${unchanged.length ? ` Changing ${name(unchanged)} did not change their selection.` : ''}`
+    : unchanged.length ? 'The participant chose the same option in the answered follow-up comparisons.'
+    : 'There are not enough follow-up answers to tell what would change this participant’s choice.';
+  const next = changed.length
+    ? `Retest the ${name(changed)} change with more participants. Check whether their explanations support the same product change.`
+    : unchanged.length ? 'Explore a different change or a constraint the options did not cover. Repeating the same choice does not tell us that these details never matter.'
+    : 'Collect the missing comparisons before recommending a product change.';
+  const ratings = Object.values(a.survey.ratings);
+  const priorities = new Set(ratings).size === 1
+    ? `They gave all four factors the same importance rating (${ratings[0]}/5).`
+    : `They rated ${a.stated_priorities.map(id => uxFactorName(a, id).toLowerCase()).join(' and ')} highest (${Math.max(...ratings)}/5).`;
+  return {summary, next, priorities};
+}
+
+function uxChoiceDescription(a) {
+  const anchor = a.alignment.anchor;
+  if (!anchor) return 'No earlier choice was available to review.';
+  if (anchor.displayed_choice === 'outside') return 'They chose neither of the available options.';
+  const selected = anchor.stimulus[anchor.displayed_choice].facts;
+  const other = anchor.stimulus[anchor.displayed_choice === 'a' ? 'b' : 'a'].facts;
+  const differing = selected.map((fact, index) => index).filter(index => selected[index] !== other[index]);
+  if (!differing.length) return `They selected Option ${anchor.displayed_choice.toUpperCase()}. Both options showed the same details.`;
+  const names = [...Object.values(a.factor_labels || {}), ...a.condition_tests.map(c => c.factor_label), ...Object.values(typeof labels !== 'undefined' ? labels : {})];
+  const wording = fact => {
+    const prefix = names.find(name => fact.startsWith(name + ': '));
+    const text = prefix ? fact.slice(prefix.length + 2) : fact;
+    return text.charAt(0).toLowerCase() + text.slice(1);
+  };
+  return `They chose the option with ${differing.map(i => wording(selected[i])).join(' and ')}. The other option offered ${differing.map(i => wording(other[i])).join(' and ')}.`;
+}
+
 function uxAnalysisHtml(a) {
   const explanation = a.participant_explanation;
-  return `<section class="brief-section"><h3>Ask → Observe → Explore → Synthesize</h3>
-    <h4>Stated context</h4><p>${escapeHtml(a.survey.statement || 'No optional survey comment.')}</p>
-    <p>${escapeHtml(a.alignment.trigger)} ${escapeHtml(a.alignment.interpretation)}</p>
-    <h4>Participant explanation · ${escapeHtml(explanation.status)}</h4>
-    <p>${escapeHtml(explanation.effective)}</p><p>Interpretation source: ${escapeHtml(explanation.source)}. Original interpretation and corrections remain in the evidence record.</p>
-    ${a.untested_participant_factor ? `<p>The participant selected factor ${escapeHtml(a.untested_participant_factor)}, which was not varied in the anchor task. This explanation remains untested by the two comparisons.</p>` : ''}
-    <details><summary>Inspect original interpretation and correction</summary><p>${escapeHtml(explanation.original_model_interpretation.summary)}</p><p>Quoted response: ${escapeHtml(explanation.original_model_interpretation.quote)}</p><p>Correction: ${escapeHtml(explanation.correction.text || 'None supplied.')}</p></details>
-    <h4>Which conditions coincided with a different choice?</h4>
+  const readout = uxReadout(a);
+  const anchor = a.alignment.anchor;
+  const why = a.evidence.find(e => e.id === 'interview.why')?.text;
+  const reflection = a.evidence.find(e => e.id === 'interview.reflection')?.text;
+  const checked = explanation.status === 'corrected' ? 'The participant corrected the description:' : explanation.status === 'confirmed' ? 'The participant accepted this description:' : 'The participant did not confirm an explanation.';
+  return `<section class="brief-section"><h3>What we learned</h3><p class="lede">${escapeHtml(readout.summary)}</p>
+    <h4>What they said mattered</h4><p>${escapeHtml(readout.priorities)}</p>
+    ${a.survey.statement ? `<blockquote>${escapeHtml(a.survey.statement)}</blockquote>` : ''}
+    <h4>What they chose</h4>
+    <p>${escapeHtml(uxChoiceDescription(a))}</p>
+    ${anchor ? `<details><summary>See the options they compared</summary><div class="choices">${interviewOptions(anchor.stimulus)}</div></details>` : ''}
+    <h4>Why they chose it</h4>${why ? `<blockquote>${escapeHtml(why)}</blockquote>` : '<p>They did not explain this choice.</p>'}
+    <p>${escapeHtml(checked)}</p>${explanation.status !== 'unresolved' ? `<blockquote>${escapeHtml(explanation.effective)}</blockquote>` : ''}
+    ${a.untested_participant_factor ? `<p>They also mentioned ${escapeHtml(uxFactorName(a, a.untested_participant_factor).toLowerCase())}. We did not test a change to that detail.</p>` : ''}
+    <h4>What happened when we changed a detail</h4>
     ${a.condition_tests.length ? a.condition_tests.map(c => `<article class="trace-entry"><h4>${escapeHtml(c.factor_label)}</h4>
-      <p>On baseline Option ${escapeHtml(c.changed.baseline_option.toUpperCase())}: ${escapeHtml(c.changed.before)} → ${escapeHtml(c.changed.after)}. All other displayed facts fixed relative to the baseline.</p>
-      <p>${c.response?.switched === true ? 'Selected option changed.' : c.response?.switched === false ? 'Selected option stayed the same.' : 'No A/B switch comparison: skipped, neither, or unanswered.'} This is descriptive, not a causal effect.</p>
-      <p>${escapeHtml(c.recommendation)}</p><p>Evidence: ${escapeHtml(c.evidence_refs.join(', '))}</p>
-      <details><summary>Inspect exact condition task and recorded plan</summary><p>${escapeHtml(c.selection_reason)}</p><div class="choices">${interviewOptions(c.stimulus)}</div><p>Stimulus digest: ${escapeHtml(c.stimulus_sha256)}</p></details></article>`).join('') : '<p>No suitable A/B anchor; condition comparisons were not issued.</p>'}
-    <h4>Behavioural interpretation and alternatives</h4><p>${escapeHtml(a.behavioural_interpretation.scope)}</p>
-    <p>Consider: ${escapeHtml(a.behavioural_interpretation.lenses.join('; '))}.</p><p>Rivals: ${escapeHtml(a.behavioural_interpretation.rivals.join('; '))}.</p>
-    <details><summary>Participant evidence and follow-up trail</summary>${a.exposure_ledger.map(e => `<article class="trace-entry"><strong>${escapeHtml(e.id)}</strong><p>${escapeHtml(e.question)}</p><blockquote>${escapeHtml(e.response || '[Skipped]')}</blockquote><p>Recorded branch reason: ${escapeHtml(e.reason)}</p></article>`).join('')}</details>
-    <h4>Limits before action</h4><ul>${a.limitations.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul></section>`;
+      <p>${escapeHtml(uxChange(c))}</p><p><strong>${escapeHtml(uxOutcome(c))}</strong></p>
+      <details><summary>See this comparison and its evidence</summary><p>Only this detail changed from the earlier task; all other option facts stayed the same.</p>
+      <div class="choices">${interviewOptions(c.stimulus)}</div><p>${escapeHtml(c.selection_reason)}</p><p>Evidence: ${escapeHtml(c.evidence_refs.join(', '))}</p></details></article>`).join('') : '<p>There was no earlier selection of A or B to use for these comparisons.</p>'}
+    ${reflection ? `<h4>How they explained the follow-up choices</h4><blockquote>${escapeHtml(reflection)}</blockquote>` : ''}
+    <h4>What to do next</h4><p>${escapeHtml(readout.next)}</p>
+    <p class="microcopy">These were study choices, not purchases. Check whether the finding holds with other participants and in real use.</p>
+    <details><summary>Study details and other possible explanations</summary>
+      <p>The order of tasks, seeing similar options again, or something missing from the options could also explain a change. This session cannot establish the cause.</p>
+      <p>Behavioural science can guide further questions about practical constraints, cost and trust. No psychological cause has been established here.</p>
+      <p>Interpretation source: ${escapeHtml(explanation.source)}.</p><p>Original description: ${escapeHtml(explanation.original_model_interpretation.summary)}</p><p>Participant correction: ${escapeHtml(explanation.correction.text || 'None supplied.')}</p>
+      ${a.exposure_ledger.map(e => `<article class="trace-entry"><strong>${escapeHtml(uxStageNames[e.phase] || e.phase)}</strong><p>${escapeHtml(e.question)}</p><blockquote>${escapeHtml(e.response || '[Skipped]')}</blockquote><p>Record: ${escapeHtml(e.id)}. ${escapeHtml(e.reason)}</p></article>`).join('')}
+      <ul>${a.limitations.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul></details></section>`;
 }
 
 function uxAggregateHtml(research) {
   if (!research?.completed_interviews) return '';
-  return `<section class="brief-section"><h3>Integrated UX analysis</h3><p>${research.completed_interviews} completed interviews. ${escapeHtml(research.scope)}</p>
-    <p>${research.collection_progress?.unfinished_interviews || 0} unfinished interviews. ${escapeHtml(research.collection_progress?.scope || '')}</p>
-    <table class="ux-exposure-table"><caption>Questions issued among completed interviews</caption><thead><tr><th scope="col">Stage</th><th scope="col">Issued</th><th scope="col">Answered</th></tr></thead><tbody>${research.exposures.map(e => `<tr><th scope="row">${escapeHtml(({why:'Choice explanation',clarify:'Possible circumstances',check:'Interpretation check',reflection:'Final reflection',condition0:'First comparison',condition1:'Rival comparison'})[e.phase] || e.phase)}</th><td>${e.shown}</td><td>${e.answered}</td></tr>`).join('')}</tbody></table>
-    <h4>Comparable conditions</h4><p>Each row contains only matching baseline facts and the same changed detail. Counts are conditional on adaptive assignment and do not estimate population effects.</p>
-    ${(research.condition_groups || []).map(g => `<p>${escapeHtml(g.factor)}: ${escapeHtml(g.changed.before)} → ${escapeHtml(g.changed.after)}. ${g.switches}/${g.ab_responses} A/B responses switched; ${g.shown} issued, ${g.outside} neither, ${g.skipped} skipped.</p>`).join('')}
-    ${research.cases.map((c, i) => `<details><summary>Case ${i + 1} · ${escapeHtml(c.analysis.participant_explanation.status)}</summary>${uxAnalysisHtml(c.analysis)}</details>`).join('')}</section>`;
+  return `<section class="brief-section"><h3>What we learned</h3><p>${research.completed_interviews} completed study sessions${research.collection_progress?.unfinished_interviews ? `; ${research.collection_progress.unfinished_interviews} interviews still unfinished` : ''}.</p>
+    ${(research.condition_groups || []).map(g => `<article class="trace-entry"><h4>${escapeHtml(g.factor)}</h4><p>${escapeHtml(uxChange({...g, factor_label:g.factor}))}</p>
+      <p>${g.ab_responses ? `${g.switches} of ${g.ab_responses} answered comparisons ended with a switch to the other option.` : 'No one selected A or B in this follow-up, so there is no choice change to compare.'}</p>
+      <p>${g.shown} sessions received this comparison; ${g.outside} chose neither option and ${g.skipped} skipped it.</p></article>`).join('')}
+    <p>These counts cover the sessions that received each exact comparison. They do not tell us how common the preference is among all users.</p>
+    <h4>Read each participant’s account</h4>
+    ${research.cases.map((c, i) => `<details><summary>Session ${i + 1} · ${escapeHtml(uxReadout(c.analysis).summary)}</summary>${uxAnalysisHtml(c.analysis)}</details>`).join('')}
+    <details><summary>Question counts and study details</summary>
+    <p>${escapeHtml(research.scope)} ${escapeHtml(research.collection_progress?.scope || '')}</p>
+    <table class="ux-exposure-table"><caption>Questions sent in completed sessions</caption><thead><tr><th scope="col">Question</th><th scope="col">Sent</th><th scope="col">Answered</th></tr></thead><tbody>${research.exposures.map(e => `<tr><th scope="row">${escapeHtml(uxStageNames[e.phase] || e.phase)}</th><td>${e.shown}</td><td>${e.answered}</td></tr>`).join('')}</tbody></table></details></section>`;
 }
 
 function uxAggregateMarkdown(research) {
-  const lines = ['## Integrated UX analysis', '', research.scope, '', '| Stage | Issued | Answered |', '|---|---:|---:|', ...research.exposures.map(e => `| ${e.phase} | ${e.shown} | ${e.answered} |`), '', `Unfinished interviews: ${research.collection_progress?.unfinished_interviews || 0}. ${research.collection_progress?.scope || ''}`, ''];
+  const lines = ['## What we learned', '', `${research.completed_interviews} completed study sessions.`, ''];
+  (research.condition_groups || []).forEach(g => lines.push(`### ${g.factor}`, '', uxChange({...g, factor_label:g.factor}), '',
+    g.ab_responses ? `${g.switches} of ${g.ab_responses} sessions with an A/B answer switched to the other option.` : 'No A/B answers to compare.',
+    `${g.shown} sessions received this comparison; ${g.outside} chose neither; ${g.skipped} skipped.`, ''));
   research.cases.forEach((c, i) => {
-    const a = c.analysis;
-    lines.push(`### Case ${i + 1}`, '', `Participant interpretation (${a.participant_explanation.status}): ${a.participant_explanation.effective}`, '', a.alignment.interpretation, '');
-    a.condition_tests.forEach(t => lines.push(`Condition ${t.id}: ${t.factor_label}; ${t.changed.before} → ${t.changed.after}.`, `Choice changed: ${t.response?.switched ?? 'not comparable'}. ${t.recommendation}`, `Evidence: ${t.evidence_refs.join(', ')}.`, ''));
-    a.evidence.forEach(e => lines.push(`${e.id} (${e.kind}):`, `> ${e.text.replace(/\n/g, '\n> ') || '[Skipped]'}`, ''));
-    lines.push('Behavioural lenses (candidates only): ' + a.behavioural_interpretation.lenses.join('; '), 'Rivals: ' + a.behavioural_interpretation.rivals.join('; '), '', ...a.limitations.map(l => `- ${l}`), '');
+    const a = c.analysis; const readout = uxReadout(a);
+    lines.push(`### Session ${i + 1}`, '', readout.summary, '', '#### What they said mattered', '', readout.priorities, '');
+    lines.push('#### What they chose', '', uxChoiceDescription(a), '');
+    a.evidence.filter(e => e.id === 'survey.statement' || e.id === 'interview.why').forEach(e => lines.push(`> ${e.text.replace(/\n/g, '\n> ') || '[No answer]'}`, ''));
+    lines.push('#### Their checked explanation', '', a.participant_explanation.status === 'unresolved' ? 'The participant did not confirm an explanation.' : a.participant_explanation.effective, '');
+    a.condition_tests.forEach(t => lines.push(`#### ${t.factor_label}`, '', uxChange(t), '', uxOutcome(t), '', `Evidence: ${t.evidence_refs.join(', ')}.`, ''));
+    lines.push('#### What to do next', '', readout.next, '', 'These were study choices, not purchases. Check whether the finding holds with other participants and in real use.', '', '#### Full participant responses', '');
+    a.evidence.forEach(e => lines.push(`${e.id}:`, `> ${e.text.replace(/\n/g, '\n> ') || '[No answer]'}`, ''));
   });
+  lines.push('### Question counts and study details', '', '| Question | Sent | Answered |', '|---|---:|---:|', ...research.exposures.map(e => `| ${uxStageNames[e.phase] || e.phase} | ${e.shown} | ${e.answered} |`), '', research.scope, '', research.collection_progress?.scope || '');
   return lines.join('\n');
 }
 

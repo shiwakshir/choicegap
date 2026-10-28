@@ -77,7 +77,7 @@ $('#export-data').addEventListener('click', async () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'choicegap-deidentified-data.json';
+  link.download = 'choicegap-research-data.json';
   link.click();
   URL.revokeObjectURL(url);
   } catch (error) {
@@ -330,12 +330,16 @@ function renderReport(report, narrative) {
   show('report');
   $('#ux-analysis').innerHTML = report.ux_analysis ? uxAnalysisHtml(report.ux_analysis) : '';
   $('#model-diagnostics').open = !report.ux_analysis;
-  if (report.evidence_quality === 'low') {
+  $('#report-quality-details').open = !report.ux_analysis;
+  $('#report-context').hidden = Boolean(report.ux_analysis);
+  if (report.ux_analysis) {
+    $('#report-headline').textContent = 'Study findings';
+  } else if (report.evidence_quality === 'low') {
     $('#report-headline').textContent = 'The result is inconclusive.';
   } else {
     $('#report-headline').textContent = report.headline;
   }
-  $('#report-summary').textContent = narrative.summary;
+  $('#report-summary').textContent = report.ux_analysis ? uxReadout(report.ux_analysis).summary : narrative.summary;
   const stated = (report.stated_priorities || [report.stated_driver])
     .map(id => labels[id] || id).join(', ');
   const consistency = report.holdout_consistent === true

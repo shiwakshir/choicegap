@@ -1,5 +1,9 @@
 # Evidence workbench: evaluation status
 
+## Plain-language report revision
+
+Reports now lead with what was said, what was selected, the participant's explanation/correction, the exact detail changed, the resulting selection and a next step. Generic alignment/behavioural-science boilerplate is removed from the main view and Markdown report. Study methods, model diagnostics and audit records remain available in collapsed sections and JSON. Existing saved analyses use the new renderer without recollection. `node tests/report_copy.test.cjs` verifies legacy-record rendering, correction visibility, missing answers, concrete option descriptions and escaped participant text. All 96 Python tests still pass. Browser checks on saved fictional sessions verified the main report and downloaded Markdown with no console errors.
+
 ## Integrated adaptive UX study, 28 October
 
 The current suite passes 96 Python tests plus the Node source-quote editor check and JavaScript syntax checks. The new integrated path covers survey context, adaptive tasks, a task-anchored bounded interview, one tentative Muse interpretation, participant corrections, two approved single-detail variations, final reflection and an evidence-linked report. Old choice-only sessions remain supported without participant model calls.

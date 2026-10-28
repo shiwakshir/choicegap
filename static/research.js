@@ -305,6 +305,7 @@ $('#workspace-report').addEventListener('click', async () => {
       <section class="brief-section">
         <h3>Decision brief</h3>
         ${typeof uxAggregateHtml === 'function' ? uxAggregateHtml(brief.ux_research) : ''}
+        <details ${brief.ux_research?.completed_interviews ? '' : 'open'}><summary>Study design and detailed results</summary>
         <p>${escapeHtml(brief.decision)}</p>
         <p>${brief.completed_sessions} completed sessions · ${brief.response_checks_passed} with sufficient choice coverage ·
           ${brief.inconclusive_response_checks} with insufficient choice coverage · ${brief.weak_model_separation} with weak model separation.</p>
@@ -341,6 +342,7 @@ $('#workspace-report').addEventListener('click', async () => {
           </details>
         `).join('')}
         <ul>${brief.limitations.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+        </details>
       </section>
     `;
     $('#export-brief').disabled = false;
@@ -359,6 +361,12 @@ function downloadResearch(content, name, type) {
 }
 
 function briefMarkdown(brief) {
+  if (brief.ux_research?.completed_interviews && typeof uxAggregateMarkdown === 'function') {
+    return [`# ${brief.study_title}: research findings`, '',
+      ...(brief.evidence_origin === 'fictional-example' ? ['**Fictional demonstration data. This is not customer research.**', ''] : []),
+      '## Research decision', '', brief.decision, '', uxAggregateMarkdown(brief.ux_research), '',
+      'The JSON research packet contains the full source map, study design and choice records.'].join('\n');
+  }
   const labelById = Object.fromEntries(brief.blueprint.attributes.map(item => [item.id, item.label]));
   const cell = text => String(text).replace(/\|/g, '\\|').replace(/\n/g, ' ');
   const lines = [

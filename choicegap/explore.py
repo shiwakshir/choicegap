@@ -225,9 +225,14 @@ def synthesis(state) -> dict:
                                          'No comparable A/B response; no product recommendation is inferred from this comparison.'),
                       'evidence_refs': ['interview.check', f'interview.condition{index}', 'interview.reflection']})
     top = max(state['survey']['ratings'].values())
+    priorities = [a['label'].lower() for a in state['attributes'] if state['survey']['ratings'][a['id']] == top]
+    anchor = state['anchor']
+    choice_description = (f"They rated {', '.join(priorities)} highest ({top}/5). In the task we asked about, they selected " +
+                          ('neither option.' if anchor['displayed_choice'] == 'outside' else f"Option {anchor['displayed_choice'].upper()}.")) if anchor else 'No earlier choice was available to discuss.'
     return {'version': VERSION, 'survey': state['survey'], 'evidence': refs,
+            'factor_labels': {a['id']: a['label'] for a in state['attributes']},
             'stated_priorities': [k for k, v in state['survey']['ratings'].items() if v == top],
-            'alignment': {'trigger': state['anchor_reason'], 'anchor': state['anchor'], 'interpretation': 'Statements and hypothetical choices measure different things. A discrepancy is a prompt to explore; agreement and mixed priorities are valid.'},
+            'alignment': {'trigger': state['anchor_reason'], 'anchor': anchor, 'interpretation': choice_description},
             'participant_explanation': {'effective': effective, 'status': correction['status'], 'original_model_interpretation': state['interpretation'], 'correction': correction, 'source': state['analysis_source'], 'evidence_refs': ['interview.why', 'interview.clarify', 'interview.check']},
             'untested_participant_factor': correction.get('factor') if correction.get('factor') not in {'unresolved', None} | {c['factor'] for c in state['contrasts']} else None,
             'condition_tests': tests,
