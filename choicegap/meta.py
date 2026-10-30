@@ -118,7 +118,7 @@ class MetaClient:
                 "json_schema": {"name": name, "schema": schema, "strict": True},
             },
         }
-        if name in ('critical_design_review', 'semantic_design_review', 'visual_context_review', 'behavioural_mechanism_plan', 'research_reconsideration'):
+        if name.startswith('studio_') or name in ('critical_design_review', 'semantic_design_review', 'visual_context_review', 'behavioural_mechanism_plan', 'research_reconsideration'):
             body['reasoning_effort'] = 'high'
         request = urllib.request.Request(
             f"{META_BASE_URL}/chat/completions",
@@ -127,7 +127,7 @@ class MetaClient:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=60 if name in ('critical_design_review', 'semantic_design_review', 'visual_context_review', 'behavioural_mechanism_plan', 'research_reconsideration') else 30) as response:
+            with urllib.request.urlopen(request, timeout=90 if name.startswith('studio_') else 60 if name in ('critical_design_review', 'semantic_design_review', 'visual_context_review', 'behavioural_mechanism_plan', 'research_reconsideration') else 30) as response:
                 payload = json.loads(response.read().decode("utf-8"))
             result = json.loads(payload["choices"][0]["message"]["content"])
             if not isinstance(result, dict):

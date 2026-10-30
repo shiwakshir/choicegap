@@ -1,5 +1,13 @@
 # Why Meta models matter to ChoiceGap
 
+## Research Studio, 30 October
+
+The primary product now starts from a brief, hypotheses and optional text/image concept. Muse Spark 1.3 drafts an editable multi-type survey and open interview guide; reads the approved stimulus alongside responses when planning bounded probes; offers a tentative participant account for correction; and synthesizes completed sessions with validated evidence IDs. This connects study creation, collection and interpretation around one approved objective rather than using a model only to summarize an exported survey.
+
+Muse Spark 1.2 transcribes optional short voice answers, following Meta's current [audio documentation](https://dev.meta.ai/docs/video-understanding), which warns about Spark 1.3 audio quality. Participants can correct the transcript before submitting. Device speech synthesis can read a question aloud; it is not a Meta-generated voice or live avatar.
+
+Code validates question types and answers, freezes published designs, enforces follow-up-topic membership and probe budgets, rejects stale answers, preserves participant corrections and checks report source IDs. These checks constrain the model but do not prove semantic accuracy or neutral moderation. The workflow is supported by Meta's structured and multimodal APIs; no exclusive capability or superiority over other providers has been established. See [Research Studio](research-studio.md) for verification and limitations. Sections below describe the earlier controlled-choice workflow, which remains available separately.
+
 ## Current participant loop, 30 October
 
 Muse now receives the full session in newly approved version-two studies. It interprets the participant's words alongside exact choices, requests one existing approved comparison through native tool calling, and reconsiders after observing the first and final results. Code owns selection validation, exact one-detail edits, orientation normalization, counts, correction precedence and the four-call cap. The actual initial reading and plan are preserved; a strengthened explanation is not presented as a different previous belief.

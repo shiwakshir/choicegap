@@ -1,6 +1,24 @@
 # ChoiceGap
 
-ChoiceGap is an adaptive UX research prototype. Its product direction is to combine surveys, text interviews and choice tasks, then give researchers an evidence-linked analysis of stated priorities, study responses, possible explanations and practical next steps. Sustainability is the first context.
+ChoiceGap is a brief-led UX and market research prototype. A researcher supplies a brief, hypotheses and an optional concept image or text. Muse drafts an editable survey and interview guide. After researcher approval, participants answer a survey, an AI-moderated interview, or both. Researchers receive findings linked to the exact responses, including participant corrections, competing explanations and proposed next tests.
+
+## Start with Research Studio
+
+Restart the server from this repository directory, then open <http://127.0.0.1:8000/?mode=researcher>.
+
+1. Enter a brief, or choose **AI assistant adoption** or **Sustainable shopping** as an editable example. Add hypotheses and a concept stimulus if useful.
+2. Select **Draft my study with Muse**. Review and edit the questions, answer options, order, interview guide and permitted follow-up topics. Save the draft if needed.
+3. Choose **Survey only**, **Interview only**, or **Survey, then interview**. Optionally offer recorded voice answers. Confirm your review and publish the participant link.
+4. Open the link in another tab. Complete or skip questions. Muse can ask bounded follow-ups; the participant can correct its tentative understanding before finishing.
+5. Return to **Findings**, refresh responses and select **Generate findings with Muse**. Open the supporting responses under each finding, or download the report and evidence.
+
+Supported survey types: **open ended, single select, multi select, ranking, 1–5 rating scale, number and hypothetical choice**. This is a working core, not an exhaustive survey question library. Interview answers can be typed or recorded for up to 30 seconds. Muse Spark 1.2 transcribes audio; participants review/edit the transcript before sending it. Muse Spark 1.3 drafts studies, selects neutral follow-ups and synthesizes findings. Read-aloud uses the browser's device voice; there is no live video avatar.
+
+The app sends briefs, attached stimuli, submitted responses and optional recordings to Meta. It stores studies and submitted text in a local unencrypted SQLite database, without researcher sign-in. Recordings are not saved by this app. Local links work on this computer; remote recruitment needs hosting, authentication and appropriate data handling. See [Research Studio setup, boundaries and validation](docs/research-studio.md).
+
+Research Studio is independent of the earlier grocery-delivery protocol. Existing links and approvals retain their original flow; open <http://127.0.0.1:8000/index.html?mode=researcher> for those studies. The sections below document that earlier workflow.
+
+## Earlier controlled-choice workflow
 
 The current implementation combines a short survey, adaptive controlled choices, a bounded text interview, participant corrections, and up to two single-detail condition comparisons. The researcher report links statements, task responses, corrections, rival explanations and proposed next tests. See [the product direction](docs/product-direction.md) and [the integrated study guide](docs/adaptive-interviews.md). Separate behavioural experiments are an advanced option.
 

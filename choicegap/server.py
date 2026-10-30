@@ -21,7 +21,7 @@ from .research import (
 )
 from .review import review_workspace
 from .config import load_env_file
-from . import mechanisms, explore
+from . import mechanisms, explore, studio
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -144,6 +144,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
+        if path.startswith('/api/studio/'):
+            try:
+                self._studio_get(path, parse_qs(urlparse(self.path).query))
+            except ValueError as exc:
+                self._json(404, {'error': str(exc)})
+            return
         if path.startswith('/api/mechanisms/'):
             try:
                 self._mechanism_get(path, parse_qs(urlparse(self.path).query))
@@ -200,6 +206,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"study_id": study_id, "study": study.to_public(), 'experience_enabled': enhanced, 'experience_version': experience_version if enhanced else 0})
             return
         requested = "index.html" if path == "/" else path.lstrip("/")
+        if path == '/' and not any(k in parse_qs(urlparse(self.path).query) for k in ('study', 'mechanism', 'workspace')):
+            requested = 'studio.html'
         target = (STATIC / requested).resolve()
         if STATIC.resolve() not in target.parents and target != STATIC.resolve():
             self.send_error(403)
@@ -217,7 +225,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         try:
             payload = self._body()
-            if self.path.startswith('/api/mechanisms/'):
+            if self.path.startswith('/api/studio/'):
+                self._studio_post(self.path, payload)
+            elif self.path.startswith('/api/mechanisms/'):
                 self._mechanism_post(self.path, payload)
             elif self.path == "/api/design":
                 self._design(payload)
@@ -257,11 +267,87 @@ class Handler(BaseHTTPRequestHandler):
                 self._explore(payload, resume=self.path.endswith('/resume'))
             else:
                 self._json(404, {"error": "Unknown endpoint"})
+        except RuntimeError:
+            self._json(502, {'error': 'Muse is unavailable right now. Your saved study is safe; please try again.'})
         except (ValueError, KeyError, StopIteration) as exc:
             self._json(400, {"error": str(exc)})
         except Exception as exc:
             self.log_error("Unhandled request error: %s", exc)
             self._json(500, {"error": "Internal server error"})
+
+    def _studio_get(self, path, query):
+        identifier = query.get('id', [''])[0]
+        if path == '/api/studio/studies':
+            self._json(200, {'studies': [{'id': s['id'], 'title': s['design']['title'], 'status': s['status'],
+                'created_at': s['created_at']} for s in STORE.list('studio_study')]})
+        elif path == '/api/studio/study':
+            self._json(200, STORE.get('studio_study', identifier))
+        elif path == '/api/studio/participant':
+            study = STORE.get('studio_study', identifier)
+            if study['status'] != 'approved':
+                raise ValueError('This study has not been published')
+            self._json(200, {'id': study['id'], 'title': study['design']['title'],
+                'intro': study['design']['participant_intro'], 'method': study['method'],
+                'recording': study['recording'], 'base_questions':
+                (len(study['design']['questions']) if study['method'] != 'interview' else 0) +
+                (len(study['design']['interview_questions']) if study['method'] != 'survey' else 0)})
+        elif path == '/api/studio/results':
+            study = STORE.get('studio_study', identifier)
+            sessions = [s for s in STORE.list('studio_session') if s['study_id'] == identifier]
+            reports = [r for r in STORE.list('studio_report') if r['study_id'] == identifier]
+            self._json(200, {'completed': sum(s['status'] == 'completed' for s in sessions),
+                'started': len(sessions), 'reports': reports[-1:], 'sessions':
+                [{'id': f'Participant {i+1}', 'status': s['status'], 'responses': studio.evidence(s),
+                  'decisions': s['decisions']} for i, s in enumerate(sessions)]})
+        else:
+            raise ValueError('Unknown studio endpoint')
+
+    def _studio_post(self, path, payload):
+        meta = MetaClient()
+        if path == '/api/studio/generate':
+            draft = studio.generate(payload, meta)
+            STORE.put('studio_study', draft['id'], draft)
+            self._json(200, draft)
+        elif path == '/api/studio/save':
+            draft = STORE.get('studio_study', str(payload.get('id', '')))
+            if draft['status'] != 'draft':
+                raise ValueError('Published studies are fixed. Create a new draft to change the questions.')
+            draft['design'] = studio.design(payload.get('design'))
+            method = payload.get('method', draft.get('method', 'combined'))
+            if method not in ('survey', 'interview', 'combined'):
+                raise ValueError('Choose a supported study format')
+            draft['method'] = method
+            draft['recording'] = payload.get('recording', draft.get('recording', False)) is True
+            STORE.put('studio_study', draft['id'], draft)
+            self._json(200, draft)
+        elif path == '/api/studio/approve':
+            draft = STORE.get('studio_study', str(payload.get('id', '')))
+            study = studio.approve(draft, payload)
+            STORE.put('studio_study', study['id'], study)
+            self._json(200, study)
+        elif path == '/api/studio/start':
+            study = STORE.get('studio_study', str(payload.get('study_id', '')))
+            state = studio.start(study, payload.get('consent'))
+            STORE.put('studio_session', state['id'], state)
+            self._json(200, studio.public_session(state, study))
+        elif path in ('/api/studio/answer', '/api/studio/resume', '/api/studio/transcribe'):
+            state = STORE.get('studio_session', str(payload.get('id', '')))
+            study = STORE.get('studio_study', state['study_id'])
+            if path.endswith('/answer'):
+                updated = studio.answer(study, state, payload, meta)
+                STORE.save_studio_session(updated, state['nonce'])
+                state = updated
+            elif path.endswith('/transcribe'):
+                self._json(200, studio.transcribe(payload, study, state, meta))
+                return
+            self._json(200, studio.public_session(state, study))
+        elif path == '/api/studio/analyse':
+            study = STORE.get('studio_study', str(payload.get('id', '')))
+            result = studio.report(study, STORE.list('studio_session'), meta)
+            STORE.put('studio_report', result['id'], result)
+            self._json(200, result)
+        else:
+            raise ValueError('Unknown studio endpoint')
 
     def _mechanism_get(self, path, query):
         identifier = query.get('id', [''])[0]

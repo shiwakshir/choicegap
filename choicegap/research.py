@@ -345,7 +345,7 @@ class ResearchStore:
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             previous = connection.execute("SELECT payload FROM documents WHERE kind=? AND id=?", (kind, identifier)).fetchone()
-            if previous and kind in ("workspace", "mechanism_study") and json.loads(previous[0]).get("status") == "approved":
+            if previous and kind in ("workspace", "mechanism_study", "studio_study") and json.loads(previous[0]).get("status") == "approved":
                 raise ValueError("Approved designs are immutable")
             connection.execute("INSERT OR REPLACE INTO documents VALUES (?,?,?)", (kind, identifier, json.dumps(payload)))
 
@@ -372,6 +372,15 @@ class ResearchStore:
         with self._connect() as connection:
             rows = connection.execute("SELECT payload FROM documents WHERE kind=? ORDER BY rowid", (kind,)).fetchall()
         return [json.loads(row[0]) for row in rows]
+
+    def save_studio_session(self, state, previous_nonce):
+        """Reject stale/concurrent answers after model work, and persist the next question atomically."""
+        with self._connect() as connection:
+            connection.execute('BEGIN IMMEDIATE')
+            row = connection.execute("SELECT payload FROM documents WHERE kind='studio_session' AND id=?", (state['id'],)).fetchone()
+            if not row or json.loads(row[0])['nonce'] != previous_nonce:
+                raise ValueError('This question has already been answered or is out of date')
+            connection.execute("UPDATE documents SET payload=? WHERE kind='studio_session' AND id=?", (json.dumps(state), state['id']))
 
     def answer_mechanism(self, identifier, answer_token, choice):
         """One durable answer per randomized assignment, including concurrent/restart retries."""
