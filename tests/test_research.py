@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 from choicegap.dynamic import compile_study
 from choicegap.research import (
     EXAMPLE_EVIDENCE, ResearchStore, approve_workspace, decision_report,
-    draft_workspace, local_map, parse_evidence, validate_map,
+    draft_workspace, local_map, parse_evidence, validate_map, prepared_delivery_study,
 )
 
 
@@ -16,6 +16,20 @@ class OfflineMeta:
 
 
 class ResearchWorkflowTests(unittest.TestCase):
+    def test_prepared_study_does_not_invent_prior_research_or_bypass_approval(self):
+        draft = prepared_delivery_study()
+        self.assertEqual(draft['sources'], [])
+        self.assertEqual(draft['api_usage'], [])
+        self.assertEqual(draft['status'], 'draft')
+        self.assertEqual(draft['blueprint']['title'], 'Grocery delivery preferences')
+        self.assertEqual(draft['evidence_origin'], 'new-study-no-prior-data')
+        self.assertTrue(all(not a['references'] for a in draft['mapping']['accounts']))
+        with self.assertRaises(ValueError): approve_workspace(draft, draft['blueprint'], draft['mapping'], False)
+        approved = approve_workspace(draft, draft['blueprint'], draft['mapping'], True)
+        self.assertEqual(approved['status'], 'approved')
+        self.assertEqual(approved['blueprint']['experience_version'], 2)
+        self.assertEqual(decision_report(approved, [])['completed_sessions'], 0)
+
     def draft(self):
         return draft_workspace('Which change should improve lower-impact grocery delivery adoption?', EXAMPLE_EVIDENCE, OfflineMeta())
 

@@ -18,11 +18,53 @@
     <p id="app-error" class="app-error" role="alert" tabindex="-1" hidden></p>
     <section id="intro" class="screen active">
       <div class="eyebrow participant-copy">Short product study</div>
-      <div class="eyebrow researcher-only">Researcher console</div>
+      <div class="eyebrow researcher-only">Sustainability research</div>
       <h1 class="participant-copy">Choose what works<br><em>for you.</em></h1>
-      <h1 class="researcher-only">Understand what people say.<br><em>Explore what they choose.</em></h1>
+      <h1 class="researcher-only">Why do shoppers skip<br><em>greener delivery?</em></h1>
       <p class="lede participant-copy">Help us understand how people make everyday sustainability trade-offs. Choose between options, explain what mattered, and correct anything we misunderstood. There are no right answers.</p>
-      <p class="lede researcher-only">Bring interview or survey evidence, collect an adaptive choice study, and review what agrees, what differs, and what still needs explaining.</p>
+      <p class="lede researcher-only">Ask what matters to shoppers, see which delivery options they choose, then ask why.</p>
+      <section class="researcher-only simple-study" aria-label="Set up your study">
+        <p class="scenario-kicker">Survey → Delivery choices → Written interview</p>
+        <h2>A simple study, ready to review</h2>
+        <p>Example brief: you work for an online supermarket. Customers say sustainability matters, but still pick standard delivery. You want to understand what gets in the way.</p>
+        <ol class="simple-methods">
+          <li><strong>Survey</strong><span>How important are sustainability, price, timing and trust?</span></li>
+          <li><strong>Delivery choices</strong><span>Which option would they choose when those details differ?</span></li>
+          <li><strong>Written interview</strong><span>What shaped that choice? What would make them choose differently?</span></li>
+        </ol>
+        <p class="microcopy">This is an AI-led written interview. Choices are hypothetical; the study does not track purchases.</p>
+        <button id="simple-prepare" class="primary" type="button">Set up this study</button>
+        <button id="simple-saved" class="secondary" type="button">Open saved studies</button>
+        <div id="simple-saved-list" class="design-result"></div>
+        <p id="simple-status" aria-live="polite"></p>
+        <div id="simple-review" hidden>
+          <h3>1. Review your study</h3>
+          <p id="simple-title"></p>
+          <details><summary>What participants will answer</summary>
+            <p>They rate how much each delivery detail matters and whether they usually try to choose lower-impact delivery. They can explain their ratings.</p>
+            <p>They make four delivery choices, followed by a repeat if they selected an option. Then they explain one choice and say what might change it.</p>
+            <p>They can correct the AI's description of their reasoning. Two more choices each change one detail, followed by a final optional explanation. Questions can be skipped.</p>
+          </details>
+          <p>These are the delivery details the study will compare:</p>
+          <div id="simple-levels"></div>
+          <p class="privacy-note">With AI enabled, Muse receives survey answers, choices, written explanations and corrections to guide the follow-up and review the results. Responses are saved locally and included in exports. Ask participants to avoid personal information.</p>
+          <label class="ratings-confirm"><input id="simple-confirm" type="checkbox"> I have reviewed the questions, delivery details and use of responses.</label>
+          <button id="simple-publish" class="primary" type="button">Create participant link</button>
+          <p id="simple-edited" hidden>You changed the detailed design. Review and approve those changes under More settings.</p>
+        </div>
+        <div id="simple-collect" hidden>
+          <h3>2. Try the study</h3>
+          <p>Open the participant link in another tab to try the survey, delivery choices and written interview. This local link works on this computer.</p>
+          <a id="simple-participant-link" class="primary" target="_blank" rel="noopener">Open participant study →</a>
+          <label for="simple-share-url">Participant link</label><input id="simple-share-url" type="text" readonly>
+          <h3>3. Read the findings</h3>
+          <p>See what people said, what they chose, their explanations and which changes were worth investigating.</p>
+          <button id="simple-results" class="primary" type="button">View findings</button>
+          <button id="simple-download" class="secondary" type="button" disabled>Download findings</button>
+          <div id="simple-findings" aria-live="polite"></div>
+        </div>
+      </section>
+      <details class="researcher-only researcher-advanced"><summary>More settings and detailed research tools</summary>
       <div class="study-builder researcher-only evidence-workbench">
         <div class="scenario-kicker">Study setup → participant responses → research analysis</div>
         <h2>Resolve a research decision</h2>
@@ -106,6 +148,7 @@
         <button id="refresh-results" class="secondary" type="button">Load completed sessions</button>
         <div id="completed-results" class="design-result" aria-live="polite"></div>
       </div>
+      </details>
       <div class="scenario-card">
         <div class="scenario-kicker">Short product study</div>
         <h2 id="scenario-title">Choose a grocery delivery option</h2>
@@ -228,10 +271,11 @@
     </section>
   </main>
 
-  <footer><span class="participant-copy">No direct identifiers requested</span><span class="researcher-only">Meta Muse Spark integration</span><span class="researcher-only">Controlled stimuli · Documented uncertainty · Reproducible benchmark</span></footer>
+  <footer><span class="participant-copy">No direct identifiers requested</span><span class="researcher-only">Sustainability research</span><span class="researcher-only">Survey · Choices · Interview · Findings</span></footer>
   <script src="/app.js"></script>
   <script src="/research.js"></script>
   <script src="/explore.js"></script>
+  <script src="/simple-study.js"></script>
   <script src="/mechanisms.js"></script>
 </body>
 </html>

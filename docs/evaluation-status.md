@@ -1,5 +1,11 @@
 # Evidence workbench: evaluation status
 
+## Simplified study setup, 30 October
+
+The researcher page now starts with one prepared grocery-delivery study and the sequence survey → delivery choices → written interview. Source import, factor editing, model critique and older result controls are collapsed under More settings. A new source-free draft uses the existing approval/collection/reporting engine and makes no setup model call. It contains no invented participants or imported findings. The participant-facing title is neutral.
+
+All 112 Python tests and both Node checks pass. A browser check verified the clean start, preparation, approval, participant link, saved-study reopening and empty findings state with no console errors. The existing participant collection engine is unchanged. The source-free draft still requires approval; imported-evidence drafts and unsaved detailed edits cannot silently publish through the simplified preview. The localhost sharing boundary is stated on the page.
+
 ## Muse planning and reconsideration, 30 October
 
 The current suite has 111 passing Python tests plus both Node checks (`research_ui.test.cjs` and `report_copy.test.cjs`). The new version-two flow uses complete session evidence, a native bounded comparison-selection tool call, a first-result review and a final review. Existing version-one approvals and pending interviews retain their original sharing scope. Skipping all interview text makes no model calls.

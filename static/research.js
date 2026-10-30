@@ -68,7 +68,7 @@ function renderWorkspace(workspace) {
   $('#workspace-prompt').value = workspace.blueprint.decision_prompt;
   $('#workspace-meta').textContent =
     `${workspace.status.toUpperCase()} · ${workspace.source} · ` +
-    `${workspace.evidence_origin === 'fictional-example' ? 'FICTIONAL EXAMPLE — demonstration only' : 'Researcher-supplied evidence; provenance unverified'}. ` +
+    `${workspace.evidence_origin === 'fictional-example' ? 'FICTIONAL EXAMPLE — demonstration only' : workspace.evidence_origin === 'new-study-no-prior-data' ? 'Prepared study; no prior responses' : 'Researcher-supplied evidence; provenance unverified'}. ` +
     (workspace.warning || 'Source links are checked for exact quotation. Interpretations still require researcher review.');
   $('#evidence-sources').innerHTML = `
     <details class="source-list"><summary>Imported sources (${workspace.sources.length})</summary>

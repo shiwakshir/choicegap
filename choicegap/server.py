@@ -17,7 +17,7 @@ from .dynamic import DynamicSession, StudySpec, audit_study, compile_study
 from .engine import DRIVER_COPY, DRIVERS, Session
 from .meta import MetaClient
 from .research import (
-    ResearchStore, EXAMPLE_EVIDENCE, draft_workspace, approve_workspace, decision_report,
+    ResearchStore, EXAMPLE_EVIDENCE, draft_workspace, approve_workspace, decision_report, prepared_delivery_study,
 )
 from .review import review_workspace
 from .config import load_env_file
@@ -221,6 +221,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._mechanism_post(self.path, payload)
             elif self.path == "/api/design":
                 self._design(payload)
+            elif self.path == '/api/research/prepared-delivery':
+                workspace = prepared_delivery_study()
+                STORE.put('workspace', workspace['id'], workspace)
+                self._json(200, workspace)
             elif self.path == "/api/research/draft":
                 meta = MetaClient()
                 workspace = draft_workspace(payload.get("decision", ""), payload.get("evidence", ""), meta)

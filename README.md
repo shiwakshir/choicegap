@@ -6,7 +6,9 @@ The current implementation combines a short survey, adaptive controlled choices,
 
 Updated 30 October: newly approved interviews use the complete session as Muse evidence. A bounded native tool call can choose the order of the two approved comparisons. Muse then reviews the first result and the final responses, preserving source references and the actual earlier reading. At most four calls are made per normal completed interview; no new participant questions were added. Existing version-one approvals retain their narrower one-call protocol. See [the Muse demonstration guide](docs/muse-demonstration.md).
 
-To try the full flow, restart the server and open the default participant page. To publish a customized study, open Researcher view, create a workspace, review the follow-up protocol and enable its checkbox before approving the design. Previously approved studies retain their original flow; create a new draft to add interviews.
+To try the full flow, restart the server and open Researcher view. Select **Set up this study**, review the prepared survey/interview plan and delivery details, confirm, then **Create participant link**. Open it in another tab, complete the study, and return to **View findings**. No imported evidence or hypothesis configuration is needed. See [the simple study guide](docs/simple-study.md).
+
+Evidence import, editable designs and model-review controls remain under **More settings and detailed research tools**. Previously approved studies retain their original flow; create a new draft to add interviews. The participant link is local to the computer running the app.
 
 The researcher workbench now supports an evidence-to-follow-up workflow: import source excerpts, review competing explanations, approve exact factor levels, collect adaptive choice responses, and export a study decision brief with proposed field contrasts.
 
@@ -14,7 +16,7 @@ The researcher workbench now supports an evidence-to-follow-up workflow: import 
 
 Updated 28 October: design review runs three times independently of the screenshot, with a separate optional visual review. Broad topic frequency is run consistency, not confidence. The brief leads with per-task counts and separate denominators; model leaders are secondary. Individual headlines contain no rating-mismatch claim. Opening EIG ties and the repeated task are seeded and randomized independently of the inferred leader. Repeat disagreement is descriptive and never excludes a session.
 
-Open <http://127.0.0.1:8000/?mode=researcher> and use **Resolve a research decision**:
+For the detailed workflow, open <http://127.0.0.1:8000/?mode=researcher>, expand **More settings and detailed research tools**, and use **Resolve a research decision**:
 
 1. Enter the product decision and paste one evidence excerpt per line using `type | source label | excerpt`. Supported types are `statement`, `observed` (a researcher-reported action), and `hypothetical`.
 2. Select **Map evidence and draft follow-ups**. With Muse enabled, the model maps sources to explanations and identifies missing or contradictory evidence. Without an API key, sources are preserved without automatic semantic assignments; the researcher assigns relationships manually.

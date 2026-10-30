@@ -62,6 +62,23 @@ def default_blueprint() -> dict[str, Any]:
     }
 
 
+def prepared_delivery_study() -> dict[str, Any]:
+    """A collection-ready draft, with no invented participants or prior findings."""
+    blueprint = default_blueprint()
+    blueprint['title'] = 'Grocery delivery preferences'
+    mapping = local_map([])
+    for account in mapping['accounts']:
+        account['missing_evidence'] = 'Collect survey answers, study choices and participant explanations.'
+    mapping['unresolved'] = ['These are starting explanations to explore, not findings.',
+                             'Participants may describe other reasons or say neither option works.']
+    return {'id': secrets.token_urlsafe(12), 'status': 'draft', 'version': 1,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'decision': 'Should we change the delivery fee, the delivery window or the evidence behind greener delivery claims?',
+            'sources': [], 'mapping': mapping, 'blueprint': blueprint,
+            'source': 'prepared-delivery-study', 'evidence_origin': 'new-study-no-prior-data',
+            'warning': 'No responses collected yet. The study options are hypothetical.', 'api_usage': []}
+
+
 def design_input_digest(blueprint: dict[str, Any], mapping: dict[str, Any]) -> str:
     if blueprint.get('experience_version') in (1, 2):
         from .explore import policy
