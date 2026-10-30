@@ -1,5 +1,19 @@
 # Evidence workbench: evaluation status
 
+## Muse planning and reconsideration, 30 October
+
+The current suite has 111 passing Python tests plus both Node checks (`research_ui.test.cjs` and `report_copy.test.cjs`). The new version-two flow uses complete session evidence, a native bounded comparison-selection tool call, a first-result review and a final review. Existing version-one approvals and pending interviews retain their original sharing scope. Skipping all interview text makes no model calls.
+
+The final recorded live demonstration (`outputs/muse-reasoning-demo-v5.json`) made four actual Muse calls: a tentative interpretation, an accepted `select_approved_comparison` request, and two reviews that passed source/quotation checks. It selected the fee comparison first, retained the participant's budget correction, and strengthened the same planned explanation rather than inventing a different prior belief. The final review cites both the latest comparison and the final explanation. These checks establish the operation of this example, not semantic accuracy across people or causal inference.
+
+Earlier development traces are preserved separately. The first planning attempt used an unsupported named tool choice and received HTTP 400; automatic tool selection corrected that integration error. Later traces exposed a fabricated before-story and a not-yet-answered task described as skipped. The prompt/history format was revised and future unanswered comparisons removed from observation sources. The final run reflects those code changes, not output-based selection between identical runs. Validation checks cannot guarantee that every model sentence is semantically correct.
+
+A six-call comparison on three fixed fictional cases returned structurally valid outputs in both input conditions. Primary-factor matches to the scripted choice rule were 0/3 with two answers and 0/3 with full context. The full-context outputs named the scripted factor as an alternative in two cases; that is an exploratory observation. Adding context alone has not demonstrated better primary-factor recovery. The full inputs/outputs are retained in `muse-context-ablation-results.json` and the limited interpretation is documented in `muse-demonstration.md`.
+
+A browser check replayed the actual final Muse outputs with explicitly fictional responses, displayed the initial reading, corrected explanation, recorded plan and both reviews, and exported Markdown. It made no new model calls and showed no console errors. The report screenshot and recorded demonstration are included in the source bundle. This is not human UXR validation, a fresh live inference in the browser, or evidence of provider superiority.
+
+Earlier test counts and one-call descriptions below are historical.
+
 ## Plain-language report revision
 
 Reports now lead with what was said, what was selected, the participant's explanation/correction, the exact detail changed, the resulting selection and a next step. Generic alignment/behavioural-science boilerplate is removed from the main view and Markdown report. Study methods, model diagnostics and audit records remain available in collapsed sections and JSON. Existing saved analyses use the new renderer without recollection. `node tests/report_copy.test.cjs` verifies legacy-record rendering, correction visibility, missing answers, concrete option descriptions and escaped participant text. All 96 Python tests still pass. Browser checks on saved fictional sessions verified the main report and downloaded Markdown with no console errors.

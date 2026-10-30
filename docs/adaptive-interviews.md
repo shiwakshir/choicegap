@@ -2,7 +2,7 @@
 
 ## Try it
 
-Run `python -m choicegap.server` from the project directory and open http://127.0.0.1:8000. The default demonstration includes the integrated flow. A configured Meta key enables one tentative interview interpretation; local mode works using a literal echo.
+Run `python -m choicegap.server` from the project directory and open http://127.0.0.1:8000. The default demonstration includes the integrated flow. A configured Meta key enables the version-two Muse loop described in [the demonstration guide](muse-demonstration.md). Local mode uses a literal echo and local task ordering.
 
 For a researcher study, open http://127.0.0.1:8000/?mode=researcher, import evidence or load the fictional example, and create a draft. Review the protocol, enable **Include the bounded interview and condition comparisons**, review all factor levels and approve. Share the approved participant link. Old approved studies remain unchanged; create a new draft to add interviews. The approved policy is snapshotted and included in the design digest. A policy mismatch at collection is rejected.
 
@@ -14,6 +14,10 @@ For a researcher study, open http://127.0.0.1:8000/?mode=researcher, import evid
 4. **Correct:** if text exists, Muse may propose a tentative, exact-quote-linked interpretation. Without a key or after a failed/invalid model response, the app echoes the participant's actual words. They confirm, correct or leave the description unresolved, and may select a factor or other/unsure. Corrections supersede the model summary while preserving the original for audit.
 5. **Compare:** up to two variants of that same baseline task each change exactly one displayed detail using an approved factor level. They test the two differing factors separately. The participant's factor is tested first when eligible; otherwise a choice-model ranking orders them. New display orientation is randomized and normalized back to baseline option identity. Predictions and reasons are recorded before answers. Neither and skip remain distinct; variations do not update the baseline model posterior.
 6. **Reflect:** an optional final question asks what explains the choices across versions. A neutral thank-you ends participation.
+
+Version two sends the complete survey, exact baseline choices, interview answers and corrections to Muse. Its native `select_approved_comparison` tool can order the same two code-audited comparisons; it cannot generate stimuli. A participant-selected eligible factor takes precedence. The model records rival explanations and switch/non-switch predictions before the first response. After the first result and after the final response, it can reconsider with evidence references. The final review must cite the latest comparison and any nonempty final reflection. Rejected or unavailable model outputs remain labelled. This adds no participant steps.
+
+The normal loop is capped at four calls: interpretation, planning, first-result review and final review. All-text skips make no calls. Version-one approved studies retain their previous one-call input scope and are not silently upgraded. Their stored protocol remains validated against version one.
 
 The default flow has up to seven choices including the repeat, and four optional text/interpretation stages. There is no claim about a validated completion time. If all baseline choices are neither, the interview still allows explanation but condition tasks are not issued. Questions and comparisons can be skipped. A corrected interpretation requires correction text; unresolved is available without text.
 

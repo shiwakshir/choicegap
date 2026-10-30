@@ -9,7 +9,7 @@ import secrets
 import threading
 from typing import Any
 
-VERSION = 1
+VERSION = 2
 LOCKS = [threading.Lock() for _ in range(64)]
 QUESTIONS = {
     'why': 'What mattered when you made this choice? You can also describe anything the options missed.',
@@ -19,10 +19,15 @@ QUESTIONS = {
 }
 
 
-def policy() -> dict[str, Any]:
-    return {'version': VERSION, 'questions': QUESTIONS, 'max_condition_tasks': 2,
+def policy(version=VERSION) -> dict[str, Any]:
+    result = {'version': version, 'questions': QUESTIONS, 'max_condition_tasks': 2,
             'scope': 'Four adaptive choices, an optional reversed repeat, four optional text responses including an interpretation check, and up to two single-detail variations of one answered task. Only approved factor levels are used. Variations do not update the choice model. One Muse interpretation call at most; no model call when text is skipped.',
             'limits': 'Within-session hypothetical comparisons are descriptive. Order, learning, repeated exposure and unmeasured factors prevent a causal or real-purchase claim.'}
+    if version == 2:
+        result['scope'] = 'Four adaptive choices, an optional reversed repeat, four optional text responses including an interpretation check, and up to two single-detail variations of one answered task. Only approved factor levels are used. Variations do not update the choice model. Muse may receive survey responses, exact choice history, interview answers and corrections: one tentative interpretation, one bounded comparison-selection tool call, one review after the first comparison and one final review, at most four calls. Skipping all interview text makes no model call. Participant-selected eligible factors take precedence. Both approved comparisons remain in the study.'
+    if version not in (1, 2):
+        raise ValueError('Unsupported interview protocol version')
+    return result
 
 
 def digest(value: Any) -> str:
@@ -50,7 +55,7 @@ def levels(option: dict, attrs: list[dict]) -> dict:
     return {a['id']: (int(option['price'] == 0) if a['id'] == 'price' else option[a['id']]) for a in attrs}
 
 
-def begin(session, base_report: dict) -> dict:
+def begin(session, base_report: dict, version=VERSION) -> dict:
     attrs = attributes(session)
     trace = [t for t in base_report['decision_trace'] if not t['holdout']]
     answered = [t for t in trace if t['displayed_choice'] in ('a', 'b')]
@@ -60,12 +65,12 @@ def begin(session, base_report: dict) -> dict:
         c = t['displayed_choice']; other = 'b' if c == 'a' else 'a'
         return sum(levels(t['stimulus'][c], attrs)[k] < levels(t['stimulus'][other], attrs)[k] for k in tops)
     anchor = max(answered, key=discrepancy) if answered else (trace[-1] if trace else None)
-    state = {'version': VERSION, 'phase': 'why', 'attributes': attrs,
+    state = {'version': version, 'phase': 'why', 'attributes': attrs,
              'survey': {'ratings': ratings, 'intention': session.intention_score, 'statement': session.statement},
              'base_report': deepcopy(base_report), 'anchor': deepcopy(anchor), 'events': [], 'contrasts': [],
              'interpretation': None, 'api_usage': [], 'analysis_source': 'literal-local',
              'anchor_reason': ('A task where a top-rated factor traded against the selected option; this is a clarification trigger, not a diagnosed gap.' if anchor and answered and discrepancy(anchor) else 'An answered task for neutral clarification; no rating-choice discrepancy is assumed.'),
-             'policy': policy(), 'policy_sha256': digest(policy())}
+             'policy': policy(version), 'policy_sha256': digest(policy(version)), 'muse_reviews': []}
     issue(state)
     return state
 
@@ -145,6 +150,7 @@ def plan_contrasts(state, factor=None):
 
 
 def advance(state: dict, payload: dict, meta) -> None:
+    usage_start = len(meta.usage)
     pending = state['pending']; phase = state['phase']
     token = payload.get('answer_token')
     if not isinstance(token, str) or not secrets.compare_digest(token.encode(), pending['answer_token'].encode()):
@@ -175,7 +181,12 @@ def advance(state: dict, payload: dict, meta) -> None:
             interp = {'summary': f'Your earlier answer: “{why}”' if why else 'No explanation supplied; the reasons remain unresolved.', 'quote': why, 'factor': 'unresolved', 'rival': 'unresolved'}
             if meta.enabled and (why or text):
                 try:
-                    result = meta.interpret_choice({'why': why, 'clarify': text}, state['attributes'])
+                    if state['version'] >= 2:
+                        from .muse_research import packet
+                        context_state = {**state, 'events': state['events'] + [event]}
+                        result = meta.interpret_choice({'why': why, 'clarify': text}, state['attributes'], packet(context_state))
+                    else:
+                        result = meta.interpret_choice({'why': why, 'clarify': text}, state['attributes'])
                     allowed = {a['id'] for a in state['attributes']} | {'unresolved'}
                     if (not isinstance(result.get('quote'), str) or not result['quote'] or
                             not any(result['quote'] in source for source in (why, text)) or
@@ -186,7 +197,6 @@ def advance(state: dict, payload: dict, meta) -> None:
                     state['analysis_source'] = meta.model
                 except (RuntimeError, ValueError, KeyError, TypeError):
                     state['analysis_source'] = 'literal-local-after-model-error'
-            state['api_usage'] = list(meta.usage)
             state['interpretation'] = interp
             state['phase'] = 'check'
         elif phase == 'check':
@@ -206,6 +216,15 @@ def advance(state: dict, payload: dict, meta) -> None:
         elif phase == 'reflection':
             state['phase'] = 'complete'
     state['events'].append(event)
+    if state['version'] >= 2:
+        from .muse_research import select, reconsider
+        if phase == 'check':
+            select(state, meta, factor if factor != 'unresolved' else None)
+        elif phase == 'condition0':
+            reconsider(state, meta, 'after_first_comparison')
+        elif phase == 'reflection':
+            reconsider(state, meta, 'after_final_response')
+    state['api_usage'].extend(meta.usage[usage_start:])
     state['pending'] = None
     if state['phase'] != 'complete':
         issue(state)
@@ -229,7 +248,9 @@ def synthesis(state) -> dict:
     anchor = state['anchor']
     choice_description = (f"They rated {', '.join(priorities)} highest ({top}/5). In the task we asked about, they selected " +
                           ('neither option.' if anchor['displayed_choice'] == 'outside' else f"Option {anchor['displayed_choice'].upper()}.")) if anchor else 'No earlier choice was available to discuss.'
-    return {'version': VERSION, 'survey': state['survey'], 'evidence': refs,
+    return {'version': state['version'], 'survey': state['survey'], 'evidence': refs,
+            'muse_reasoning': {'initial': state['interpretation'], 'plan': deepcopy(state.get('muse_plan')), 'reviews': deepcopy(state.get('muse_reviews', [])),
+                               'scope': 'Model interpretations for researcher review. Participant corrections and recorded choices remain the evidence; a model revision is not causal proof.'},
             'factor_labels': {a['id']: a['label'] for a in state['attributes']},
             'stated_priorities': [k for k, v in state['survey']['ratings'].items() if v == top],
             'alignment': {'trigger': state['anchor_reason'], 'anchor': anchor, 'interpretation': choice_description},

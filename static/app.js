@@ -114,6 +114,9 @@ function applyStudy(data) {
   state.studyReady = true;
   state.studyId = data.study_id;
   state.experienceEnabled = data.experience_enabled === true;
+  $('#interview-sharing-notice').textContent = data.experience_version === 1
+    ? 'This study includes optional written follow-ups and up to two more choices. You may skip questions. Comments and corrections are stored and included in researcher exports. If AI is enabled, the two initial interview answers and factor definitions are sent to Meta for one tentative interpretation. Avoid identifying or sensitive information. No purchase is made.'
+    : 'This study includes optional written follow-ups and up to two more choices. You may skip questions. Comments and corrections are stored and included in researcher exports. If AI is enabled, your survey responses, choices, interview answers and corrections are sent to Meta to interpret the session, order the approved follow-ups and review the results. Avoid identifying or sensitive information. No purchase is made.';
   state.decisionPrompt = data.study.decision_prompt;
   $('#scenario-title').textContent = data.study.title;
   $('#scenario-prompt').textContent = 'Consider the options in this study. Rate each factor before continuing.';

@@ -4,6 +4,8 @@ ChoiceGap is an adaptive UX research prototype. Its product direction is to comb
 
 The current implementation combines a short survey, adaptive controlled choices, a bounded text interview, participant corrections, and up to two single-detail condition comparisons. The researcher report links statements, task responses, corrections, rival explanations and proposed next tests. See [the product direction](docs/product-direction.md) and [the integrated study guide](docs/adaptive-interviews.md). Separate behavioural experiments are an advanced option.
 
+Updated 30 October: newly approved interviews use the complete session as Muse evidence. A bounded native tool call can choose the order of the two approved comparisons. Muse then reviews the first result and the final responses, preserving source references and the actual earlier reading. At most four calls are made per normal completed interview; no new participant questions were added. Existing version-one approvals retain their narrower one-call protocol. See [the Muse demonstration guide](docs/muse-demonstration.md).
+
 To try the full flow, restart the server and open the default participant page. To publish a customized study, open Researcher view, create a workspace, review the follow-up protocol and enable its checkbox before approving the design. Previously approved studies retain their original flow; create a new draft to add interviews.
 
 The researcher workbench now supports an evidence-to-follow-up workflow: import source excerpts, review competing explanations, approve exact factor levels, collect adaptive choice responses, and export a study decision brief with proposed field contrasts.
@@ -41,13 +43,13 @@ stated preference → competing hypotheses → adaptive controlled choice
 
 - **Muse evidence mapping:** interprets supplied excerpts within four predefined, editable grocery-delivery categories. Omitted explanations remain unresolved.
 - **Muse design review:** reads source quotes, exact study levels and an optional prototype screenshot together, identifying possible confounds and suggested controls before fieldwork.
-- **Computed question selection:** maximum expected information gain selects each task and records the predicted disagreement before observing a response. No participant task calls the model API.
+- **Computed baseline question selection:** maximum expected information gain selects each baseline task and records the predicted disagreement before observing a response. Baseline selection makes no model call; enabled version-two interviews use Muse for bounded comparison ordering and result reviews.
 - **Deterministic evidence layer:** compiles a complete six-pair design, audits controls and coverage, then owns choice likelihoods, posterior updates, side randomization, and information gain.
 - **Computed reporting:** preserves exact tested levels and distinguishes hypothetical choices from reported actions. Source interpretations and new session results appear side by side without assuming participant matching.
 - **Deterministic operation:** the fixed study works without an API key.
 - **Research quality layer:** neutral practice example, genuine outside option, reversed-side holdout, and de-identified JSON export.
 
-Participants rate every factor plus a general lower-impact intention item; the choice-model posterior begins uniform. Choice task selection and numerical analysis make no model calls. In the integrated flow, Muse may interpret two optional interview responses once, with an exact quoted span. The participant can confirm, correct or reject that interpretation before follow-up comparisons. Local mode uses a literal response echo rather than claiming semantic interpretation. Free text and corrections appear in the integrated research export.
+Participants rate every factor plus a general lower-impact intention item; the choice-model posterior begins uniform. Baseline task selection and numerical analysis make no model calls. In a version-two interview, Muse receives the survey, exact choices and interview responses for a tentative interpretation with an exact quoted span. After participant correction it can select an existing approved comparison through a validated tool call, then review the first result and final response. Local mode uses literal text and computed ordering. Free text and corrections appear in the integrated export.
 
 The repeat samples a completed informative task uniformly using a seeded draw independent of the inferred leader, then reverses its sides. Agreement is descriptive: it does not filter sessions or update probabilities. Outside selections also leave probabilities unchanged.
 
@@ -55,7 +57,7 @@ Muse Image is not used in this prototype because generated visuals would add an 
 
 ### Model boundary
 
-Muse performs bounded semantic interpretation and pre-fieldwork review. Deterministic code owns question selection, study validation, likelihoods, probability updates, randomization, and descriptive reporting. A model response cannot override an inconclusive result or introduce an unvalidated experiment. Legacy standalone compiler/API methods remain for compatibility but are hidden from the main researcher workflow.
+Muse performs bounded semantic interpretation, pre-fieldwork review, approved-comparison ordering and evidence-linked reconsideration. Code owns baseline question selection, study validation, allowed-task checks, likelihoods, probability updates, randomization and descriptive reporting. A model response cannot override an inconclusive numerical result or introduce an unvalidated experiment. Legacy standalone compiler/API methods remain for compatibility but are hidden from the main researcher workflow.
 
 ### Dynamic study workflow
 
@@ -158,7 +160,7 @@ The sustainability choices and claims boundary are grounded in `docs/sustainabil
 - The interface does not request direct identifiers.
 - Integrated interview exports include survey free text, interview answers and corrections. Review for identifying information before sharing. Legacy choice-only records exclude the intake comment.
 - App exports include exact stimuli, decision trails, model source, and returned API token usage when available. Separate evaluation reports estimate token cost using explicitly documented published rates.
-- Muse receives imported excerpts and draft study inputs for researcher-requested mapping/review, plus the optional screenshot when a review is requested. An enabled integrated interview makes at most one interpretation call containing the two interview responses and approved factor definitions. Skipping both responses makes no call. API failure or invalid quotations fall back to literal local text.
+- Muse receives imported excerpts and draft study inputs for researcher-requested mapping/review, plus the optional screenshot when requested. A newly approved version-two interview makes at most four calls using survey responses, exact choices, interview answers, corrections and factor definitions. Skipping all interview text makes no call. Version-one approvals retain their original two-answer, one-call scope. Failed/invalid model output falls back to the recorded evidence and approved local ordering.
 - Imported excerpts are persisted and may appear in the decision-brief export. Use de-identified material you are authorized to process.
 - The local server has no authentication, encrypted storage, retention controls, or multi-user isolation. It is not a production deployment.
 

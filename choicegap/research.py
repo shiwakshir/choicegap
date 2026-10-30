@@ -48,7 +48,7 @@ def parse_evidence(raw: str) -> list[dict[str, str]]:
 
 def default_blueprint() -> dict[str, Any]:
     return {
-        "experience_version": 1,
+        "experience_version": 2,
         "title": "Sustainable grocery delivery",
         "decision_prompt": "Which delivery option would you choose for your weekly grocery shop?",
         "attributes": [
@@ -63,9 +63,9 @@ def default_blueprint() -> dict[str, Any]:
 
 
 def design_input_digest(blueprint: dict[str, Any], mapping: dict[str, Any]) -> str:
-    if blueprint.get('experience_version') == 1:
+    if blueprint.get('experience_version') in (1, 2):
         from .explore import policy
-        blueprint = {**blueprint, 'experience_policy': policy()}
+        blueprint = {**blueprint, 'experience_policy': policy(blueprint['experience_version'])}
     encoded = json.dumps({"blueprint": blueprint, "mapping": mapping}, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(encoded.encode('utf-8')).hexdigest()
 
@@ -179,11 +179,11 @@ def approve_workspace(draft: dict[str, Any], blueprint: dict[str, Any], mapping:
     for key, maximum in (("title", 100), ("decision_prompt", 240)):
         if not isinstance(blueprint.get(key), str) or not 1 <= len(blueprint[key].strip()) <= maximum:
             raise ValueError(f"Study {key} must contain 1–{maximum} characters")
-    if blueprint.get('experience_version', 0) not in (0, 1):
+    if blueprint.get('experience_version', 0) not in (0, 1, 2):
         raise ValueError('Unsupported interview protocol version')
-    if blueprint.get('experience_version') == 1:
+    if blueprint.get('experience_version') in (1, 2):
         from .explore import policy
-        blueprint = {**blueprint, 'experience_policy': policy()}
+        blueprint = {**blueprint, 'experience_policy': policy(blueprint['experience_version'])}
     attributes = blueprint.get("attributes", [])
     if len(attributes) != 4 or len({item.get("label", "").strip().casefold() for item in attributes}) != 4:
         raise ValueError("Use four distinct factor names")

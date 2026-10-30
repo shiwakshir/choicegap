@@ -1,0 +1,482 @@
+{
+  "scope": "Six real Muse calls on three prespecified fictional scenarios, one call per input condition. Expected factors come from a scripted choice rule, not validated human motives. Same interpretation prompt/schema/model, with full-session evidence added in one condition. This is a tiny development ablation, not a reliable accuracy estimate, provider comparison or proof of causal inference. No output-based case selection or retries.",
+  "summary": {
+    "narrow": {
+      "expected_factor_matches": 0,
+      "valid_outputs": 3,
+      "planned_calls": 3
+    },
+    "full_context": {
+      "expected_factor_matches": 0,
+      "valid_outputs": 3,
+      "planned_calls": 3
+    }
+  },
+  "cases": [
+    {
+      "case": {
+        "id": "verification_words_budget_choices",
+        "weights": {
+          "b": 3,
+          "d": 1,
+          "a": 0.8
+        },
+        "expected_factor": "b",
+        "responses": {
+          "why": "Fictional respondent: I value independent verification of environmental claims.",
+          "clarify": "Fictional respondent: Independent evidence makes a delivery claim more credible."
+        }
+      },
+      "full_context_input": {
+        "sources": [
+          {
+            "id": "survey.statement",
+            "kind": "text",
+            "text": "Fictional respondent: I value verified environmental claims."
+          },
+          {
+            "id": "survey.ratings",
+            "kind": "record",
+            "text": "{\"ratings\": {\"a\": 4, \"b\": 4, \"c\": 3, \"d\": 5}, \"intention\": 3, \"statement\": \"Fictional respondent: I value verified environmental claims.\"}"
+          },
+          {
+            "id": "choice.1",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e5\", \"title\": \"Delivery cost or Claim verification?\", \"rationale\": \"A controlled trade-off between Delivery cost and Claim verification; the other two factors are identical.\", \"a\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 0, \"d\": 1}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Method independently verified\"]}, \"b\": {\"name\": \"Option A\", \"levels\": {\"a\": 0, \"b\": 1, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: Free delivery\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"flipped\": true, \"information_gain\": 0.3862}, \"selected_displayed_option\": \"b\", \"repeat\": false}"
+          },
+          {
+            "id": "choice.2",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e4\", \"title\": \"Delivery cost or Delivery window?\", \"rationale\": \"A controlled trade-off between Delivery cost and Delivery window; the other two factors are identical.\", \"a\": {\"name\": \"Option A\", \"levels\": {\"a\": 0, \"b\": 1, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: Free delivery\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"b\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 1, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: Two-hour delivery window\", \"Claim verification: Retailer calculation\"]}, \"flipped\": false, \"information_gain\": 0.5316}, \"selected_displayed_option\": \"a\", \"repeat\": false}"
+          },
+          {
+            "id": "choice.3",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e1\", \"title\": \"Environmental impact or Delivery cost?\", \"rationale\": \"A controlled trade-off between Environmental impact and Delivery cost; the other two factors are identical.\", \"a\": {\"name\": \"Option A\", \"levels\": {\"a\": 1, \"b\": 0, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Estimated delivery emissions 60% lower\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"b\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 1, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: Free delivery\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"flipped\": false, \"information_gain\": 0.5466}, \"selected_displayed_option\": \"b\", \"repeat\": false}"
+          },
+          {
+            "id": "choice.4",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e3\", \"title\": \"Environmental impact or Claim verification?\", \"rationale\": \"A controlled trade-off between Environmental impact and Claim verification; the other two factors are identical.\", \"a\": {\"name\": \"Option A\", \"levels\": {\"a\": 1, \"b\": 0, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Estimated delivery emissions 60% lower\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"b\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 0, \"d\": 1}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Method independently verified\"]}, \"flipped\": false, \"information_gain\": 0.0154}, \"selected_displayed_option\": \"b\", \"repeat\": false}"
+          },
+          {
+            "id": "interview.why",
+            "kind": "text",
+            "text": "Fictional respondent: I value independent verification of environmental claims."
+          },
+          {
+            "id": "interview.clarify",
+            "kind": "text",
+            "text": "Fictional respondent: Independent evidence makes a delivery claim more credible."
+          }
+        ],
+        "approved_factors": [
+          {
+            "id": "a",
+            "label": "Environmental impact",
+            "low_label": "Standard estimated delivery emissions",
+            "high_label": "Estimated delivery emissions 60% lower",
+            "hypothesis_label": "Environmental impact",
+            "hypothesis_description": "Differences in environmental impact may explain delivery choices."
+          },
+          {
+            "id": "b",
+            "label": "Delivery cost",
+            "low_label": "£3 delivery fee",
+            "high_label": "Free delivery",
+            "hypothesis_label": "Delivery cost",
+            "hypothesis_description": "Differences in delivery cost may explain delivery choices."
+          },
+          {
+            "id": "c",
+            "label": "Delivery window",
+            "low_label": "All-day delivery window",
+            "high_label": "Two-hour delivery window",
+            "hypothesis_label": "Delivery window",
+            "hypothesis_description": "Differences in delivery window may explain delivery choices."
+          },
+          {
+            "id": "d",
+            "label": "Claim verification",
+            "low_label": "Retailer calculation",
+            "high_label": "Method independently verified",
+            "hypothesis_label": "Claim verification",
+            "hypothesis_description": "Differences in claim verification may explain delivery choices."
+          }
+        ],
+        "planning_reading": null,
+        "participant_check": null,
+        "previous_interpretation": null,
+        "previous_interpretation_rejected": false,
+        "earlier_reviews": [],
+        "scope": "Hypothetical within-session choices. Ratings and statements are not actual purchases. A correction takes precedence over the initial model interpretation; unresolved is not confirmation. Record references describe supplied observations, not causal proof."
+      },
+      "outputs": {
+        "narrow": {
+          "status": "ok",
+          "result": {
+            "factor": "d",
+            "quote": "Independent evidence makes a delivery claim more credible.",
+            "rival": "unresolved",
+            "summary": "You said \"Independent evidence makes a delivery claim more credible.\" This sounds like independently verified information might be something you look for. If I have described this incorrectly, please correct me."
+          },
+          "matches_scripted_factor": false,
+          "usage": [
+            {
+              "task": "participant_interpretation",
+              "model": "muse-spark-1.3",
+              "usage": {
+                "completion_tokens": 1363,
+                "prompt_tokens": 488,
+                "total_tokens": 1851,
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1285
+                },
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                }
+              }
+            }
+          ]
+        },
+        "full_context": {
+          "status": "ok",
+          "result": {
+            "factor": "d",
+            "quote": "I value independent verification of environmental claims.",
+            "rival": "b",
+            "summary": "You said \"I value independent verification of environmental claims.\" One possible reading is that independently verified claims stood out for you in these hypothetical options. Another possible reading is that free delivery also stood out in some options. You may reject either or both — which, if any, feels closer to your view?"
+          },
+          "matches_scripted_factor": false,
+          "usage": [
+            {
+              "task": "participant_interpretation",
+              "model": "muse-spark-1.3",
+              "usage": {
+                "completion_tokens": 1538,
+                "prompt_tokens": 1998,
+                "total_tokens": 3536,
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1435
+                },
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": {
+        "id": "fee_words_verified_choices",
+        "weights": {
+          "b": 1,
+          "d": 3,
+          "a": 0.8
+        },
+        "expected_factor": "d",
+        "responses": {
+          "why": "Fictional respondent: I value free delivery because fees add up.",
+          "clarify": "Fictional respondent: I like delivery options that help me save money."
+        }
+      },
+      "full_context_input": {
+        "sources": [
+          {
+            "id": "survey.statement",
+            "kind": "text",
+            "text": "Fictional respondent: I value verified environmental claims."
+          },
+          {
+            "id": "survey.ratings",
+            "kind": "record",
+            "text": "{\"ratings\": {\"a\": 4, \"b\": 4, \"c\": 3, \"d\": 5}, \"intention\": 3, \"statement\": \"Fictional respondent: I value verified environmental claims.\"}"
+          },
+          {
+            "id": "choice.1",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e5\", \"title\": \"Delivery cost or Claim verification?\", \"rationale\": \"A controlled trade-off between Delivery cost and Claim verification; the other two factors are identical.\", \"a\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 0, \"d\": 1}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Method independently verified\"]}, \"b\": {\"name\": \"Option A\", \"levels\": {\"a\": 0, \"b\": 1, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: Free delivery\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"flipped\": true, \"information_gain\": 0.3862}, \"selected_displayed_option\": \"a\", \"repeat\": false}"
+          },
+          {
+            "id": "choice.2",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e3\", \"title\": \"Environmental impact or Claim verification?\", \"rationale\": \"A controlled trade-off between Environmental impact and Claim verification; the other two factors are identical.\", \"a\": {\"name\": \"Option A\", \"levels\": {\"a\": 1, \"b\": 0, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Estimated delivery emissions 60% lower\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"b\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 0, \"d\": 1}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Method independently verified\"]}, \"flipped\": false, \"information_gain\": 0.5316}, \"selected_displayed_option\": \"b\", \"repeat\": false}"
+          },
+          {
+            "id": "choice.3",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e6\", \"title\": \"Delivery window or Claim verification?\", \"rationale\": \"A controlled trade-off between Delivery window and Claim verification; the other two factors are identical.\", \"a\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 0, \"d\": 1}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Method independently verified\"]}, \"b\": {\"name\": \"Option A\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 1, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: Two-hour delivery window\", \"Claim verification: Retailer calculation\"]}, \"flipped\": true, \"information_gain\": 0.5466}, \"selected_displayed_option\": \"a\", \"repeat\": false}"
+          },
+          {
+            "id": "choice.4",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e4\", \"title\": \"Delivery cost or Delivery window?\", \"rationale\": \"A controlled trade-off between Delivery cost and Delivery window; the other two factors are identical.\", \"a\": {\"name\": \"Option A\", \"levels\": {\"a\": 0, \"b\": 1, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: Free delivery\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"b\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 1, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: Two-hour delivery window\", \"Claim verification: Retailer calculation\"]}, \"flipped\": false, \"information_gain\": 0.0154}, \"selected_displayed_option\": \"a\", \"repeat\": false}"
+          },
+          {
+            "id": "interview.why",
+            "kind": "text",
+            "text": "Fictional respondent: I value free delivery because fees add up."
+          },
+          {
+            "id": "interview.clarify",
+            "kind": "text",
+            "text": "Fictional respondent: I like delivery options that help me save money."
+          }
+        ],
+        "approved_factors": [
+          {
+            "id": "a",
+            "label": "Environmental impact",
+            "low_label": "Standard estimated delivery emissions",
+            "high_label": "Estimated delivery emissions 60% lower",
+            "hypothesis_label": "Environmental impact",
+            "hypothesis_description": "Differences in environmental impact may explain delivery choices."
+          },
+          {
+            "id": "b",
+            "label": "Delivery cost",
+            "low_label": "£3 delivery fee",
+            "high_label": "Free delivery",
+            "hypothesis_label": "Delivery cost",
+            "hypothesis_description": "Differences in delivery cost may explain delivery choices."
+          },
+          {
+            "id": "c",
+            "label": "Delivery window",
+            "low_label": "All-day delivery window",
+            "high_label": "Two-hour delivery window",
+            "hypothesis_label": "Delivery window",
+            "hypothesis_description": "Differences in delivery window may explain delivery choices."
+          },
+          {
+            "id": "d",
+            "label": "Claim verification",
+            "low_label": "Retailer calculation",
+            "high_label": "Method independently verified",
+            "hypothesis_label": "Claim verification",
+            "hypothesis_description": "Differences in claim verification may explain delivery choices."
+          }
+        ],
+        "planning_reading": null,
+        "participant_check": null,
+        "previous_interpretation": null,
+        "previous_interpretation_rejected": false,
+        "earlier_reviews": [],
+        "scope": "Hypothetical within-session choices. Ratings and statements are not actual purchases. A correction takes precedence over the initial model interpretation; unresolved is not confirmation. Record references describe supplied observations, not causal proof."
+      },
+      "outputs": {
+        "narrow": {
+          "status": "ok",
+          "result": {
+            "factor": "b",
+            "quote": "I value free delivery because fees add up.",
+            "rival": "unresolved",
+            "summary": "You mentioned valuing free delivery and saving money. One possible reading is that delivery cost was part of how you described your preference. Please correct this if it does not fit what you meant."
+          },
+          "matches_scripted_factor": false,
+          "usage": [
+            {
+              "task": "participant_interpretation",
+              "model": "muse-spark-1.3",
+              "usage": {
+                "completion_tokens": 1392,
+                "prompt_tokens": 490,
+                "total_tokens": 1882,
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1313
+                },
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                }
+              }
+            }
+          ]
+        },
+        "full_context": {
+          "status": "ok",
+          "result": {
+            "factor": "b",
+            "quote": "I value free delivery because fees add up.",
+            "rival": "d",
+            "summary": "You said \"I value free delivery because fees add up.\" One possible reading is that free delivery was on your mind in that answer. Another possible reading from this session is that independently verified claims were also on your mind. Please let me know what fits, or if neither does, and correct me."
+          },
+          "matches_scripted_factor": false,
+          "usage": [
+            {
+              "task": "participant_interpretation",
+              "model": "muse-spark-1.3",
+              "usage": {
+                "completion_tokens": 1635,
+                "prompt_tokens": 2001,
+                "total_tokens": 3636,
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1534
+                },
+                "prompt_tokens_details": {
+                  "cached_tokens": 369
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": {
+        "id": "vague_words_budget_choices",
+        "weights": {
+          "b": 3,
+          "d": 1,
+          "a": 0.8
+        },
+        "expected_factor": "b",
+        "responses": {
+          "why": "Fictional respondent: I compared the options and chose what worked.",
+          "clarify": "Fictional respondent: It depends on my weekly shop."
+        }
+      },
+      "full_context_input": {
+        "sources": [
+          {
+            "id": "survey.statement",
+            "kind": "text",
+            "text": "Fictional respondent: I value verified environmental claims."
+          },
+          {
+            "id": "survey.ratings",
+            "kind": "record",
+            "text": "{\"ratings\": {\"a\": 4, \"b\": 4, \"c\": 3, \"d\": 5}, \"intention\": 3, \"statement\": \"Fictional respondent: I value verified environmental claims.\"}"
+          },
+          {
+            "id": "choice.1",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e5\", \"title\": \"Delivery cost or Claim verification?\", \"rationale\": \"A controlled trade-off between Delivery cost and Claim verification; the other two factors are identical.\", \"a\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 0, \"d\": 1}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Method independently verified\"]}, \"b\": {\"name\": \"Option A\", \"levels\": {\"a\": 0, \"b\": 1, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: Free delivery\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"flipped\": true, \"information_gain\": 0.3862}, \"selected_displayed_option\": \"b\", \"repeat\": false}"
+          },
+          {
+            "id": "choice.2",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e4\", \"title\": \"Delivery cost or Delivery window?\", \"rationale\": \"A controlled trade-off between Delivery cost and Delivery window; the other two factors are identical.\", \"a\": {\"name\": \"Option A\", \"levels\": {\"a\": 0, \"b\": 1, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: Free delivery\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"b\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 1, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: Two-hour delivery window\", \"Claim verification: Retailer calculation\"]}, \"flipped\": false, \"information_gain\": 0.5316}, \"selected_displayed_option\": \"a\", \"repeat\": false}"
+          },
+          {
+            "id": "choice.3",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e1\", \"title\": \"Environmental impact or Delivery cost?\", \"rationale\": \"A controlled trade-off between Environmental impact and Delivery cost; the other two factors are identical.\", \"a\": {\"name\": \"Option A\", \"levels\": {\"a\": 1, \"b\": 0, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Estimated delivery emissions 60% lower\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"b\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 1, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: Free delivery\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"flipped\": false, \"information_gain\": 0.5466}, \"selected_displayed_option\": \"b\", \"repeat\": false}"
+          },
+          {
+            "id": "choice.4",
+            "kind": "record",
+            "text": "{\"stimulus\": {\"id\": \"e3\", \"title\": \"Environmental impact or Claim verification?\", \"rationale\": \"A controlled trade-off between Environmental impact and Claim verification; the other two factors are identical.\", \"a\": {\"name\": \"Option A\", \"levels\": {\"a\": 1, \"b\": 0, \"c\": 0, \"d\": 0}, \"facts\": [\"Environmental impact: Estimated delivery emissions 60% lower\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Retailer calculation\"]}, \"b\": {\"name\": \"Option B\", \"levels\": {\"a\": 0, \"b\": 0, \"c\": 0, \"d\": 1}, \"facts\": [\"Environmental impact: Standard estimated delivery emissions\", \"Delivery cost: £3 delivery fee\", \"Delivery window: All-day delivery window\", \"Claim verification: Method independently verified\"]}, \"flipped\": false, \"information_gain\": 0.0154}, \"selected_displayed_option\": \"b\", \"repeat\": false}"
+          },
+          {
+            "id": "interview.why",
+            "kind": "text",
+            "text": "Fictional respondent: I compared the options and chose what worked."
+          },
+          {
+            "id": "interview.clarify",
+            "kind": "text",
+            "text": "Fictional respondent: It depends on my weekly shop."
+          }
+        ],
+        "approved_factors": [
+          {
+            "id": "a",
+            "label": "Environmental impact",
+            "low_label": "Standard estimated delivery emissions",
+            "high_label": "Estimated delivery emissions 60% lower",
+            "hypothesis_label": "Environmental impact",
+            "hypothesis_description": "Differences in environmental impact may explain delivery choices."
+          },
+          {
+            "id": "b",
+            "label": "Delivery cost",
+            "low_label": "£3 delivery fee",
+            "high_label": "Free delivery",
+            "hypothesis_label": "Delivery cost",
+            "hypothesis_description": "Differences in delivery cost may explain delivery choices."
+          },
+          {
+            "id": "c",
+            "label": "Delivery window",
+            "low_label": "All-day delivery window",
+            "high_label": "Two-hour delivery window",
+            "hypothesis_label": "Delivery window",
+            "hypothesis_description": "Differences in delivery window may explain delivery choices."
+          },
+          {
+            "id": "d",
+            "label": "Claim verification",
+            "low_label": "Retailer calculation",
+            "high_label": "Method independently verified",
+            "hypothesis_label": "Claim verification",
+            "hypothesis_description": "Differences in claim verification may explain delivery choices."
+          }
+        ],
+        "planning_reading": null,
+        "participant_check": null,
+        "previous_interpretation": null,
+        "previous_interpretation_rejected": false,
+        "earlier_reviews": [],
+        "scope": "Hypothetical within-session choices. Ratings and statements are not actual purchases. A correction takes precedence over the initial model interpretation; unresolved is not confirmation. Record references describe supplied observations, not causal proof."
+      },
+      "outputs": {
+        "narrow": {
+          "status": "ok",
+          "result": {
+            "factor": "unresolved",
+            "quote": "I compared the options and chose what worked.",
+            "rival": "unresolved",
+            "summary": "You said \"I compared the options and chose what worked.\" My tentative reading is that you compared options without naming a specific feature, so I am leaving the reason open. Please correct me if this misses your meaning."
+          },
+          "matches_scripted_factor": false,
+          "usage": [
+            {
+              "task": "participant_interpretation",
+              "model": "muse-spark-1.3",
+              "usage": {
+                "completion_tokens": 1361,
+                "prompt_tokens": 487,
+                "total_tokens": 1848,
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1275
+                },
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                }
+              }
+            }
+          ]
+        },
+        "full_context": {
+          "status": "ok",
+          "result": {
+            "factor": "unresolved",
+            "quote": "I compared the options and chose what worked.",
+            "rival": "unresolved",
+            "summary": "You said \"I compared the options and chose what worked.\" In these hypothetical tasks you chose free delivery options in three tasks and the independently verified method over lower emissions in one task. This is only a tentative reading for you to correct or reject if it does not fit your view."
+          },
+          "matches_scripted_factor": false,
+          "usage": [
+            {
+              "task": "participant_interpretation",
+              "model": "muse-spark-1.3",
+              "usage": {
+                "completion_tokens": 2166,
+                "prompt_tokens": 1996,
+                "total_tokens": 4162,
+                "completion_tokens_details": {
+                  "reasoning_tokens": 2067
+                },
+                "prompt_tokens_details": {
+                  "cached_tokens": 0
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

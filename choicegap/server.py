@@ -35,7 +35,7 @@ PENDING: dict[str, dict[str, Any]] = {}
 TRACES: dict[str, list[dict[str, Any]]] = {}
 USAGE: dict[str, list[dict[str, Any]]] = {}
 SESSION_STUDIES: dict[str, str] = {}
-EXPERIENCES: set[str] = set()
+EXPERIENCES: dict[str, int] = {}
 LOCK = threading.Lock()
 MAX_REQUEST_BYTES = 2_000_000
 ADAPTIVE_ROUNDS = 4
@@ -193,10 +193,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(404, {"error": "Study unavailable or not yet approved."})
             else:
                 try:
-                    enhanced = STORE.get('workspace', study_id)['blueprint'].get('experience_version') == 1
+                    experience_version = STORE.get('workspace', study_id)['blueprint'].get('experience_version', 0)
+                    enhanced = experience_version in (1, 2)
                 except ValueError:
                     enhanced = False
-                self._json(200, {"study_id": study_id, "study": study.to_public(), 'experience_enabled': enhanced})
+                self._json(200, {"study_id": study_id, "study": study.to_public(), 'experience_enabled': enhanced, 'experience_version': experience_version if enhanced else 0})
             return
         requested = "index.html" if path == "/" else path.lstrip("/")
         target = (STATIC / requested).resolve()
@@ -343,14 +344,16 @@ class Handler(BaseHTTPRequestHandler):
         if study_id and study is None:
             raise ValueError("Study unavailable. Ask the researcher for a new study link.")
         enhanced = payload.get('experience_enabled') is True
+        experience_version = explore.VERSION
         if enhanced:
             if payload.get('interview_consent') is not True:
                 raise ValueError('Please review the interview and data-sharing notice before continuing')
             if study_id:
                 workspace = STORE.get('workspace', study_id)
-                if workspace['blueprint'].get('experience_version') != 1:
+                experience_version = workspace['blueprint'].get('experience_version', 0)
+                if experience_version not in (1, 2):
                     raise ValueError('This study was not approved for adaptive interviews')
-                if workspace['blueprint'].get('experience_policy') != explore.policy():
+                if workspace['blueprint'].get('experience_policy') != explore.policy(experience_version):
                     raise ValueError('The approved follow-up protocol differs from this version. Ask the researcher for a newly approved study.')
         valid_drivers = study.driver_ids if study else DRIVERS
         raw_ratings = payload.get("ratings") or {}
@@ -392,7 +395,7 @@ class Handler(BaseHTTPRequestHandler):
             USAGE[token] = list(meta.usage)
             SESSION_STUDIES[token] = study_id
             if enhanced:
-                EXPERIENCES.add(token)
+                EXPERIENCES[token] = experience_version
         answer_token = issue_experiment(token, experiment, plan, candidates)
         self._json(200, {
             "session_id": token,
@@ -473,7 +476,7 @@ class Handler(BaseHTTPRequestHandler):
         }
         enhanced = token in EXPERIENCES
         if enhanced:
-            state = explore.begin(session, report)
+            state = explore.begin(session, report, EXPERIENCES[token])
             state['record'] = record
             STORE.put('exploration', token, state)
         else:
@@ -481,7 +484,7 @@ class Handler(BaseHTTPRequestHandler):
         with LOCK:
             if not enhanced:
                 COMPLETED.append(record)
-            EXPERIENCES.discard(token)
+            EXPERIENCES.pop(token, None)
             SESSIONS.pop(token, None)
             PENDING.pop(token, None)
             TRACES.pop(token, None)

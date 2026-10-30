@@ -109,7 +109,10 @@ function renderWorkspace(workspace) {
     `;
   }).join('');
   $('#unresolved-questions').value = workspace.mapping.unresolved.join('\n');
-  $('#experience-enabled').checked = workspace.blueprint.experience_version === 1;
+  $('#experience-enabled').checked = [1, 2].includes(workspace.blueprint.experience_version);
+  $('#experience-protocol-model-notice').textContent = approved && workspace.blueprint.experience_version === 1
+    ? 'This approved study uses the original interview protocol: one tentative interpretation of the two initial interview answers, with participant correction and two locally ordered comparisons. Only those two answers and factor definitions are sent to Meta. The full-context Muse planning/review loop requires a newly approved study. Free text is stored and exported. These comparisons do not establish causality.'
+    : 'Review both levels for every factor: either differing factor may be varied in the two follow-up comparisons. Muse can interpret the full session, propose which approved comparison to show first, then reconsider after the responses. Survey responses, exact choices, interview answers, corrections and factor definitions are sent to Meta in at most four calls. Participant-selected eligible factors take precedence; both comparisons remain in the study. The participant can reject the initial description. Free text is stored and exported. These comparisons do not establish causality.';
   $('#workspace-approved').checked = approved;
   $('#workspace-review').querySelectorAll('input, textarea, select').forEach(input => {
     if (!input.closest('#mechanism-workbench')) input.disabled = approved;
@@ -190,7 +193,7 @@ $('#load-workspaces').addEventListener('click', async () => {
 
 function readWorkspaceEditor() {
   const blueprint = structuredClone(researchWorkspace.blueprint);
-  blueprint.experience_version = $('#experience-enabled').checked ? 1 : 0;
+  blueprint.experience_version = $('#experience-enabled').checked ? 2 : 0;
   delete blueprint.experience_policy;
   blueprint.title = $('#workspace-title').value;
   blueprint.decision_prompt = $('#workspace-prompt').value;

@@ -126,6 +126,7 @@ function uxAnalysisHtml(a) {
       <details><summary>See this comparison and its evidence</summary><p>Only this detail changed from the earlier task; all other option facts stayed the same.</p>
       <div class="choices">${interviewOptions(c.stimulus)}</div><p>${escapeHtml(c.selection_reason)}</p><p>Evidence: ${escapeHtml(c.evidence_refs.join(', '))}</p></details></article>`).join('') : '<p>There was no earlier selection of A or B to use for these comparisons.</p>'}
     ${reflection ? `<h4>How they explained the follow-up choices</h4><blockquote>${escapeHtml(reflection)}</blockquote>` : ''}
+    ${uxMuseReadingHtml(a)}
     <h4>What to do next</h4><p>${escapeHtml(readout.next)}</p>
     <p class="microcopy">These were study choices, not purchases. Check whether the finding holds with other participants and in real use.</p>
     <details><summary>Study details and other possible explanations</summary>
@@ -134,6 +135,32 @@ function uxAnalysisHtml(a) {
       <p>Interpretation source: ${escapeHtml(explanation.source)}.</p><p>Original description: ${escapeHtml(explanation.original_model_interpretation.summary)}</p><p>Participant correction: ${escapeHtml(explanation.correction.text || 'None supplied.')}</p>
       ${a.exposure_ledger.map(e => `<article class="trace-entry"><strong>${escapeHtml(uxStageNames[e.phase] || e.phase)}</strong><p>${escapeHtml(e.question)}</p><blockquote>${escapeHtml(e.response || '[Skipped]')}</blockquote><p>Record: ${escapeHtml(e.id)}. ${escapeHtml(e.reason)}</p></article>`).join('')}
       <ul>${a.limitations.map(l => `<li>${escapeHtml(l)}</li>`).join('')}</ul></details></section>`;
+}
+
+function uxMuseReadingHtml(a) {
+  const reasoning = a.muse_reasoning;
+  if (!reasoning || (!reasoning.plan && !reasoning.reviews?.length)) return '';
+  const reviews = (reasoning.reviews || []).filter(r => r.status === 'ok');
+  const plan = reasoning.plan?.status === 'accepted' ? reasoning.plan.tool_call.arguments : null;
+  return `<h4>How Muse’s reading changed</h4>
+    ${reasoning.initial?.factor && reasoning.initial.factor !== 'unresolved' ? `<p><strong>Initial possibility, before the participant’s check:</strong> ${escapeHtml(uxFactorName(a, reasoning.initial.factor).toLowerCase())}.</p>` : ''}
+    ${plan ? `<p><strong>Before the follow-up:</strong> ${escapeHtml(plan.leading_explanation)}</p><p><strong>Another possibility:</strong> ${escapeHtml(plan.alternative_explanation)}</p><p><strong>Why this comparison came first:</strong> ${escapeHtml(plan.reason)}</p>` : ''}
+    ${reviews.map(r => `<p><strong>${r.stage === 'after_first_comparison' ? 'After the first comparison' : 'After the final response'}:</strong> ${escapeHtml(r.summary)}</p><p>${escapeHtml(uxMuseUpdate(a, r))}</p><p>${escapeHtml(r.what_changed)}</p>`).join('')}
+    ${(reasoning.reviews || []).filter(r => r.status !== 'ok').map(r => `<p>${r.stage === 'after_first_comparison' ? 'After the first comparison' : 'After the final response'}: ${escapeHtml(r.summary)}</p>`).join('')}
+    ${reviews.length ? `<p><strong>Still unanswered:</strong> ${escapeHtml(reviews[reviews.length - 1].remaining_uncertainty)}</p>` : '<p>Muse could not provide a checked update. The recorded choices and participant explanation remain available above.</p>'}
+    <p class="microcopy">These are Muse’s interpretations for researcher review, separate from the participant’s own explanation.</p>
+    <details><summary>Check Muse’s evidence and recorded predictions</summary>
+      ${plan ? `<p>If the choice changed: ${escapeHtml(plan.if_switch)}</p><p>If it stayed the same: ${escapeHtml(plan.if_same)}</p>` : ''}
+      ${reviews.map(r => `<p>${escapeHtml(r.source)} · ${escapeHtml(r.update)}</p>${r.evidence_refs.map(ref => `<p>${escapeHtml(ref.source_id)}</p>${ref.quote ? `<blockquote>${escapeHtml(ref.quote)}</blockquote>` : ''}`).join('')}`).join('')}
+    </details>`;
+}
+
+function uxMuseUpdate(a, review) {
+  if (review.factor === 'unresolved') return 'Muse did not settle on one explanation.';
+  if (review.factor_changed === true) return `The leading possibility changed from ${uxFactorName(a, review.previous_factor).toLowerCase()} to ${uxFactorName(a, review.factor).toLowerCase()}.`;
+  if (review.factor_changed === false && review.update === 'strengthened') return 'The same explanation gained support.';
+  if (review.factor_changed === false && review.update === 'weakened') return 'The same explanation lost support.';
+  return review.update === 'unchanged' ? 'The reading stayed the same.' : 'The evidence still leaves more than one explanation open.';
 }
 
 function uxAggregateHtml(research) {
@@ -163,6 +190,11 @@ function uxAggregateMarkdown(research) {
     lines.push('#### Their checked explanation', '', a.participant_explanation.status === 'unresolved' ? 'The participant did not confirm an explanation.' : a.participant_explanation.effective, '');
     a.condition_tests.forEach(t => lines.push(`#### ${t.factor_label}`, '', uxChange(t), '', uxOutcome(t), '', `Evidence: ${t.evidence_refs.join(', ')}.`, ''));
     lines.push('#### What to do next', '', readout.next, '', 'These were study choices, not purchases. Check whether the finding holds with other participants and in real use.', '', '#### Full participant responses', '');
+    if (a.muse_reasoning) {
+      const plan = a.muse_reasoning.plan;
+      if (plan?.status === 'accepted') lines.push('#### Muse before the follow-up', '', plan.tool_call.arguments.leading_explanation, '', 'Another possibility: ' + plan.tool_call.arguments.alternative_explanation, '', 'Why this comparison: ' + plan.tool_call.arguments.reason, '');
+      (a.muse_reasoning.reviews || []).filter(r => r.status === 'ok').forEach(r => lines.push('#### Muse ' + (r.stage === 'after_first_comparison' ? 'after the first comparison' : 'after the final response'), '', r.summary, '', r.what_changed, '', 'Still unanswered: ' + r.remaining_uncertainty, '', 'Evidence: ' + r.evidence_refs.map(ref => ref.source_id).join(', '), ''));
+    }
     a.evidence.forEach(e => lines.push(`${e.id}:`, `> ${e.text.replace(/\n/g, '\n> ') || '[No answer]'}`, ''));
   });
   lines.push('### Question counts and study details', '', '| Question | Sent | Answered |', '|---|---:|---:|', ...research.exposures.map(e => `| ${uxStageNames[e.phase] || e.phase} | ${e.shown} | ${e.answered} |`), '', research.scope, '', research.collection_progress?.scope || '');

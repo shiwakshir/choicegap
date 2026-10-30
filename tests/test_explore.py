@@ -200,5 +200,23 @@ class ExploreTests(unittest.TestCase):
         self.assertEqual(result['checks_passed']['corrections_preserved'], 3)
         self.assertEqual(result['checks_passed']['unresolved_interpretations_not_adopted'], 2)
 
+    def test_approved_version_one_keeps_its_narrow_input_scope(self):
+        draft = draft_workspace('Which delivery detail should change?', EXAMPLE_EVIDENCE, MetaClient())
+        draft['blueprint']['experience_version'] = 1
+        study = approve_workspace(draft, draft['blueprint'], draft['mapping'], True)
+        self.store.put('workspace', study['id'], study)
+        self.start_interview(study_id=study['id'])
+        self.assertEqual(self.store.get('exploration', self.token)['version'], 1)
+        self.step(text='The delivery fee mattered.')
+        with patch.dict('os.environ', {'MODEL_API_KEY': 'test-only'}), patch.object(MetaClient, '_structured', return_value={
+            'summary': 'The fee may have mattered.', 'quote': 'delivery fee mattered', 'factor': 'b', 'rival': 'unresolved'}) as call:
+            self.step(text='A lower fee.')
+            self.step(status='unresolved')
+            while self.response.get('interview', {}).get('kind') == 'choice': self.step(choice='a')
+            self.step(text='The fee still matters.')
+        self.assertEqual(call.call_count, 1)
+        request = json.loads(call.call_args.args[0][-1]['content'])
+        self.assertNotIn('full_session_evidence', request)
+
 
 if __name__ == '__main__': unittest.main()

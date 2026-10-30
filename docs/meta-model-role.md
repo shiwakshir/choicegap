@@ -1,5 +1,13 @@
 # Why Meta models matter to ChoiceGap
 
+## Current participant loop, 30 October
+
+Muse now receives the full session in newly approved version-two studies. It interprets the participant's words alongside exact choices, requests one existing approved comparison through native tool calling, and reconsiders after observing the first and final results. Code owns selection validation, exact one-detail edits, orientation normalization, counts, correction precedence and the four-call cap. The actual initial reading and plan are preserved; a strengthened explanation is not presented as a different previous belief.
+
+Both comparisons still run; the model chooses their order within the existing approved pair. It cannot create a task, expand the hypothesis catalogue or override the participant's selected eligible detail. Its post-task reading is explicitly separate from the participant's confirmed/corrected account. Strict source validation does not establish semantic accuracy. See `muse-demonstration.md` for the recorded run, unsuccessful checks and evaluation limits.
+
+The older one-call descriptions below apply to version-one studies. Previously approved input-sharing scopes remain unchanged.
+
 ## Current review workflow (28 October)
 
 The product runs three text-only design critiques and a separate optional prototype review. Screenshot findings cannot suppress the independent design critique. Broad topic frequency across runs is consistency, not confidence or semantic consensus. The legacy combined reviewer below is retained to reproduce v4. The new neutral-instruction evaluation tests previously unused visual features without naming them in the prompts.

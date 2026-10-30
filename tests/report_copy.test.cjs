@@ -43,4 +43,12 @@ context.research = {completed_interviews:1,cases:[{analysis}],condition_groups:[
 const md = vm.runInContext('uxAggregateMarkdown(research)', context);
 assert.ok(md.includes('What to do next'));
 assert.ok(!md.includes(boilerplate));
+assert.equal(vm.runInContext("uxMuseUpdate(analysis, {factor:'b', previous_factor:'b', factor_changed:false, update:'strengthened'})",context), 'The same explanation gained support.');
+const museCase = structuredClone(analysis);
+museCase.muse_reasoning = {initial:{}, plan:{status:'accepted',tool_call:{arguments:{leading_explanation:'The fee may matter.',alternative_explanation:'Verification may matter.',reason:'Compare fees first.',if_switch:'Consistent with a fee constraint.',if_same:'Other constraints remain open.'}}},reviews:[{stage:'after_first_comparison',status:'ok',source:'Muse-test',summary:'The fee reading gained support.',what_changed:'The selected option changed.',factor:'b',previous_factor:'b',factor_changed:false,update:'strengthened',remaining_uncertainty:'Only one study task.',evidence_refs:[{source_id:'comparison.b',quote:''}]}]};
+context.museCase = museCase;
+const museHtml = vm.runInContext('uxMuseReadingHtml(museCase)',context);
+assert.ok(museHtml.includes('Before the follow-up'));
+assert.ok(museHtml.includes('The same explanation gained support.'));
+assert.ok(!museHtml.includes('leading possibility changed'));
 console.log('Plain report findings, saved-record compatibility, correction visibility, skips and escaping passed.');
