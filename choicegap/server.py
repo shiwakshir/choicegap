@@ -135,7 +135,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
-        if length < 0 or length > MAX_REQUEST_BYTES:
+        limit = 4_100_000 if self.path == '/api/studio/transcribe' else MAX_REQUEST_BYTES
+        if length < 0 or length > limit:
             raise ValueError("Request too large")
         payload = json.loads(self.rfile.read(length) or b"{}")
         if not isinstance(payload, dict):
@@ -288,7 +289,10 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError('This study has not been published')
             self._json(200, {'id': study['id'], 'title': study['design']['title'],
                 'intro': study['design']['participant_intro'], 'method': study['method'],
-                'recording': study['recording'], 'base_questions':
+                'recording': study['recording'],
+                'recording_seconds': study['policy'].get('recording_seconds', 30),
+                'spoken_moderator': study['recording'] and study['method'] != 'survey' and study['policy'].get('spoken_moderator') is True,
+                'base_questions':
                 (len(study['design']['questions']) if study['method'] != 'interview' else 0) +
                 (len(study['design']['interview_questions']) if study['method'] != 'survey' else 0)})
         elif path == '/api/studio/results':

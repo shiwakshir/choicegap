@@ -2,8 +2,8 @@
   "date": "2026-10-30",
   "status": "Working local prototype; not validated with human researchers or participants",
   "automated": {
-    "python_tests_passed": 125,
-    "studio_tests_passed": 13,
+    "python_tests_passed": 129,
+    "studio_tests_passed": 17,
     "existing_javascript_checks_passed": ["research_ui.test.cjs", "report_copy.test.cjs"],
     "studio_javascript_syntax": "passed",
     "coverage": ["seven answer types", "explicit review and consent", "draft preferences and immutable publication", "bounded adaptive probes", "skip handling", "participant corrections", "out-of-scope fallback", "duplicate/stale response rejection", "resume", "source and correction references", "stimulus context", "no synthesis of all-skipped sessions"]
@@ -16,5 +16,15 @@
     {"task": "Evidence-linked synthesis", "model": "muse-spark-1.3", "result": "Source/correction checks passed; revised prompt produced one concise finding instead of three verbose findings"}
   ],
   "browser_checks": ["brief examples", "generated question editing", "numeric question addition", "save and publication", "participant consent", "session resume", "multi-select selection", "ranking reorder", "optional question skips", "study completion", "findings with exact supporting answers and participant correction"],
+  "spoken_moderator": {
+    "policy_version": 2,
+    "transcription_model": "muse-voice-transcribe-1.0",
+    "outgoing_voice": "Device speech synthesis; not a Meta voice or video avatar",
+    "live_checks": ["9.28 seconds of synthetic speech transcribed; a duplicated word remained", "Spark medium-effort planning returned a recent-episode probe from a fictional answer"],
+    "javascript_checks_passed": ["spoken_turn.test.cjs", "spoken_moderator.test.cjs"],
+    "controller_coverage": ["no capture during speech", "stop microphone before transcription", "no automatic answer submission", "pause cancels stale callbacks", "late permission stream closed", "no late capture during answer processing", "microphone denial falls back to text"],
+    "browser_checked": "Ready-state spoken moderator panel, disclosure and session resume",
+    "real_microphone_and_voice_playback": "Not exercised on the user's device; remains a manual acceptance check"
+  },
   "not_established": ["actual say-do gap", "causal mechanism", "representative prevalence", "human usability", "researcher time saved", "moderation neutrality", "transcription accuracy across accents", "provider superiority", "full live microphone recording across browsers", "remote deployment readiness"]
 }

@@ -120,6 +120,10 @@ class MetaClient:
         }
         if name.startswith('studio_') or name in ('critical_design_review', 'semantic_design_review', 'visual_context_review', 'behavioural_mechanism_plan', 'research_reconsideration'):
             body['reasoning_effort'] = 'high'
+        if name == 'studio_probe':
+            body['reasoning_effort'] = 'medium'
+        elif name == 'studio_member_check':
+            body['reasoning_effort'] = 'low'
         request = urllib.request.Request(
             f"{META_BASE_URL}/chat/completions",
             data=json.dumps(body).encode("utf-8"),

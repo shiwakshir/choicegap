@@ -4,6 +4,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 const typeLabels = {open:'Open ended',single:'Single select',multi:'Multi select',ranking:'Ranking',scale:'Rating scale (1–5)',number:'Number',choice:'Hypothetical choice'};
 const kindLabels = {stated_priority:'Stated priority',reported_behaviour:'Reported past behaviour',hypothetical_choice:'Hypothetical choice',context:'Context',explanation:'Explanation'};
 let study = null, results = null, session = null, rank = [], inputMode = 'typed', busy = false, assetImage = '', recording = null, mediaStream = null, audioUrl = '', audioVersion = 0;
+let spokenMode=false, speechEpoch=0, moderatorState='ready', turnTimer=null, levelTimer=null, levelContext=null;
 const params = new URLSearchParams(location.search);
 const participantId = params.get('study');
 
@@ -19,11 +20,12 @@ async function run(label, task) {
   if (busy) return;
   busy = true; el('errors').hidden = true; message(label);
   const disabled = [...document.querySelectorAll('button')].map(b => [b,b.disabled]);
-  disabled.forEach(([b]) => b.disabled = true);
+  disabled.forEach(([b]) => {if(b.id!=='pause-spoken')b.disabled = true;});
   try { await task(); message(''); } catch(err) { message(''); error(err); }
   finally { disabled.forEach(([b,v]) => { if (b.isConnected) b.disabled = v; }); busy = false; updateNav();
     if(results)el('analyse-results').disabled=!results.completed;
     el('download-results').disabled=!(results?.reports?.length);
+    syncSpokenControls();
   }
 }
 function view(name) {
@@ -164,6 +166,9 @@ async function initParticipant(){
   el('participant-title').textContent=info.title;el('participant-intro').textContent=info.intro;
   el('participant-format').textContent=`${info.method==='combined'?'Survey followed by an interview':info.method==='interview'?'AI-moderated interview':'Survey'} · ${info.base_questions} planned questions, with a few possible follow-ups. All questions are optional.`;
   el('recording-notice').hidden=!info.recording;
+  el('recording-notice').textContent=info.spoken_moderator?
+    `Voice is optional. In spoken interview mode your device reads the questions, then your microphone listens for up to ${info.recording_seconds} seconds per answer. A quiet pause can end a recording and send it to Meta's Muse Voice for transcription. Review or correct the text before sending your answer. Pause voice mode whenever you wish. This app stores submitted text, not the audio.`:
+    `Voice answers are optional. With your microphone permission, a recording of up to ${info.recording_seconds} seconds can go to Meta for transcription. You can correct the transcript before submitting. This app stores your submitted text, not the recording.`;
   el('participant-resume').hidden=!localStorage.getItem(`choicegap-studio-${participantId}`);
 }
 el('participant-start').onclick=()=>run('Starting your study…',async()=>{
@@ -175,9 +180,9 @@ el('participant-resume').onclick=()=>run('Resuming…',async()=>{
   session=await api('resume',{id:localStorage.getItem(`choicegap-studio-${participantId}`)});renderParticipant();
 });
 function renderParticipant(){
-  stopMedia();inputMode='typed';audioVersion++;el('participant-welcome').hidden=true;
+  stopMedia();inputMode='typed';el('participant-welcome').hidden=true;
   el('participant-question').hidden=session.status==='completed';el('participant-done').hidden=session.status!=='completed';
-  if(session.status==='completed'){localStorage.removeItem(`choicegap-studio-${participantId}`);return;}
+  if(session.status==='completed'){spokenMode=false;localStorage.removeItem(`choicegap-studio-${participantId}`);return;}
   const q=session.question;el('question-prompt').textContent=q.prompt;
   el('question-phase').textContent=q.phase==='correction'?'Before we finish':q.phase==='interview'?'Interview':'Survey';
   el('question-progress').textContent=`${session.answered} answered · ${session.remaining} planned remaining`;
@@ -190,8 +195,11 @@ function renderParticipant(){
   if(q.type==='scale')control.innerHTML=`<p class="hint">1 = ${esc(q.options[0])} · 5 = ${esc(q.options[q.options.length-1])}</p>`+[1,2,3,4,5].map(v=>`<label class="answer-option"><input type="radio" name="answer" value="${v}">${v}</label>`).join('');
   if(q.type==='ranking'){rank=[...q.options];renderRank();}
   el('voice-controls').hidden=!session.recording;
+  el('spoken-moderator').hidden=!(session.spoken_moderator && q.type==='open' && q.phase!=='survey');
   el('voice-status').textContent='';el('recording-playback').hidden=true;el('record-answer').textContent='Record an answer';
   el('question-prompt').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});
+  setModerator('ready',spokenMode?'Preparing your next question…':'Ready when you are. You can speak or type.');
+  if(spokenMode && !el('spoken-moderator').hidden)speakCurrentQuestion();
 }
 function renderRank(){el('answer-control').innerHTML='<p class="hint">Put the most important item first. Use the arrows to change the order, then confirm your ranking.</p>'+rank.map((v,i)=>`<div class="rank-row"><strong>${i+1}</strong><span>${esc(v)}</span><button class="quiet" data-rank="${i}" data-direction="-1" aria-label="Move ${esc(v)} up" ${i===0?'disabled':''}>↑</button><button class="quiet" data-rank="${i}" data-direction="1" aria-label="Move ${esc(v)} down" ${i===rank.length-1?'disabled':''}>↓</button></div>`).join('')+'<label class="check"><input id="confirm-ranking" type="checkbox"> This order reflects my ranking.</label>';el('answer-control').querySelectorAll('[data-rank]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.rank),j=i+Number(b.dataset.direction);[rank[i],rank[j]]=[rank[j],rank[i]];renderRank();});}
 function getAnswer(){const q=session.question;
@@ -204,16 +212,43 @@ function getAnswer(){const q=session.question;
 }
 function submit(skip){run('Saving your answer and preparing the next question…',async()=>{
   if(recording)throw new Error('Stop the recording and review your transcript before continuing.');
-  const next=await api('answer',{id:session.id,nonce:session.nonce,answer:skip?null:getAnswer(),skip,input_mode:inputMode});session=next;renderParticipant();
+  const answer=skip?null:getAnswer();
+  if(spokenMode){speechEpoch++;window.speechSynthesis?.cancel();setModerator('thinking','Muse is choosing the next question…');}
+  try{const next=await api('answer',{id:session.id,nonce:session.nonce,answer,skip,input_mode:inputMode});session=next;renderParticipant();}
+  catch(err){setModerator('review','Your answer has not advanced. Check the message above and try again.');throw err;}
 });}
 el('submit-answer').onclick=()=>submit(false);el('skip-answer').onclick=()=>submit(true);
 
 // Audio stays in browser memory until explicitly sent for transcription. No third-party speech service.
-function stopMedia(){if(recording && recording.state!=='inactive'){recording.onstop=null;recording.stop();}recording=null;mediaStream?.getTracks().forEach(t=>t.stop());mediaStream=null;if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl='';}window.speechSynthesis?.cancel();}
+function stopTurnMonitor(){clearTimeout(turnTimer);clearInterval(levelTimer);turnTimer=null;levelTimer=null;levelContext?.close().catch(()=>{});levelContext=null;}
+function stopMedia(){audioVersion++;speechEpoch++;stopTurnMonitor();if(recording && recording.state!=='inactive'){recording.onstop=null;recording.stop();}recording=null;mediaStream?.getTracks().forEach(t=>t.stop());mediaStream=null;el('recording-playback').pause();if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl='';}window.speechSynthesis?.cancel();}
+function setModerator(state,label){moderatorState=state;el('spoken-moderator').dataset.state=state;el('moderator-status').textContent=label;syncSpokenControls();}
+function syncSpokenControls(){
+  el('start-spoken').hidden=spokenMode;el('pause-spoken').hidden=!spokenMode;
+  el('start-spoken').disabled=busy||!!recording;
+  el('record-answer').disabled=busy||moderatorState==='speaking';
+  el('read-question').disabled=busy||!!recording||moderatorState==='speaking';
+}
+function speakCurrentQuestion(){
+  if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){spokenMode=false;setModerator('ready','This browser cannot read questions aloud. You can record or type an answer.');return;}
+  const epoch=++speechEpoch,nonce=session.nonce;
+  el('recording-playback').pause();
+  window.speechSynthesis.cancel();
+  const utterance=new SpeechSynthesisUtterance(session.question.prompt);
+  const voices=window.speechSynthesis.getVoices();
+  const voice=voices.find(v=>/^en[-_]/i.test(v.lang)&&/natural|online/i.test(v.name))||voices.find(v=>/^en[-_]/i.test(v.lang));
+  if(voice){utterance.voice=voice;utterance.lang=voice.lang;}utterance.rate=.96;
+  setModerator('speaking','Asking the question… Your microphone is off.');
+  utterance.onend=()=>{if(epoch===speechEpoch&&spokenMode&&session.nonce===nonce)beginRecording(true);};
+  utterance.onerror=()=>{if(epoch===speechEpoch){spokenMode=false;setModerator('ready','Voice playback stopped. Read the question, then record or type your answer.');}};
+  window.speechSynthesis.speak(utterance);
+}
+el('start-spoken').onclick=()=>{if(busy)return;spokenMode=true;speakCurrentQuestion();};
+el('pause-spoken').onclick=()=>{spokenMode=false;speechEpoch++;window.speechSynthesis?.cancel();if(recording?.state==='recording')recording.stop();else{audioVersion++;mediaStream?.getTracks().forEach(t=>t.stop());mediaStream=null;}stopTurnMonitor();setModerator('ready','Voice mode paused. You can review, record or type your answer.');};
 async function wavBase64(blob){
   const context=new AudioContext();let decoded;
   try{decoded=await context.decodeAudioData(await blob.arrayBuffer());}finally{await context.close();}
-  const offline=new OfflineAudioContext(1,Math.min(Math.ceil(decoded.duration*16000),30*16000),16000);
+  const offline=new OfflineAudioContext(1,Math.min(Math.ceil(decoded.duration*16000),(session.recording_seconds||30)*16000),16000);
   const source=offline.createBufferSource();source.buffer=decoded;source.connect(offline.destination);source.start();
   const buffer=await offline.startRendering(), samples=buffer.getChannelData(0), raw=new ArrayBuffer(44+samples.length*2), view=new DataView(raw);
   function str(offset,s){for(let i=0;i<s.length;i++)view.setUint8(offset+i,s.charCodeAt(i));}
@@ -221,35 +256,62 @@ async function wavBase64(blob){
   for(let i=0;i<samples.length;i++)view.setInt16(44+i*2,Math.max(-1,Math.min(1,samples[i]))*(samples[i]<0?32768:32767),true);
   return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(new Blob([raw],{type:'audio/wav'}));});
 }
-el('record-answer').onclick=async()=>{
+async function transcribeRecording(blob,version){
+  return run('Muse is transcribing. You can correct the text before sending your answer…',async()=>{
+    setModerator('transcribing','Turning your answer into text… Your microphone is off.');
+    try{
+      const audio=await wavBase64(blob);const response=await api('transcribe',{id:session.id,nonce:session.nonce,audio});
+      if(version!==audioVersion)return;
+      el('open-answer').value=response.transcript;inputMode='confirmed_transcript';
+      el('voice-status').textContent='Check and correct the transcript above, then send your answer. Your microphone is off.';
+      setModerator('review','Does this capture your answer? Edit the text, send it, or record again.');el('open-answer').focus({preventScroll:true});
+    }catch(err){setModerator('review','Transcription did not complete. Your answer has not been submitted. Try again or type instead.');throw err;}
+  });
+}
+async function beginRecording(automatic=false){
   if(busy)return;
   if(recording){recording.stop();return;}
-  if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder)return error(new Error('This browser cannot record audio. You can type your answer.'));
-  const version=++audioVersion;
+  if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){spokenMode=false;setModerator('ready','This browser cannot record audio. You can type your answer.');return error(new Error('This browser cannot record audio. You can type your answer.'));}
+  const version=++audioVersion,nonce=session.nonce;
   try{
-    window.speechSynthesis?.cancel();mediaStream=await navigator.mediaDevices.getUserMedia({audio:true});
-    if(version!==audioVersion){stopMedia();return;}
+    window.speechSynthesis?.cancel();setModerator('listening','Waiting for microphone permission…');
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    if(version!==audioVersion||session.nonce!==nonce||busy||(automatic&&!spokenMode)){stream.getTracks().forEach(t=>t.stop());return;}
+    mediaStream=stream;
+    el('recording-playback').pause();
     if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl='';}el('recording-playback').hidden=true;
-    const chunks=[];recording=new MediaRecorder(mediaStream);recording.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
-    recording.onstop=async()=>{
-      const mime=recording.mimeType;recording=null;mediaStream?.getTracks().forEach(t=>t.stop());mediaStream=null;
+    const chunks=[],recorder=new MediaRecorder(mediaStream);recording=recorder;recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+    recorder.onstop=async()=>{
+      const mime=recorder.mimeType;recording=null;stopTurnMonitor();stream.getTracks().forEach(t=>t.stop());mediaStream=null;
       el('record-answer').textContent='Record again';
       if(version!==audioVersion)return;
       const blob=new Blob(chunks,{type:mime});audioUrl=URL.createObjectURL(blob);el('recording-playback').src=audioUrl;el('recording-playback').hidden=false;
+      setModerator('review','Recording stopped. Review it or transcribe it when ready.');
       const control=el('voice-status');control.replaceChildren(document.createTextNode('Listen to your recording, then send it to Muse to transcribe. '));
       const send=document.createElement('button');send.className='quiet';send.textContent='Transcribe this recording';control.append(send);
-      send.onclick=()=>run('Muse is transcribing. You can edit the text before sending your answer…',async()=>{
-        const audio=await wavBase64(blob);const response=await api('transcribe',{id:session.id,nonce:session.nonce,audio});
-        if(version!==audioVersion)return;el('open-answer').value=response.transcript;inputMode='confirmed_transcript';
-        control.textContent='Check and correct the transcript above. Only the text you send will be saved as your answer.';
-        el('open-answer').focus();
-      });
+      send.onclick=()=>transcribeRecording(blob,version);
+      if(automatic&&spokenMode)await transcribeRecording(blob,version);
     };
-    recording.start();el('record-answer').textContent='Stop recording';el('voice-status').textContent='Recording… stops automatically after 30 seconds.';
-    setTimeout(()=>{if(version===audioVersion && recording?.state==='recording')recording.stop();},30000);
-  }catch(err){stopMedia();error(new Error('Microphone unavailable. Check browser permission, or type your answer.'));}
-};
+    recorder.onerror=()=>{stopMedia();spokenMode=false;setModerator('ready','Recording failed. Please type your answer or try recording again.');};
+    recorder.start();el('record-answer').textContent='Stop recording';
+    const seconds=session.recording_seconds||30;
+    el('voice-status').textContent=`Recording… up to ${seconds} seconds. ${automatic?'A quiet pause can stop the recording early. You can also press Stop recording.':''}`;
+    setModerator('listening','Listening to your answer…');
+    turnTimer=setTimeout(()=>{if(version===audioVersion&&recorder.state==='recording')recorder.stop();},seconds*1000);
+    if(automatic){
+      try{
+        const context=new AudioContext();levelContext=context;await context.resume();
+        if(version!==audioVersion||recorder.state!=='recording'){await context.close();return;}
+        const input=context.createMediaStreamSource(stream),analyser=context.createAnalyser();analyser.fftSize=2048;input.connect(analyser);
+        const samples=new Float32Array(analyser.fftSize),gate=new SpokenTurn({maxMs:seconds*1000});
+        levelTimer=setInterval(()=>{if(version!==audioVersion||recorder.state!=='recording')return;analyser.getFloatTimeDomainData(samples);const rms=Math.sqrt(samples.reduce((sum,v)=>sum+v*v,0)/samples.length);if(gate.observe(rms,performance.now()))recorder.stop();},100);
+      }catch{el('voice-status').textContent=`Recording… press Stop recording when finished. Maximum ${seconds} seconds.`;}
+    }
+  }catch(err){stopMedia();spokenMode=false;setModerator('ready','Microphone unavailable. You can type your answer.');error(new Error('Microphone unavailable. Check browser permission, or type your answer.'));}
+}
+el('record-answer').onclick=()=>beginRecording(spokenMode);
 el('read-question').onclick=()=>{if(!window.speechSynthesis)return error(new Error('Read aloud is unavailable in this browser.'));window.speechSynthesis.cancel();window.speechSynthesis.speak(new SpeechSynthesisUtterance(session.question.prompt));el('voice-status').textContent='Reading with your device’s voice. Muse chooses the question; this is not an avatar.';};
-window.addEventListener('pagehide',stopMedia);
+window.addEventListener('pagehide',()=>{spokenMode=false;stopMedia();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&spokenMode)el('pause-spoken').click();});
 if(participantId)run('Opening your study…',initParticipant);
 else {updateNav();fetch('/api/health').then(r=>r.json()).then(h=>{if(!h.meta_enabled)message('Muse is not connected. Configure your local API key and restart the app before generating a study.');}).catch(()=>message('Could not reach the local server.'));}

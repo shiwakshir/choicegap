@@ -1,6 +1,10 @@
 import copy
+import base64
+import io
+import json
 import tempfile
 import unittest
+import wave
 from pathlib import Path
 from unittest.mock import patch
 
@@ -218,6 +222,68 @@ class StudioTests(unittest.TestCase):
                 handler._studio_get('/api/studio/results', {'id': [published['id']]})
                 self.assertEqual(replies[-1]['started'], 1)
                 self.assertEqual(replies[-1]['completed'], 0)
+
+    def test_new_voice_policy_does_not_change_legacy_approvals(self):
+        self.assertEqual(self.study['policy']['recording_model'], 'muse-voice-transcribe-1.0')
+        state = studio.start(self.study, True)
+        public = studio.public_session(state, self.study)
+        self.assertTrue(public['spoken_moderator'])
+        self.assertEqual(public['recording_seconds'], 90)
+        survey = {**self.study, 'method': 'survey'}
+        self.assertFalse(studio.public_session(state, survey)['spoken_moderator'])
+        legacy = copy.deepcopy(self.study)
+        legacy['policy'] = {'version': 1, 'survey_probes': 2, 'interview_probes': 3,
+                            'participant_correction': True, 'recording_model': 'muse-spark-1.2'}
+        public = studio.public_session(state, legacy)
+        self.assertFalse(public['spoken_moderator'])
+        self.assertEqual(public['recording_seconds'], 30)
+        self.assertNotIn('recording_seconds', legacy['policy'])
+
+    def test_dedicated_voice_request_keeps_key_server_side_and_returns_only_text(self):
+        class VoiceMeta(FakeMeta):
+            api_key = 'fictional-local-test-key'
+        response = {'transcript': 'My usual tool was easier for that task.', 'audioDurationMs': 1000}
+        def receive(req, timeout):
+            self.assertTrue(req.full_url.endswith('/asr/transcribe'))
+            self.assertIn(b'name="request"', req.data)
+            self.assertIn(b'name="audio"', req.data)
+            self.assertIn(b'muse-voice-transcribe-1.0', req.data)
+            self.assertNotIn(b'fictional-local-test-key', req.data)
+            return io.BytesIO(json.dumps(response).encode())
+        with patch('urllib.request.urlopen', side_effect=receive):
+            result = studio.transcribe_voice(b'fictional-wave-fixture', VoiceMeta())
+        self.assertEqual(result['transcript'], response['transcript'])
+        self.assertNotIn('audio', result)
+        self.assertNotIn('api_key', result)
+
+    def test_recording_length_and_question_scope_checked_before_network(self):
+        def audio(seconds):
+            out = io.BytesIO()
+            with wave.open(out, 'wb') as wav:
+                wav.setnchannels(1); wav.setsampwidth(2); wav.setframerate(16000)
+                wav.writeframes(b'\0\0' * int(seconds * 16000))
+            return base64.b64encode(out.getvalue()).decode()
+        state = studio.start(self.study, True)
+        payload = {'nonce': state['nonce'], 'audio': audio(31)}
+        with patch.object(studio, 'transcribe_voice', return_value={'transcript': 'Test'}) as call:
+            self.assertEqual(studio.transcribe(payload, self.study, state, FakeMeta()), {'transcript': 'Test'})
+            call.assert_called_once()
+        legacy = copy.deepcopy(self.study)
+        legacy['policy'] = {'recording_model': 'muse-spark-1.2'}
+        with self.assertRaises(ValueError):
+            studio.transcribe(payload, legacy, state, FakeMeta())
+        with self.assertRaises(ValueError):
+            studio.transcribe({**payload, 'audio': audio(91)}, self.study, state, FakeMeta())
+        with self.assertRaises(ValueError):
+            studio.transcribe({**payload, 'nonce': 'stale'}, self.study, state, FakeMeta())
+        self.study['recording'] = False
+        with self.assertRaises(ValueError):
+            studio.transcribe(payload, self.study, state, FakeMeta())
+
+    def test_empty_transcript_does_not_create_an_answer(self):
+        with patch('urllib.request.urlopen', return_value=io.BytesIO(b'{"transcript":""}')):
+            with self.assertRaisesRegex(ValueError, 'has not been submitted'):
+                studio.transcribe_voice(b'fixture', type('Meta', (), {'api_key': 'test'})())
 
 
 if __name__ == '__main__':

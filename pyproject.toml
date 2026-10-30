@@ -18,5 +18,5 @@ choicegap = "choicegap.server:main"
 packages = ["choicegap"]
 
 [tool.setuptools.data-files]
-"share/choicegap/static" = ["static/index.html", "static/app.js", "static/research.js", "static/explore.js", "static/simple-study.js", "static/mechanisms.js", "static/styles.css", "static/modes.css", "static/studio.html", "static/studio.js", "static/studio.css"]
+"share/choicegap/static" = ["static/index.html", "static/app.js", "static/research.js", "static/explore.js", "static/simple-study.js", "static/mechanisms.js", "static/styles.css", "static/modes.css", "static/studio.html", "static/studio.js", "static/studio.css", "static/spoken-turn.js"]
 

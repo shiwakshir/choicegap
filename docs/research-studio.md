@@ -2,6 +2,8 @@
 
 Updated 30 October 2026. This is the primary workflow at `/?mode=researcher`; earlier delivery studies remain at `/index.html?mode=researcher`.
 
+New Studio approvals now offer a [spoken AI moderator](spoken-moderator.md) using device speech and Muse Voice Transcribe, with up to 90 seconds per recorded answer. The original 30-second Spark 1.2 recording path described below applies to existing version-one approvals. New interviews remain turn based and require transcript confirmation; they have no video avatar.
+
 ## Product workflow
 
 Brief → Muse draft → researcher edits and approves → adaptive survey/interview → participant correction → researcher findings.
@@ -57,4 +59,4 @@ This is a single-computer prototype. It has no authentication, encryption, reten
 
 Unknowns remain: real researcher usability, participant burden, transcription quality across accents/languages, moderation neutrality, semantic validity, accessibility across assistive technologies, cost/latency at scale and generalizable product demand.
 
-The latest run passed 125 Python tests (13 for Research Studio), the two existing JavaScript checks and the new script's syntax check. See [the validation record](studio-validation.json). Live transcription used synthetic speech; actual microphone capture across browsers remains unverified.
+The latest run passed 129 Python tests (17 for Research Studio), the two existing JavaScript checks, two spoken-moderator JavaScript checks and the script syntax check. See [the validation record](studio-validation.json). Live transcription used synthetic speech; actual microphone capture across browsers remains unverified.
