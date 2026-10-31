@@ -1,5 +1,11 @@
 # Evidence workbench: evaluation status
 
+## Integrated Studio capabilities, 31 October
+
+The current revision adds reviewed desk research, concept generation/editing, recording-grounded probes, native approved-condition selection, streaming speech and an optional original 3D character. Actual Meta checks returned cited background, a generated and edited concept, a comparison draft, approximate visible events from a four-second fictional visual fixture, and a streamed transcript from synthetic speech. The streaming check used the app's real local relay and native Meta endpointing; it verified that transcription alone did not submit an answer.
+
+New tests cover source-review gates, single-cell task compilation, native selection/fallback, skipped baselines, recording-review corrections, timestamp limits, one-use/stale stream access, private credentials, PCM conversion and participant-controller streaming/pause behaviour. The latest validation record and bounded claims are in [studio-validation.json](studio-validation.json) and [muse-enhancements.md](muse-enhancements.md). Earlier counts and evaluations below are historical; no earlier result is upgraded into evidence of research quality by these integration checks.
+
 ## Simplified study setup, 30 October
 
 The researcher page now starts with one prepared grocery-delivery study and the sequence survey → delivery choices → written interview. Source import, factor editing, model critique and older result controls are collapsed under More settings. A new source-free draft uses the existing approval/collection/reporting engine and makes no setup model call. It contains no invented participants or imported findings. The participant-facing title is neutral.

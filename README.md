@@ -4,7 +4,9 @@ ChoiceGap is a brief-led UX and market research prototype. A researcher supplies
 
 ## Start with Research Studio
 
-Restart the server from this repository directory, then open <http://127.0.0.1:8000/?mode=researcher>.
+Updated 31 October: Studio now includes cited background research, reviewed Muse Image concept generation/editing, approved single-detail comparisons selected through a Muse tool call, participant-reviewed task recordings, streaming Muse Voice and an optional included 3D moderator. See [the enhanced workflow and setup](docs/muse-enhancements.md). The 3D route needs no external avatar account. Existing study approvals retain their original collection scope.
+
+Run `Start-ChoiceGap.ps1` from this repository directory (it prepares a local environment on first use), then open <http://127.0.0.1:8000/?mode=researcher>. For manual setup, use `python -m pip install -e .` followed by `python -m choicegap.server`. The streaming relay needs the declared `websockets` dependency and the adjacent localhost port; recorded transcription remains available if it cannot start.
 
 1. Enter a brief, or choose **AI assistant adoption** or **Sustainable shopping** as an editable example. Add hypotheses and a concept stimulus if useful.
 2. Select **Draft my study with Muse**. Review and edit the questions, answer options, order, interview guide and permitted follow-up topics. Save the draft if needed.
@@ -12,7 +14,7 @@ Restart the server from this repository directory, then open <http://127.0.0.1:8
 4. Open the link in another tab. Complete or skip questions. Muse can ask bounded follow-ups; the participant can correct its tentative understanding before finishing.
 5. Return to **Findings**, refresh responses and select **Generate findings with Muse**. Open the supporting responses under each finding, or download the report and evidence.
 
-Supported survey types: **open ended, single select, multi select, ranking, 1–5 rating scale, number and hypothetical choice**. This is a working core, not an exhaustive survey question library. Newly approved studies can offer a **spoken AI moderator**: the device speaks the question, listens to an answer of up to 90 seconds, and Muse Voice Transcribe supplies an editable transcript. The participant sends the reviewed answer, then Muse Spark chooses the next question. No human moderator needs to attend. Existing approvals retain their original recording protocol. There is no live video avatar. See [spoken interview setup and validation](docs/spoken-moderator.md).
+Supported survey types: **open ended, single select, multi select, ranking, 1–5 rating scale, number and hypothetical choice**. This is a working core, not an exhaustive survey question library. Newly approved studies can offer a **spoken AI moderator** and an optional **3D AI character**: the device speaks the question, listens to an answer of up to 90 seconds, and Muse Voice Transcribe supplies an editable transcript. The participant sends the reviewed answer, then Muse Spark chooses the next question. No human moderator needs to attend. Existing approvals retain their original recording protocol. The included character is stylised with approximate speaking movements; photorealistic video was deferred. See [spoken interview setup and validation](docs/spoken-moderator.md) and [the new capability guide](docs/muse-enhancements.md).
 
 The app sends briefs, attached stimuli, submitted responses and optional recordings to Meta. It stores studies and submitted text in a local unencrypted SQLite database, without researcher sign-in. Recordings are not saved by this app. Local links work on this computer; remote recruitment needs hosting, authentication and appropriate data handling. See [Research Studio setup, boundaries and validation](docs/research-studio.md).
 

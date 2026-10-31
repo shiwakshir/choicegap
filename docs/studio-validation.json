@@ -1,9 +1,11 @@
 {
-  "date": "2026-10-30",
+  "date": "2026-10-31",
   "status": "Working local prototype; not validated with human researchers or participants",
   "automated": {
-    "python_tests_passed": 129,
+    "python_tests_passed": 148,
     "studio_tests_passed": 17,
+    "enhancement_and_relay_tests_passed": 19,
+    "pcm_worklet_check": "passed at 16, 24 and 48 kHz",
     "existing_javascript_checks_passed": ["research_ui.test.cjs", "report_copy.test.cjs"],
     "studio_javascript_syntax": "passed",
     "coverage": ["seven answer types", "explicit review and consent", "draft preferences and immutable publication", "bounded adaptive probes", "skip handling", "participant corrections", "out-of-scope fallback", "duplicate/stale response rejection", "resume", "source and correction references", "stimulus context", "no synthesis of all-skipped sessions"]
@@ -16,10 +18,16 @@
     {"task": "Evidence-linked synthesis", "model": "muse-spark-1.3", "result": "Source/correction checks passed; revised prompt produced one concise finding instead of three verbose findings"}
   ],
   "browser_checks": ["brief examples", "generated question editing", "numeric question addition", "save and publication", "participant consent", "session resume", "multi-select selection", "ranking reorder", "optional question skips", "study completion", "findings with exact supporting answers and participant correction"],
+  "enhancement_checks": {
+    "protocol_version_for_new_approvals": 3,
+    "live_meta": ["native web search returned five citation annotations, not five distinct sources", "Muse Image generated and edited separate concept drafts", "comparison drafting revised after an initially dominated option pair; both traces retained", "four-second synthetic video produced bounded approximate event descriptions", "synthetic speech streamed through the local relay with native turn completion and no answer submission", "completed fictional nine-response browser study used native approved-condition selection and preserved the participant correction in synthesis"],
+    "browser": ["3D character hide/show", "reviewed video upload", "save and publish enhanced study", "single-detail comparison with fixed option order", "same choice reported with answered-pair denominator", "no console errors"],
+    "scope": "Software integration checks using fictional material, not human research validation"
+  },
   "spoken_moderator": {
-    "policy_version": 2,
+    "policy_version": 3,
     "transcription_model": "muse-voice-transcribe-1.0",
-    "outgoing_voice": "Device speech synthesis; not a Meta voice or video avatar",
+    "outgoing_voice": "Device speech synthesis with optional included 3D character; not a Meta voice or photorealistic video avatar",
     "live_checks": ["9.28 seconds of synthetic speech transcribed; a duplicated word remained", "Spark medium-effort planning returned a recent-episode probe from a fictional answer"],
     "javascript_checks_passed": ["spoken_turn.test.cjs", "spoken_moderator.test.cjs"],
     "controller_coverage": ["no capture during speech", "stop microphone before transcription", "no automatic answer submission", "pause cancels stale callbacks", "late permission stream closed", "no late capture during answer processing", "microphone denial falls back to text"],

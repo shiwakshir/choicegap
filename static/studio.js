@@ -2,9 +2,11 @@
 const el = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const typeLabels = {open:'Open ended',single:'Single select',multi:'Multi select',ranking:'Ranking',scale:'Rating scale (1–5)',number:'Number',choice:'Hypothetical choice'};
-const kindLabels = {stated_priority:'Stated priority',reported_behaviour:'Reported past behaviour',hypothetical_choice:'Hypothetical choice',context:'Context',explanation:'Explanation'};
+const kindLabels = {stated_priority:'Stated priority',reported_behaviour:'Reported past behaviour',hypothetical_choice:'Hypothetical choice',context:'Context',explanation:'Explanation',task_recording:'Participant-reviewed recording description'};
 let study = null, results = null, session = null, rank = [], inputMode = 'typed', busy = false, assetImage = '', recording = null, mediaStream = null, audioUrl = '', audioVersion = 0;
 let spokenMode=false, speechEpoch=0, moderatorState='ready', turnTimer=null, levelTimer=null, levelContext=null;
+let streamingCapture=null;
+let pendingNative=false;
 const params = new URLSearchParams(location.search);
 const participantId = params.get('study');
 
@@ -53,13 +55,14 @@ for (const key of Object.keys(examples)) el(`example-${key}`).onclick = () => {
 };
 el('stimulus-file').onchange = async () => {
   const file = el('stimulus-file').files[0]; assetImage = ''; el('stimulus-preview').replaceChildren();
+  window.researchTools?.clearConcept();
   if (!file) return;
   if (file.size > 1_000_000 || !['image/png','image/jpeg','image/webp'].includes(file.type)) { error(new Error('Choose a PNG, JPEG or WebP image up to 1 MB.')); el('stimulus-file').value=''; return; }
   assetImage = await new Promise((resolve,reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
   const img = document.createElement('img'); img.src = assetImage; img.alt = 'Concept stimulus preview'; el('stimulus-preview').append(img);
 };
 el('brief-form').onsubmit = event => { event.preventDefault(); run('Muse is drafting your study. This may take a minute…', async () => {
-  study = await api('generate',{brief:el('research-brief').value,hypotheses:el('research-hypotheses').value,stimulus:{text:el('stimulus-text').value,image:assetImage}});
+  study = await api('generate',{brief:el('research-brief').value,hypotheses:el('research-hypotheses').value,stimulus:{text:el('stimulus-text').value,image:assetImage},...window.researchTools?.briefOptions()});
   results = null; renderEditor(); view('review');
 }); };
 function optionsHtml(values, labels, chosen) { return values.map(v => `<option value="${esc(v)}" ${chosen===v?'selected':''}>${esc(labels[v] || v)}</option>`).join(''); }
@@ -67,6 +70,7 @@ function renderEditor() {
   const d = study.design;
   el('study-method').value=study.method||'combined';el('allow-recording').checked=study.recording===true;
   el('review-source-brief').textContent=study.brief;
+  if(study.background){const box=document.createElement('div');box.innerHTML=`<p class="pill">Reviewed desk research · not participant evidence</p><p class="source-summary">${esc(study.background.summary)}</p><ul>${[...new Map(study.background.citations.map(c=>[c.url,c])).values()].map(c=>`<li><a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">${esc(c.title)}</a></li>`).join('')}</ul>`;el('review-source-brief').append(box);}
   el('review-stimulus').replaceChildren();
   const description=document.createElement('p');description.textContent=study.stimulus.text||'No concept text attached.';el('review-stimulus').append(description);
   if(study.stimulus.image){const img=document.createElement('img');img.src=study.stimulus.image;img.alt=study.stimulus.text||'Attached concept';img.style.maxWidth='100%';el('review-stimulus').append(img);}
@@ -74,6 +78,7 @@ function renderEditor() {
   el('study-hypotheses').value=d.hypotheses.join('\n'); el('study-topics').value=d.followup_topics.join('\n');
   for (const key of ['questions','interview_questions']) renderQuestions(key);
   el('approve-study').checked=false;
+  window.researchTools?.render(study);
 }
 function renderQuestions(key) {
   const target = el(key === 'questions' ? 'survey-editor' : 'interview-editor');
@@ -82,7 +87,7 @@ function renderQuestions(key) {
     <div class="card-tools"><button class="quiet" data-action="up" aria-label="Move question ${i+1} up" ${i===0?'disabled':''}>↑</button><button class="quiet" data-action="down" aria-label="Move question ${i+1} down" ${i===study.design[key].length-1?'disabled':''}>↓</button><button class="quiet" data-action="remove" ${study.design[key].length===1?'disabled':''}>Remove</button></div></div>
     <label>Question text<textarea class="q-prompt" rows="2">${esc(q.prompt)}</textarea></label>
     <label class="q-options-label" ${['open','number'].includes(q.type)?'hidden':''}>${q.type==='scale'?'Scale endpoints · one per line':'Answer options · one per line'}<textarea class="q-options" rows="3">${esc(q.options.join('\n'))}</textarea></label>
-    <details><summary>Question purpose & evidence</summary><label>What this question explores<textarea class="q-purpose" rows="2">${esc(q.purpose)}</textarea></label><label>How to interpret the answer<select class="q-kind">${optionsHtml(Object.keys(kindLabels),kindLabels,q.evidence_kind)}</select></label><label class="check"><input class="q-stimulus" type="checkbox" ${q.show_stimulus?'checked':''}> Show the approved stimulus with this question</label></details></article>`).join('');
+    <details><summary>Question purpose & evidence</summary><label>What this question explores<textarea class="q-purpose" rows="2">${esc(q.purpose)}</textarea></label><label>How to interpret the answer<select class="q-kind">${optionsHtml(Object.keys(kindLabels).filter(k=>k!=='task_recording'),kindLabels,q.evidence_kind)}</select></label><label class="check"><input class="q-stimulus" type="checkbox" ${q.show_stimulus?'checked':''}> Show the approved stimulus with this question</label></details></article>`).join('');
   target.querySelectorAll('.q-type').forEach(input => input.onchange = () => {
     readEditor(); const i=Number(input.closest('article').dataset.index); const q=study.design[key][i];
     if (q.type==='choice') q.evidence_kind='hypothetical_choice';
@@ -113,10 +118,10 @@ for (const [id,key] of [['add-survey','questions'],['add-interview','interview_q
   study.design[key].push({type:'open',prompt:'',options:[],purpose:'',evidence_kind:'explanation',show_stimulus:false}); renderQuestions(key); el('approve-study').checked=false;
 };
 el('review').addEventListener('input', event => { if(event.target.id!=='approve-study') el('approve-study').checked=false; });
-function draftPayload(){return {id:study.id,design:study.design,method:el('study-method').value,recording:el('allow-recording').checked};}
+function draftPayload(){return {id:study.id,design:study.design,method:el('study-method').value,recording:el('allow-recording').checked,...window.researchTools?.read()};}
 el('save-draft').onclick=()=>run('Saving your draft…',async()=>{readEditor();study=await api('save',draftPayload());});
 el('publish-study').onclick=()=>run('Publishing the approved study…',async()=>{
-  readEditor(); study=await api('approve',{id:study.id,design:study.design,method:el('study-method').value,recording:el('allow-recording').checked,confirmed:el('approve-study').checked}); renderCollection(); view('collect');
+  readEditor(); study=await api('approve',{...draftPayload(),confirmed:el('approve-study').checked}); renderCollection(); view('collect');
 });
 function renderCollection(){
   el('collection-title').textContent=study.design.title;
@@ -132,16 +137,18 @@ async function loadResults(){
   results=await api(`results?id=${encodeURIComponent(study.id)}`);
   el('response-count').textContent=`${results.completed} completed ${results.completed===1?'session':'sessions'} · ${results.started-results.completed} unfinished`;
   el('analyse-results').disabled=!results.completed;
-  el('raw-responses').innerHTML=results.sessions.map((s,i)=>`<details><summary>${esc(s.id)} · ${esc(s.status)}</summary>${s.responses.map(r=>evidenceHtml(r,`raw-${i}-${r.id}`)).join('')}<details><summary>Moderator decisions</summary>${s.decisions.map(d=>`<p>${esc(d.question||d.reason)}<br><span class="hint">${esc(d.topic||'')} · ${esc(d.reason||'')} ${d.rival_explanation?`Alternative: ${esc(d.rival_explanation)}`:''}</span></p>`).join('')}</details></details>`).join('')||'<p>No responses yet. Try the participant link first.</p>';
+  el('raw-responses').innerHTML=results.sessions.map((s,i)=>`<details><summary>${esc(s.id)} · ${esc(s.status)}</summary>${s.responses.map(r=>evidenceHtml(r,`raw-${i}-${r.id}`)).join('')}<details><summary>Moderator decisions</summary>${s.decisions.map(d=>`<p><strong>${esc(d.question||'Next-step decision')}</strong><br>${esc(d.reason||'')}<br><span class="hint">${esc(d.source||d.topic||'')}${d.rival_explanation?` · Alternative: ${esc(d.rival_explanation)}`:''}${d.if_switch?`<br>If the choice changes: ${esc(d.if_switch)}`:''}${d.if_same?`<br>If it stays the same: ${esc(d.if_same)}`:''}${d.source_ids?.length?`<br>Response references: ${esc(d.source_ids.join(', '))}`:''}</span></p>`).join('')}</details></details>`).join('')||'<p>No responses yet. Try the participant link first.</p>';
   el('findings-content').innerHTML='';el('download-results').disabled=true;
   if(results.reports.length) renderReport(results.reports[0]);
   view('findings');
 }
-function displayAnswer(r){return r.skipped?'Skipped':Array.isArray(r.answer)?r.answer.map((v,i)=>r.evidence_kind==='context'?v:`${i+1}. ${v}`).join('\n'):String(r.answer??'');}
-function evidenceHtml(r,id){return `<div class="evidence-line" id="${esc(id)}"><span class="pill">${esc(r.id)}</span> <span class="hint">${esc(kindLabels[r.evidence_kind]||r.evidence_kind)}${r.phase==='correction'?' · Participant correction':''}</span><p><strong>${esc(r.question)}</strong></p><blockquote>${esc(displayAnswer(r))}</blockquote></div>`;}
+function displayAnswer(r){if(r.skipped)return 'Skipped';if(r.answer&&typeof r.answer==='object'&&!Array.isArray(r.answer))return [...(r.answer.confirmed_events||[]).map(e=>`${e.seconds}s: ${e.description}`),r.answer.participant_correction?`Participant correction: ${r.answer.participant_correction}`:'',r.answer.model_uncertainty?`Recording uncertainty: ${r.answer.model_uncertainty}`:''].filter(Boolean).join('\n');return Array.isArray(r.answer)?r.answer.map((v,i)=>`${i+1}. ${v}`).join('\n'):String(r.answer??'');}
+function comparisonHtml(comparison,options){const order=comparison.display_order||['a','b'];return `<div class="table-scroll"><table><thead><tr><th>Detail</th>${order.map((key,i)=>`<th>${esc(options[i])}</th>`).join('')}</tr></thead><tbody>${comparison.rows.map(row=>`<tr><th>${esc(row.name)}</th>${order.map(key=>`<td>${esc(row[key])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;}
+function evidenceHtml(r,id){return `<div class="evidence-line" id="${esc(id)}"><span class="pill">${esc(r.id)}</span> <span class="hint">${esc(kindLabels[r.evidence_kind]||r.evidence_kind)}${r.phase==='correction'?' · Participant correction':''}</span><p><strong>${esc(r.question)}</strong></p>${r.comparison?comparisonHtml(r.comparison,r.options):''}<blockquote>${esc(displayAnswer(r))}</blockquote></div>`;}
 function renderReport(report){
   const a=report.analysis;const byId=Object.fromEntries(report.evidence.map(r=>[r.id,r]));
   el('findings-content').innerHTML=`<div class="panel"><p class="eyebrow">Researcher review required</p><h2>What the responses suggest</h2><p>${esc(a.overview)}</p><p class="hint">Includes ${report.included} of ${report.completed_total} completed sessions at the time of analysis. ${report.incomplete} were unfinished. Generated by ${esc(report.model)}.</p></div>`+
+    ((report.comparison_results||[]).length?`<div class="panel"><h2>Choices under the tested conditions</h2>${report.comparison_results.map(c=>`<p><strong>${esc(c.change)}</strong><br>${c.different_option} of ${c.answered_both} completed answer pairs changed option; ${c.same_option} kept the same option. ${c.neither_in_pair} pairs included “Neither”; ${c.skipped_in_pair} pairs included a skipped task.</p>`).join('')}<p class="hint">Descriptive repeated hypothetical choices. These counts do not establish a causal effect or predict real-world adoption.</p></div>`:'')+
     a.findings.map(f=>`<article class="panel finding"><h3>${esc(f.finding)}</h3>${f.behavioural_interpretation?`<p><strong>Possible explanation:</strong> ${esc(f.behavioural_interpretation)}</p>`:''}<p><strong>Another explanation:</strong> ${esc(f.alternative_explanation)}</p><p><strong>What to test:</strong> ${esc(f.recommendation)}</p><p class="hint">${esc(f.limitation)}</p><details><summary>Read the supporting responses (${f.evidence_ids.length})</summary>${f.evidence_ids.map(id=>evidenceHtml(byId[id],`evidence-${id}`)).join('')}</details></article>`).join('')+
     `<div class="panel"><h2>What to research next</h2><ul>${a.next_research.map(v=>`<li>${esc(v)}</li>`).join('')}</ul><details><summary>Limits of these findings</summary><ul>${report.limitations.map(v=>`<li>${esc(v)}</li>`).join('')}</ul></details></div>`;
   el('download-results').disabled=false;
@@ -166,8 +173,11 @@ async function initParticipant(){
   el('participant-title').textContent=info.title;el('participant-intro').textContent=info.intro;
   el('participant-format').textContent=`${info.method==='combined'?'Survey followed by an interview':info.method==='interview'?'AI-moderated interview':'Survey'} · ${info.base_questions} planned questions, with a few possible follow-ups. All questions are optional.`;
   el('recording-notice').hidden=!info.recording;
+  el('task-notice').hidden=!info.task_recording;
+  el('avatar-notice').hidden=info.avatar==='none'||!info.avatar;
+  el('avatar-notice').textContent=info.avatar==='liveavatar'?'A realistic AI video character is provided by LiveAvatar, an additional service. The spoken questions and generated voice audio go to that service for animation. Your interview answers still go to Meta.':'An optional animated 3D AI character may appear. It is a computer-generated character, not a person. You can hide it.';
   el('recording-notice').textContent=info.spoken_moderator?
-    `Voice is optional. In spoken interview mode your device reads the questions, then your microphone listens for up to ${info.recording_seconds} seconds per answer. A quiet pause can end a recording and send it to Meta's Muse Voice for transcription. Review or correct the text before sending your answer. Pause voice mode whenever you wish. This app stores submitted text, not the audio.`:
+    `Voice is optional. Your device reads the questions, then the microphone listens for up to ${info.recording_seconds} seconds per answer. ${info.streaming_voice?'Muse Voice can transcribe as you speak and detect a finished speech turn. If streaming is unavailable, a recorded clip is sent for transcription.':'A quiet pause can end a recording and send it to Meta for transcription.'} Review or correct the text before sending your answer. Pause voice mode whenever you wish. This app stores submitted text, not the audio.`:
     `Voice answers are optional. With your microphone permission, a recording of up to ${info.recording_seconds} seconds can go to Meta for transcription. You can correct the transcript before submitting. This app stores your submitted text, not the recording.`;
   el('participant-resume').hidden=!localStorage.getItem(`choicegap-studio-${participantId}`);
 }
@@ -180,22 +190,28 @@ el('participant-resume').onclick=()=>run('Resuming…',async()=>{
   session=await api('resume',{id:localStorage.getItem(`choicegap-studio-${participantId}`)});renderParticipant();
 });
 function renderParticipant(){
-  stopMedia();inputMode='typed';el('participant-welcome').hidden=true;
+  stopMedia();window.taskCapture?.cleanup();inputMode='typed';el('participant-welcome').hidden=true;
   el('participant-question').hidden=session.status==='completed';el('participant-done').hidden=session.status!=='completed';
-  if(session.status==='completed'){spokenMode=false;localStorage.removeItem(`choicegap-studio-${participantId}`);return;}
+  if(session.status==='completed'){spokenMode=false;window.moderatorAvatar?.stop();localStorage.removeItem(`choicegap-studio-${participantId}`);return;}
   const q=session.question;el('question-prompt').textContent=q.prompt;
-  el('question-phase').textContent=q.phase==='correction'?'Before we finish':q.phase==='interview'?'Interview':'Survey';
+  const showAvatar=session.avatar==='3d'&&q.type==='open'&&q.phase!=='survey';
+  el('participant').classList.toggle('with-avatar',showAvatar);el('participant-question').classList.toggle('has-avatar',showAvatar);
+  el('question-phase').textContent=q.phase==='correction'?'Before we finish':q.phase==='task'?'Task recording':q.phase==='comparison'?'Choice task':q.phase==='interview'?'Interview':'Survey';
   el('question-progress').textContent=`${session.answered} answered · ${session.remaining} planned remaining`;
   const stimulus=el('question-stimulus');stimulus.replaceChildren();
   if(session.stimulus){if(session.stimulus.text){const p=document.createElement('p');p.textContent=session.stimulus.text;stimulus.append(p);}if(session.stimulus.image){const img=document.createElement('img');img.src=session.stimulus.image;img.alt=session.stimulus.text||'Study concept';stimulus.append(img);}}
   const control=el('answer-control');
+  if(q.type==='task')window.taskCapture?.render(q);
   if(q.type==='open')control.innerHTML='<label for="open-answer">Your answer</label><textarea id="open-answer" rows="5" maxlength="6000" placeholder="Tell us in your own words…"></textarea>';
   if(q.type==='number')control.innerHTML='<label for="number-answer">Your answer</label><input id="number-answer" type="number" step="any">';
   if(['single','multi','choice'].includes(q.type))control.innerHTML=`<p class="hint">${q.type==='multi'?'Select all that apply.':q.type==='choice'?'Imagine this situation; no real purchase or action is made. Select one option.':'Select one.'}</p>`+q.options.map((v,i)=>`<label class="answer-option"><input type="${q.type==='multi'?'checkbox':'radio'}" name="answer" value="${i}" aria-label="${esc(v)}"><span>${esc(v)}</span></label>`).join('');
+  if(q.comparison)control.insertAdjacentHTML('afterbegin',comparisonHtml(q.comparison,q.options));
   if(q.type==='scale')control.innerHTML=`<p class="hint">1 = ${esc(q.options[0])} · 5 = ${esc(q.options[q.options.length-1])}</p>`+[1,2,3,4,5].map(v=>`<label class="answer-option"><input type="radio" name="answer" value="${v}">${v}</label>`).join('');
   if(q.type==='ranking'){rank=[...q.options];renderRank();}
   el('voice-controls').hidden=!session.recording;
   el('spoken-moderator').hidden=!(session.spoken_moderator && q.type==='open' && q.phase!=='survey');
+  el('spoken-explanation').textContent=session.streaming_voice?'Hear each question and answer aloud. Listening starts after the question. Muse Voice can show a live transcript and detect the end of a speech turn. Review the text before sending your answer. Recorded transcription is available if streaming fails. The outgoing voice comes from this device.':'Hear each question and answer aloud. Listening starts after the question. A quiet pause can end the recording for transcription. Review the text before sending your answer. The outgoing voice comes from this device.';
+  window.moderatorAvatar?.configure(session.avatar||'none',!el('spoken-moderator').hidden);
   el('voice-status').textContent='';el('recording-playback').hidden=true;el('record-answer').textContent='Record an answer';
   el('question-prompt').focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});
   setModerator('ready',spokenMode?'Preparing your next question…':'Ready when you are. You can speak or type.');
@@ -203,6 +219,7 @@ function renderParticipant(){
 }
 function renderRank(){el('answer-control').innerHTML='<p class="hint">Put the most important item first. Use the arrows to change the order, then confirm your ranking.</p>'+rank.map((v,i)=>`<div class="rank-row"><strong>${i+1}</strong><span>${esc(v)}</span><button class="quiet" data-rank="${i}" data-direction="-1" aria-label="Move ${esc(v)} up" ${i===0?'disabled':''}>↑</button><button class="quiet" data-rank="${i}" data-direction="1" aria-label="Move ${esc(v)} down" ${i===rank.length-1?'disabled':''}>↓</button></div>`).join('')+'<label class="check"><input id="confirm-ranking" type="checkbox"> This order reflects my ranking.</label>';el('answer-control').querySelectorAll('[data-rank]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.rank),j=i+Number(b.dataset.direction);[rank[i],rank[j]]=[rank[j],rank[i]];renderRank();});}
 function getAnswer(){const q=session.question;
+  if(q.type==='task')return window.taskCapture.value();
   if(q.type==='open')return el('open-answer').value;
   if(q.type==='number')return el('number-answer').value.trim()===''?null:Number(el('number-answer').value);
   if(q.type==='ranking'){if(!el('confirm-ranking').checked)throw new Error('Confirm that the order reflects your ranking, or skip the question.');return rank;}
@@ -211,22 +228,23 @@ function getAnswer(){const q=session.question;
   const values=checked.map(c=>q.options[Number(c.value)]);return q.type==='multi'?values:values[0]??null;
 }
 function submit(skip){run('Saving your answer and preparing the next question…',async()=>{
-  if(recording)throw new Error('Stop the recording and review your transcript before continuing.');
+  if(recording||pendingNative)throw new Error('Finish the recording and review your transcript before continuing.');
   const answer=skip?null:getAnswer();
   if(spokenMode){speechEpoch++;window.speechSynthesis?.cancel();setModerator('thinking','Muse is choosing the next question…');}
-  try{const next=await api('answer',{id:session.id,nonce:session.nonce,answer,skip,input_mode:inputMode});session=next;renderParticipant();}
+  try{const next=await api('answer',{id:session.id,nonce:session.nonce,answer,skip,input_mode:inputMode,avatar_visible:window.moderatorAvatar?.visible===true});session=next;renderParticipant();}
   catch(err){setModerator('review','Your answer has not advanced. Check the message above and try again.');throw err;}
 });}
 el('submit-answer').onclick=()=>submit(false);el('skip-answer').onclick=()=>submit(true);
 
 // Audio stays in browser memory until explicitly sent for transcription. No third-party speech service.
 function stopTurnMonitor(){clearTimeout(turnTimer);clearInterval(levelTimer);turnTimer=null;levelTimer=null;levelContext?.close().catch(()=>{});levelContext=null;}
-function stopMedia(){audioVersion++;speechEpoch++;stopTurnMonitor();if(recording && recording.state!=='inactive'){recording.onstop=null;recording.stop();}recording=null;mediaStream?.getTracks().forEach(t=>t.stop());mediaStream=null;el('recording-playback').pause();if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl='';}window.speechSynthesis?.cancel();}
-function setModerator(state,label){moderatorState=state;el('spoken-moderator').dataset.state=state;el('moderator-status').textContent=label;syncSpokenControls();}
+function stopMedia(){audioVersion++;speechEpoch++;streamingCapture?.close();streamingCapture=null;stopTurnMonitor();if(recording && recording.state!=='inactive'){recording.onstop=null;recording.stop();}recording=null;mediaStream?.getTracks().forEach(t=>t.stop());mediaStream=null;el('recording-playback').pause();if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl='';}window.speechSynthesis?.cancel();}
+function setModerator(state,label){moderatorState=state;el('spoken-moderator').dataset.state=state;el('moderator-status').textContent=label;window.moderatorAvatar?.state(state);syncSpokenControls();}
 function syncSpokenControls(){
   el('start-spoken').hidden=spokenMode;el('pause-spoken').hidden=!spokenMode;
   el('start-spoken').disabled=busy||!!recording;
   el('record-answer').disabled=busy||moderatorState==='speaking';
+  if(pendingNative)el('record-answer').disabled=true;
   el('read-question').disabled=busy||!!recording||moderatorState==='speaking';
 }
 function speakCurrentQuestion(){
@@ -244,7 +262,7 @@ function speakCurrentQuestion(){
   window.speechSynthesis.speak(utterance);
 }
 el('start-spoken').onclick=()=>{if(busy)return;spokenMode=true;speakCurrentQuestion();};
-el('pause-spoken').onclick=()=>{spokenMode=false;speechEpoch++;window.speechSynthesis?.cancel();if(recording?.state==='recording')recording.stop();else{audioVersion++;mediaStream?.getTracks().forEach(t=>t.stop());mediaStream=null;}stopTurnMonitor();setModerator('ready','Voice mode paused. You can review, record or type your answer.');};
+el('pause-spoken').onclick=()=>{spokenMode=false;speechEpoch++;window.speechSynthesis?.cancel();streamingCapture?.close();streamingCapture=null;if(recording?.state==='recording')recording.stop();else{audioVersion++;mediaStream?.getTracks().forEach(t=>t.stop());mediaStream=null;}const input=el('open-answer');if(input)input.readOnly=false;stopTurnMonitor();setModerator('ready','Voice mode paused. You can review, record or type your answer.');};
 async function wavBase64(blob){
   const context=new AudioContext();let decoded;
   try{decoded=await context.decodeAudioData(await blob.arrayBuffer());}finally{await context.close();}
@@ -269,7 +287,7 @@ async function transcribeRecording(blob,version){
   });
 }
 async function beginRecording(automatic=false){
-  if(busy)return;
+  if(busy||pendingNative)return;
   if(recording){recording.stop();return;}
   if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){spokenMode=false;setModerator('ready','This browser cannot record audio. You can type your answer.');return error(new Error('This browser cannot record audio. You can type your answer.'));}
   const version=++audioVersion,nonce=session.nonce;
@@ -280,7 +298,7 @@ async function beginRecording(automatic=false){
     mediaStream=stream;
     el('recording-playback').pause();
     if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl='';}el('recording-playback').hidden=true;
-    const chunks=[],recorder=new MediaRecorder(mediaStream);recording=recorder;recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+    const chunks=[],recorder=new MediaRecorder(mediaStream);let nativeStream=null;recording=recorder;recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
     recorder.onstop=async()=>{
       const mime=recorder.mimeType;recording=null;stopTurnMonitor();stream.getTracks().forEach(t=>t.stop());mediaStream=null;
       el('record-answer').textContent='Record again';
@@ -290,15 +308,28 @@ async function beginRecording(automatic=false){
       const control=el('voice-status');control.replaceChildren(document.createTextNode('Listen to your recording, then send it to Muse to transcribe. '));
       const send=document.createElement('button');send.className='quiet';send.textContent='Transcribe this recording';control.append(send);
       send.onclick=()=>transcribeRecording(blob,version);
-      if(automatic&&spokenMode)await transcribeRecording(blob,version);
+      let finalText='';
+      if(nativeStream&&spokenMode){pendingNative=true;setModerator('transcribing','Finishing the live transcript…');try{finalText=await nativeStream.finish();}finally{pendingNative=false;syncSpokenControls();}}
+      nativeStream?.close();if(streamingCapture===nativeStream)streamingCapture=null;
+      if(version!==audioVersion)return;
+      el('open-answer').readOnly=false;
+      if(finalText){el('open-answer').value=finalText;inputMode='confirmed_transcript';control.textContent='Review and correct the live transcript before sending your answer.';setModerator('review','Does this capture your answer? Edit it, send it, or record again.');}
+      else if(automatic&&spokenMode)await transcribeRecording(blob,version);
     };
     recorder.onerror=()=>{stopMedia();spokenMode=false;setModerator('ready','Recording failed. Please type your answer or try recording again.');};
-    recorder.start();el('record-answer').textContent='Stop recording';
+    if(automatic&&session.streaming_voice&&window.MuseStream){
+      setModerator('transcribing','Connecting Muse Voice… Your answer has not started recording.');
+      nativeStream=new window.MuseStream({onPartial:t=>{if(version===audioVersion){el('open-answer').value=t;el('voice-status').textContent='Live transcript · review it when you finish.';}},onFinal:()=>{if(version===audioVersion&&recorder.state==='recording')recorder.stop();},onError:()=>{if(version===audioVersion)el('voice-status').textContent='Live transcription stopped. Stop the recording to transcribe the clip, or type instead.';}});
+      streamingCapture=nativeStream;
+      try{await nativeStream.start(stream,session);}catch{nativeStream.close();nativeStream=null;streamingCapture=null;}
+      if(version!==audioVersion||!spokenMode){nativeStream?.close();stream.getTracks().forEach(t=>t.stop());recording=null;return;}
+    }
+    recorder.start();el('open-answer').readOnly=true;el('record-answer').textContent='Stop recording';
     const seconds=session.recording_seconds||30;
     el('voice-status').textContent=`Recording… up to ${seconds} seconds. ${automatic?'A quiet pause can stop the recording early. You can also press Stop recording.':''}`;
     setModerator('listening','Listening to your answer…');
     turnTimer=setTimeout(()=>{if(version===audioVersion&&recorder.state==='recording')recorder.stop();},seconds*1000);
-    if(automatic){
+    if(automatic&&!nativeStream){
       try{
         const context=new AudioContext();levelContext=context;await context.resume();
         if(version!==audioVersion||recorder.state!=='recording'){await context.close();return;}
@@ -310,8 +341,9 @@ async function beginRecording(automatic=false){
   }catch(err){stopMedia();spokenMode=false;setModerator('ready','Microphone unavailable. You can type your answer.');error(new Error('Microphone unavailable. Check browser permission, or type your answer.'));}
 }
 el('record-answer').onclick=()=>beginRecording(spokenMode);
-el('read-question').onclick=()=>{if(!window.speechSynthesis)return error(new Error('Read aloud is unavailable in this browser.'));window.speechSynthesis.cancel();window.speechSynthesis.speak(new SpeechSynthesisUtterance(session.question.prompt));el('voice-status').textContent='Reading with your device’s voice. Muse chooses the question; this is not an avatar.';};
+el('read-question').onclick=()=>{if(!window.speechSynthesis)return error(new Error('Read aloud is unavailable in this browser.'));window.speechSynthesis.cancel();window.speechSynthesis.speak(new SpeechSynthesisUtterance(session.question.prompt));el('voice-status').textContent='Reading with your device’s voice. Muse chooses the question.';};
 window.addEventListener('pagehide',()=>{spokenMode=false;stopMedia();});
+window.addEventListener('moderator-avatar-ready',()=>{if(session?.status==='active')window.moderatorAvatar?.configure(session.avatar||'none',!el('spoken-moderator').hidden);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&spokenMode)el('pause-spoken').click();});
 if(participantId)run('Opening your study…',initParticipant);
 else {updateNav();fetch('/api/health').then(r=>r.json()).then(h=>{if(!h.meta_enabled)message('Muse is not connected. Configure your local API key and restart the app before generating a study.');}).catch(()=>message('Could not reach the local server.'));}

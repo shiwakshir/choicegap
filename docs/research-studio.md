@@ -1,5 +1,7 @@
 # Research Studio
 
+The 31 October capability revision adds [cited background, concept drafts, reviewed task clips, controlled comparisons, streaming voice and a local 3D moderator](muse-enhancements.md). New approvals use policy version 3. Earlier version-one/two descriptions below remain applicable to existing saved approvals; none is migrated in place.
+
 Updated 30 October 2026. This is the primary workflow at `/?mode=researcher`; earlier delivery studies remain at `/index.html?mode=researcher`.
 
 New Studio approvals now offer a [spoken AI moderator](spoken-moderator.md) using device speech and Muse Voice Transcribe, with up to 90 seconds per recorded answer. The original 30-second Spark 1.2 recording path described below applies to existing version-one approvals. New interviews remain turn based and require transcript confirmation; they have no video avatar.
@@ -59,4 +61,4 @@ This is a single-computer prototype. It has no authentication, encryption, reten
 
 Unknowns remain: real researcher usability, participant burden, transcription quality across accents/languages, moderation neutrality, semantic validity, accessibility across assistive technologies, cost/latency at scale and generalizable product demand.
 
-The latest run passed 129 Python tests (17 for Research Studio), the two existing JavaScript checks, two spoken-moderator JavaScript checks and the script syntax check. See [the validation record](studio-validation.json). Live transcription used synthetic speech; actual microphone capture across browsers remains unverified.
+The latest run passed 148 Python tests (17 for Research Studio and 19 for the new capabilities and streaming relay), five JavaScript checks and script syntax checks. See [the validation record](studio-validation.json). Live transcription used synthetic speech; actual microphone capture across browsers remains unverified.

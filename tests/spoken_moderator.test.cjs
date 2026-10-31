@@ -55,6 +55,21 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   run('spokenMode=true;speakCurrentQuestion()');utterance.onend();await tick();
   assert.equal(run('recording'),null);assert.equal(run('spokenMode'),false);
   assert.match(element('errors').textContent,/Microphone unavailable/);
+  // The native streaming branch reuses its final transcript without a second upload.
+  let native;
+  context.navigator.mediaDevices.getUserMedia=async()=>stream();
+  window.MuseStream=class{constructor(callbacks){Object.assign(this,callbacks);native=this;this.text='';}async start(){}async finish(){return this.text;}close(){}};
+  run('session.streaming_voice=true;spokenMode=true;speakCurrentQuestion()');utterance.onend();await tick();
+  const streamingRecorder=recorders.at(-1);assert.equal(streamingRecorder.state,'recording');
+  native.onPartial('A partial streamed answer');assert.equal(element('open-answer').value,'A partial streamed answer');
+  native.text='My reviewed streaming answer.';native.onFinal(native.text);await streamingRecorder.stopped;await tick();
+  assert.equal(element('open-answer').value,'My reviewed streaming answer.');
+  assert.equal(element('open-answer').readOnly,false);
+  assert.equal(calls.filter(c=>c.path.endsWith('/transcribe')).length,1,'native completion must not re-upload the clip');
+  assert.equal(calls.filter(c=>c.path.endsWith('/answer')).length,0);
+  // Pause during pending finalization must always restore text entry.
+  run('pendingNative=true');element('open-answer').readOnly=true;await element('pause-spoken').onclick();
+  assert.equal(element('open-answer').readOnly,false);run('pendingNative=false');
   run('stopMedia()');
   console.log('Spoken controller speaking/listening/transcription/review, pause, stale callback and microphone-denial checks passed.');
 })().catch(err=>{run('stopMedia()');console.error(err);process.exitCode=1;});

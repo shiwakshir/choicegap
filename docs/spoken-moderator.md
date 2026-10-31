@@ -1,5 +1,7 @@
 # Spoken AI moderator
 
+Updated 31 October: new policy-version-three studies can use streaming Muse Voice with native endpointing and an optional local 3D character. See [the enhanced setup](muse-enhancements.md). The earlier recording workflow below remains the fallback and the protocol for existing approvals; no approved study is expanded silently.
+
 ChoiceGap can conduct a turn-by-turn interview without a human attending the session. Muse Spark chooses the approved questions and bounded probes. The device's speech synthesis reads the question. The browser captures a short answer, Meta's Muse Voice Transcribe turns it into text, and the participant reviews/corrects it before submission. Muse then decides what to ask next.
 
 ## Try it

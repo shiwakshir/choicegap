@@ -1,5 +1,11 @@
 # Why Meta models matter to ChoiceGap
 
+## Integrated capabilities, 31 October
+
+The primary Studio workflow now uses Spark's native web search for cited desk research, Muse Image for researcher-reviewed concept generation/editing, Spark video understanding for participant-reviewed task descriptions, native function calls to select an approved single-detail comparison, and Muse Voice Transcribe's streaming endpoint for partial text and speech-turn completion. The included 3D character is local rendering, not a Meta-generated video avatar. The user chose this route rather than an external avatar service.
+
+These capabilities connect preparation, observation, adaptive inquiry and synthesis around the approved study. Code fixes permitted task levels, checks source IDs and timestamps, separates desk research from participant evidence, preserves corrections and logs exact stimuli and model decisions. Live checks used public briefs and fictional clips/answers; they establish the integrations, not psychological validity, participant usability, causal effects or superiority over other models. See [the implementation and limits](muse-enhancements.md).
+
 ## Research Studio, 30 October
 
 The primary product now starts from a brief, hypotheses and optional text/image concept. Muse Spark 1.3 drafts an editable multi-type survey and open interview guide; reads the approved stimulus alongside responses when planning bounded probes; offers a tentative participant account for correction; and synthesizes completed sessions with validated evidence IDs. This connects study creation, collection and interpretation around one approved objective rather than using a model only to summarize an exported survey.

@@ -21,7 +21,7 @@ from .research import (
 )
 from .review import review_workspace
 from .config import load_env_file
-from . import mechanisms, explore, studio
+from . import mechanisms, explore, studio, studio_capabilities as capabilities
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -135,7 +135,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
-        limit = 4_100_000 if self.path == '/api/studio/transcribe' else MAX_REQUEST_BYTES
+        limit = (16_100_000 if self.path == '/api/studio/inspect-clip' else
+                 4_100_000 if self.path == '/api/studio/transcribe' else MAX_REQUEST_BYTES)
         if length < 0 or length > limit:
             raise ValueError("Request too large")
         payload = json.loads(self.rfile.read(length) or b"{}")
@@ -278,7 +279,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def _studio_get(self, path, query):
         identifier = query.get('id', [''])[0]
-        if path == '/api/studio/studies':
+        if path == '/api/studio/capabilities':
+            from . import voice_stream
+            self._json(200, {'meta_enabled': MetaClient().enabled, 'streaming_voice': voice_stream.available(),
+                'avatar_3d': True, 'liveavatar_configured': False})
+        elif path == '/api/studio/studies':
             self._json(200, {'studies': [{'id': s['id'], 'title': s['design']['title'], 'status': s['status'],
                 'created_at': s['created_at']} for s in STORE.list('studio_study')]})
         elif path == '/api/studio/study':
@@ -292,6 +297,8 @@ class Handler(BaseHTTPRequestHandler):
                 'recording': study['recording'],
                 'recording_seconds': study['policy'].get('recording_seconds', 30),
                 'spoken_moderator': study['recording'] and study['method'] != 'survey' and study['policy'].get('spoken_moderator') is True,
+                'streaming_voice': study['recording'] and study['policy'].get('streaming_voice') is True,
+                'avatar': study.get('avatar', 'none'), 'task_recording': study['policy'].get('task_recording') is True,
                 'base_questions':
                 (len(study['design']['questions']) if study['method'] != 'interview' else 0) +
                 (len(study['design']['interview_questions']) if study['method'] != 'survey' else 0)})
@@ -308,8 +315,30 @@ class Handler(BaseHTTPRequestHandler):
 
     def _studio_post(self, path, payload):
         meta = MetaClient()
-        if path == '/api/studio/generate':
+        if path == '/api/studio/background':
+            result = capabilities.background(payload.get('brief'), meta)
+            STORE.put('studio_background', result['id'], result)
+            self._json(200, result)
+        elif path == '/api/studio/concept':
+            result = capabilities.concept(payload.get('prompt'), payload.get('reference', ''), meta)
+            STORE.put('studio_concept', result['id'], result)
+            self._json(200, result)
+        elif path == '/api/studio/comparisons':
+            result = capabilities.draft_comparisons(studio.design(payload.get('design')), meta)
+            self._json(200, result)
+        elif path == '/api/studio/generate':
+            payload.pop('_reviewed_background', None)
+            if payload.get('background_id'):
+                background = STORE.get('studio_background', str(payload['background_id']))
+                if payload.get('background_reviewed') is not True or background['brief_digest'] != capabilities.digest(str(payload.get('brief', ''))):
+                    raise ValueError('Review background research for this exact brief before using it')
+                payload['_reviewed_background'] = background
             draft = studio.generate(payload, meta)
+            if payload.get('concept_id'):
+                concept = STORE.get('studio_concept', str(payload['concept_id']))
+                if concept['image'] != draft['stimulus']['image']:
+                    raise ValueError('The selected concept does not match the attached image')
+                draft['stimulus_provenance'] = {k: v for k, v in concept.items() if k != 'image'}
             STORE.put('studio_study', draft['id'], draft)
             self._json(200, draft)
         elif path == '/api/studio/save':
@@ -322,11 +351,17 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError('Choose a supported study format')
             draft['method'] = method
             draft['recording'] = payload.get('recording', draft.get('recording', False)) is True
+            draft['comparisons'] = capabilities.validate_comparisons(payload.get('comparisons', draft.get('comparisons')))
+            draft['task_prompt'] = studio.text(payload.get('task_prompt', draft.get('task_prompt', '')), 1200, 'Task instructions', True)
+            draft['avatar'] = payload.get('avatar', draft.get('avatar', 'none'))
+            draft['voice_keywords'] = studio.strings(payload.get('voice_keywords', draft.get('voice_keywords', [])), 8, 'Voice vocabulary hints')
             STORE.put('studio_study', draft['id'], draft)
             self._json(200, draft)
         elif path == '/api/studio/approve':
             draft = STORE.get('studio_study', str(payload.get('id', '')))
             study = studio.approve(draft, payload)
+            if study['avatar'] == 'liveavatar':
+                raise ValueError('Use the included 3D moderator. External realistic video is not enabled in this build.')
             STORE.put('studio_study', study['id'], study)
             self._json(200, study)
         elif path == '/api/studio/start':
@@ -334,15 +369,31 @@ class Handler(BaseHTTPRequestHandler):
             state = studio.start(study, payload.get('consent'))
             STORE.put('studio_session', state['id'], state)
             self._json(200, studio.public_session(state, study))
-        elif path in ('/api/studio/answer', '/api/studio/resume', '/api/studio/transcribe'):
+        elif path in ('/api/studio/answer', '/api/studio/resume', '/api/studio/transcribe',
+                      '/api/studio/inspect-clip', '/api/studio/voice-ticket'):
             state = STORE.get('studio_session', str(payload.get('id', '')))
             study = STORE.get('studio_study', state['study_id'])
             if path.endswith('/answer'):
+                if state['status'] == 'active' and state['queue'][state['index']]['type'] == 'task' and payload.get('skip') is not True:
+                    review_id = (payload.get('answer') or {}).get('review_id', '') if isinstance(payload.get('answer'), dict) else ''
+                    review = STORE.get('studio_clip_review', str(review_id))
+                    payload['answer'] = capabilities.task_answer(payload['answer'], review, state)
+                    payload['input_mode'] = 'task_review'
                 updated = studio.answer(study, state, payload, meta)
                 STORE.save_studio_session(updated, state['nonce'])
                 state = updated
             elif path.endswith('/transcribe'):
                 self._json(200, studio.transcribe(payload, study, state, meta))
+                return
+            elif path.endswith('/inspect-clip'):
+                review = capabilities.inspect_clip(payload, study, state, meta)
+                STORE.put('studio_clip_review', review['id'], review)
+                self._json(200, review)
+                return
+            elif path.endswith('/voice-ticket'):
+                from . import voice_stream
+                result = voice_stream.ticket(study, state, payload.get('nonce'), STORE)
+                self._json(200, result)
                 return
             self._json(200, studio.public_session(state, study))
         elif path == '/api/studio/analyse':
@@ -627,6 +678,8 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     with LOCK:
         COMPLETED[:] = STORE.list("session")
     server = ThreadingHTTPServer((host, port), Handler)
+    from . import voice_stream
+    bridge = voice_stream.start(port)
     print(f"ChoiceGap running at http://{host}:{port}")
     print("Muse Spark enabled" if MetaClient().enabled else "Local mode: set MODEL_API_KEY to enable Muse Spark")
     try:
@@ -634,6 +687,8 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     except KeyboardInterrupt:
         pass
     finally:
+        if bridge:
+            bridge.stop()
         server.server_close()
 
 
