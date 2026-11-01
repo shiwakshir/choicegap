@@ -32,7 +32,10 @@ async function run(label, task) {
 }
 function view(name) {
   document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== name);
-  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('current', b.dataset.view === name));
+  document.querySelectorAll('nav button').forEach(b => {
+    b.classList.toggle('current', b.dataset.view === name);
+    if(b.dataset.view === name)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
+  });
   window.scrollTo({top:0,behavior:'instant'});
 }
 function updateNav() {
@@ -158,7 +161,7 @@ function download(data,name){const blob=new Blob([JSON.stringify(data,null,2)],{
 el('library').onclick=()=>run('Opening your studies…',async()=>{
   if(study?.status==='draft'&&!el('review').hidden) {readEditor();study=await api('save',draftPayload());}
   const list=await api('studies');
-  el('saved-list').innerHTML=list.studies.reverse().map(s=>`<div class="panel"><h2>${esc(s.title)}</h2><p class="hint">${esc(s.status==='approved'?'Published study':'Editable draft')} · ${esc(new Date(s.created_at).toLocaleDateString())}</p><button class="quiet" data-study="${esc(s.id)}">Open study</button></div>`).join('')||'<p>Your drafts and published studies will appear here.</p>';
+  el('saved-list').innerHTML=list.studies.reverse().map(s=>`<div class="panel"><span class="study-status" data-status="${esc(s.status)}">${s.status==='approved'?'Published':'Draft'}</span><h2>${esc(s.title)}</h2><p class="hint">Created ${esc(new Date(s.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}))}</p><button class="quiet" data-study="${esc(s.id)}">${s.status==='approved'?'Open study':'Continue editing'} <span aria-hidden="true">→</span></button></div>`).join('')||'<div class="panel"><h2>No studies yet</h2><p class="hint">Start with a brief. Your drafts and published studies will be saved here.</p></div>';
   el('saved-list').querySelectorAll('[data-study]').forEach(b=>b.onclick=()=>run('Opening study…',async()=>{
     study=await api(`study?id=${encodeURIComponent(b.dataset.study)}`); results=null;
     if(study.status==='draft'){renderEditor();view('review');}else{renderCollection();view('collect');}
@@ -168,12 +171,15 @@ el('new-study').onclick=()=>{study=null;results=null;view('brief');updateNav();}
 
 // Participant: one issued question at a time; responses are committed before the next is shown.
 async function initParticipant(){
+  document.body?.classList.add('participant-mode');
+  el('skip-link').href='#participant';el('skip-link').textContent='Skip to study';
   el('researcher').hidden=true;el('library').hidden=true;el('participant').hidden=false;
   const info=await api(`participant?id=${encodeURIComponent(participantId)}`);
   el('participant-title').textContent=info.title;el('participant-intro').textContent=info.intro;
   el('participant-format').textContent=`${info.method==='combined'?'Survey followed by an interview':info.method==='interview'?'AI-moderated interview':'Survey'} · Up to ${info.base_questions} planned questions, including the final chance to correct our understanding, plus a few possible follow-ups. All questions are optional.`;
   el('moderator-notice').textContent=info.method==='survey'?'Muse may ask follow-up questions based on your answers. You can skip any question or leave whenever you wish. There are no right answers. Please avoid names, contact details or other private information.':'The interview is moderated by AI, not a person. You can type your answers and, where enabled, choose voice. You can skip any question or leave whenever you wish. There are no right answers. Please avoid names, contact details or other private information.';
   el('recording-notice').hidden=!info.recording;
+  el('participant-options').hidden=!(info.recording||info.task_recording||(info.avatar&&info.avatar!=='none'));
   el('task-notice').hidden=!info.task_recording;
   el('avatar-notice').hidden=info.avatar==='none'||!info.avatar;
   el('avatar-notice').textContent=info.avatar==='liveavatar'?'A realistic AI video character is provided by LiveAvatar, an additional service. The spoken questions and generated voice audio go to that service for animation. Your interview answers still go to Meta.':'An optional animated 3D AI character may appear. It is a computer-generated character, not a person. You can hide it.';
@@ -207,7 +213,7 @@ function renderParticipant(){
   if(q.type==='number')control.innerHTML='<label for="number-answer">Your answer</label><input id="number-answer" type="number" step="any">';
   if(['single','multi','choice'].includes(q.type))control.innerHTML=`<p class="hint">${q.type==='multi'?'Select all that apply.':q.type==='choice'?'Imagine this situation; no real purchase or action is made. Select one option.':'Select one.'}</p>`+q.options.map((v,i)=>`<label class="answer-option"><input type="${q.type==='multi'?'checkbox':'radio'}" name="answer" value="${i}" aria-label="${esc(v)}"><span>${esc(v)}</span></label>`).join('');
   if(q.comparison)control.insertAdjacentHTML('afterbegin',comparisonHtml(q.comparison,q.options));
-  if(q.type==='scale')control.innerHTML=`<p class="hint">1 = ${esc(q.options[0])} · 5 = ${esc(q.options[q.options.length-1])}</p>`+[1,2,3,4,5].map(v=>`<label class="answer-option"><input type="radio" name="answer" value="${v}">${v}</label>`).join('');
+  if(q.type==='scale')control.innerHTML=`<div class="rating-endpoints" id="scale-description"><span>1 · ${esc(q.options[0])}</span><span>5 · ${esc(q.options[q.options.length-1])}</span></div><div class="rating-options" role="radiogroup" aria-labelledby="question-prompt" aria-describedby="scale-description">`+[1,2,3,4,5].map(v=>`<label class="answer-option rating-option"><input type="radio" name="answer" value="${v}" aria-label="${v} of 5"><span>${v}</span></label>`).join('')+'</div>';
   if(q.type==='ranking'){rank=[...q.options];renderRank();}
   el('voice-controls').hidden=!session.recording;
   el('spoken-moderator').hidden=!(session.spoken_moderator && q.type==='open' && q.phase!=='survey');

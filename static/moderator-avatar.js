@@ -13,8 +13,9 @@ function shape(parent,color,position,scale,radius=1){
 function init(){
   if(renderer)return;
   renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-  renderer.setSize(mount.clientWidth||600,300);mount.replaceChildren(renderer.domElement);
-  scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(32,(mount.clientWidth||600)/300,.1,100);camera.position.set(0,1.5,5.5);camera.lookAt(0,1.35,0);
+  const height=mount.clientHeight||300;
+  renderer.setSize(mount.clientWidth||600,height);mount.replaceChildren(renderer.domElement);
+  scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(32,(mount.clientWidth||600)/height,.1,100);camera.position.set(0,1.5,5.5);camera.lookAt(0,1.35,0);
   scene.add(new THREE.HemisphereLight(0xffffff,0x7e8e79,2.4));const key=new THREE.DirectionalLight(0xfff2e2,3);key.position.set(-2,3,4);scene.add(key);
   const person=new THREE.Group();scene.add(person);
   shape(person,0x244b3f,[0,.25,-.03],[1.1,.65,.48]);
@@ -33,7 +34,7 @@ function init(){
   mouth=new THREE.Group();mouth.position.set(0,-.3,.47);head.add(mouth);
   shape(mouth,0x452a28,[0,0,0],[.16,.018,.028]);
   shape(mouth,0xa6625a,[0,.021,.006],[.175,.022,.025]);shape(mouth,0xb57868,[0,-.024,.007],[.17,.025,.024]);
-  new ResizeObserver(()=>{if(!renderer)return;const w=mount.clientWidth||600;renderer.setSize(w,300);camera.aspect=w/300;camera.updateProjectionMatrix();}).observe(mount);
+  new ResizeObserver(()=>{if(!renderer)return;const w=mount.clientWidth||600,h=mount.clientHeight||300;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();}).observe(mount);
 }
 function animate(now){
   if(!active)return;
