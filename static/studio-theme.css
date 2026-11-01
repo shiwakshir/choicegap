@@ -27,6 +27,25 @@ nav button.current { background: #e7eeeb; color: #214f46; }
 .current .step-index { background: var(--green); color: white; border-color: var(--green); }
 .nav-note { color: var(--muted); font-size: 12px; line-height: 1.8; border-top: 1px solid var(--line); margin: 24px 10px; padding-top: 18px; }
 .view { min-width: 0; }
+.about-panel { grid-column: 1 / -1; margin: 0 0 -20px; border: 1px solid var(--line); border-radius: 7px; background: white; padding: 0 20px; }
+.about-panel > summary { display: list-item; padding: 14px 0; font-size: 13px; }
+.about-summary { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 18px; }
+.about-content { max-width: 900px; margin: 0 auto; padding: 20px 18px 30px; border-top: 1px solid var(--line); }
+.about-content h2 { font-size: 27px; margin: 10px 0 20px; line-height: 1.3; }
+.about-content h3 { font-size: 16px; margin: 30px 0 12px; }
+.about-content p, .about-content li { font-size: 14px; line-height: 1.8; }
+.about-content p { margin: 10px 0 18px; }
+.about-steps { padding-left: 22px; }
+.about-steps > li { padding-left: 7px; margin: 20px 0; }
+.about-steps > li::marker { color: var(--green); font-weight: 600; }
+.about-steps p { margin-top: 5px; }
+.about-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; border-top: 1px solid var(--line); margin-top: 25px; }
+.about-columns ul { padding-left: 19px; }
+.about-columns li { margin: 9px 0; }
+.about-boundary { background: #f5f7f6; border-radius: 6px; padding: 18px 22px; margin-top: 26px; }
+.about-boundary h3 { margin-top: 0; }
+.about-boundary p { font-size: 12px; }
+.about-boundary p:last-child { margin-bottom: 0; }
 h1 { font-size: clamp(28px, 3vw, 36px); line-height: 1.2; letter-spacing: -1px; font-weight: 620; margin: 10px 0 14px; max-width: 850px; text-wrap: balance; }
 h2 { font-size: 20px; letter-spacing: -.35px; font-weight: 620; }
 h3 { font-size: 17px; font-weight: 620; }
@@ -158,6 +177,11 @@ footer > span:first-child { font-weight: 600; color: var(--ink); }
   header .brand { margin-right: auto; }
   main { padding: 22px 20px 50px; }
   #researcher { display: block; }
+  .about-panel { margin: 0 0 22px; padding: 0 15px; }
+  .about-summary { display: block; margin: 4px 0 0 16px; }
+  .about-content { padding: 17px 0 22px; }
+  .about-content h2 { font-size: 23px; }
+  .about-columns { grid-template-columns: 1fr; gap: 0; }
   nav { position: static; flex-direction: row; justify-content: space-between; gap: 3px; padding: 0 0 15px; margin-bottom: 25px; border-bottom: 1px solid var(--line); }
   .nav-label, .nav-note, nav button small { display: none; }
   nav button { flex-direction: column; gap: 6px; padding: 8px 7px; font-size: 11px; min-height: 68px; flex: 1; text-align: center; }
