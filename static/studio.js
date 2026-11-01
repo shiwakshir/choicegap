@@ -8,7 +8,7 @@ let spokenMode=false, speechEpoch=0, moderatorState='ready', turnTimer=null, lev
 let streamingCapture=null;
 let pendingNative=false;
 const params = new URLSearchParams(location.search);
-const participantId = params.get('study');
+let participantId = params.get('study');
 
 async function api(path, data) {
   const response = await fetch(`/api/studio/${path}`, data === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
@@ -43,6 +43,12 @@ function updateNav() {
     b.disabled = busy || (b.dataset.view === 'review' && (!study || study.status !== 'draft')) ||
       (['collect','findings'].includes(b.dataset.view) && (!study || study.status !== 'approved'));
   });
+  const modeBtn = el('switch-mode');
+  if (modeBtn) {
+    modeBtn.hidden = participantId ? false : (!study || study.status !== 'approved');
+    modeBtn.textContent = participantId ? '← Researcher view' : 'Participant view →';
+    modeBtn.disabled = busy;
+  }
 }
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
   if (study?.status === 'draft' && !el('review').hidden) readEditor();
@@ -130,7 +136,14 @@ function renderCollection(){
   el('collection-title').textContent=study.design.title;
   const url=new URL('/studio.html',location.origin);url.searchParams.set('study',study.id);
   el('participant-link').value=url.href;el('open-participant').href=url.href;
+  updateNav();
 }
+el('open-participant').onclick=event=>{
+  if(event&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&study?.status==='approved'){
+    event.preventDefault();
+    run('Opening participant view…',()=>enterParticipant(study.id));
+  }
+};
 el('copy-link').onclick=()=>run('Copying…',async()=>{await navigator.clipboard.writeText(el('participant-link').value);el('copy-link').textContent='Link copied';});
 el('go-results').onclick=el('refresh-results').onclick=()=>run('Loading responses…',loadResults);
 el('analyse-results').onclick=()=>run('Muse is reading the completed sessions and their corrections…',async()=>{
@@ -169,11 +182,40 @@ el('library').onclick=()=>run('Opening your studies…',async()=>{
 });
 el('new-study').onclick=()=>{study=null;results=null;view('brief');updateNav();};
 
+async function enterParticipant(id){
+  participantId=id;
+  window.history?.replaceState?.(null,'',`/studio.html?study=${encodeURIComponent(id)}`);
+  await initParticipant();
+}
+async function exitParticipantToResearcher(openFindings=false){
+  spokenMode=false;stopMedia();window.taskCapture?.cleanup();window.moderatorAvatar?.stop();
+  const targetId=study?.id||participantId;
+  participantId=null;
+  window.history?.replaceState?.(null,'','/?mode=researcher');
+  document.body?.classList.remove('participant-mode');
+  el('skip-link').href='#researcher';el('skip-link').textContent='Skip to workspace';
+  el('participant').hidden=true;el('researcher').hidden=false;el('library').hidden=false;
+  if(targetId&&(!study||study.id!==targetId))study=await api(`study?id=${encodeURIComponent(targetId)}`);
+  if(study?.status==='approved'){
+    renderCollection();
+    if(openFindings)await loadResults();
+    else view('collect');
+  }else view('brief');
+  updateNav();
+}
+if(el('switch-mode'))el('switch-mode').onclick=()=>run(participantId?'Returning to researcher workspace…':'Opening participant view…',async()=>{
+  if(participantId)await exitParticipantToResearcher(session?.status==='completed'||(session?.answered>0));
+  else if(study?.status==='approved')await enterParticipant(study.id);
+});
+if(el('return-findings'))el('return-findings').onclick=()=>run('Opening researcher findings…',()=>exitParticipantToResearcher(true));
+
 // Participant: one issued question at a time; responses are committed before the next is shown.
 async function initParticipant(){
+  session=null;spokenMode=false;stopMedia();window.taskCapture?.cleanup();window.moderatorAvatar?.stop();
   document.body?.classList.add('participant-mode');
   el('skip-link').href='#participant';el('skip-link').textContent='Skip to study';
   el('researcher').hidden=true;el('library').hidden=true;el('participant').hidden=false;
+  el('participant-welcome').hidden=false;el('participant-question').hidden=true;el('participant-done').hidden=true;
   const info=await api(`participant?id=${encodeURIComponent(participantId)}`);
   el('participant-title').textContent=info.title;el('participant-intro').textContent=info.intro;
   el('participant-format').textContent=`${info.method==='combined'?'Survey followed by an interview':info.method==='interview'?'AI-moderated interview':'Survey'} · Up to ${info.base_questions} planned questions, including the final chance to correct our understanding, plus a few possible follow-ups. All questions are optional.`;
@@ -187,6 +229,7 @@ async function initParticipant(){
     `Voice is optional. Your device reads the questions, then the microphone listens for up to ${info.recording_seconds} seconds per answer. ${info.streaming_voice?'Muse Voice can transcribe as you speak and detect a finished speech turn. If streaming is unavailable, a recorded clip is sent for transcription.':'A quiet pause can end a recording and send it to Meta for transcription.'} Review or correct the text before sending your answer. Pause voice mode whenever you wish. This app stores submitted text, not the audio.`:
     `Voice answers are optional. With your microphone permission, a recording of up to ${info.recording_seconds} seconds can go to Meta for transcription. You can correct the transcript before submitting. This app stores your submitted text, not the recording.`;
   el('participant-resume').hidden=!localStorage.getItem(`choicegap-studio-${participantId}`);
+  updateNav();
 }
 el('participant-start').onclick=()=>run('Starting your study…',async()=>{
   session=await api('start',{study_id:participantId,consent:el('participant-consent').checked});

@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ChoiceGap · Research Studio</title><meta name="description" content="Turn your research brief into an editable survey and adaptive interview.">
 <link rel="stylesheet" href="/studio.css"><link rel="stylesheet" href="/studio-theme.css"><script src="/spoken-turn.js" defer></script><script src="/voice-stream.js" defer></script><script src="/studio.js" defer></script><script src="/research-tools.js" defer></script><script src="/task-capture.js" defer></script><script type="module" src="/moderator-avatar.js"></script></head>
-<body><a id="skip-link" class="skip-link" href="#researcher">Skip to workspace</a><header><a class="brand" href="/"><span>CG</span>ChoiceGap</a><span class="header-context">Research workspace</span><button id="library" class="quiet">Study library</button></header>
+<body><a id="skip-link" class="skip-link" href="#researcher">Skip to workspace</a><header><a class="brand" href="/"><span>CG</span>ChoiceGap</a><span class="header-context">Research workspace</span><button id="switch-mode" class="quiet" type="button" hidden>Participant view →</button><button id="library" class="quiet">Study library</button></header>
 <main><p id="notice" role="status" aria-live="polite"></p><div id="errors" role="alert" tabindex="-1" hidden></div>
 <div id="researcher">
 <details id="about-choicegap" class="about-panel">
@@ -70,5 +70,5 @@
 <div id="avatar-area" hidden><div id="avatar-canvas" role="img" aria-label="Animated AI moderator character"></div><p id="avatar-caption" class="hint">AI character · animated speaking movements</p><button id="hide-avatar" class="quiet" type="button">Hide character</button></div>
 <div id="answer-control"></div><div id="voice-controls" hidden><div class="actions"><button id="record-answer" class="quiet">Record an answer</button><button id="read-question" class="quiet">Read question aloud</button></div><p id="voice-status" class="hint" aria-live="polite"></p><audio id="recording-playback" controls hidden></audio></div>
 <div class="actions"><button id="submit-answer" class="primary">Send answer →</button><button id="skip-answer" class="quiet">Skip question</button></div><p class="hint">The moderator may take a moment to choose a follow-up.</p></div>
-<div id="participant-done" class="panel" hidden><div class="completion-mark" aria-hidden="true">✓</div><div class="eyebrow">Study complete</div><h1>Thank you for your time.</h1><p>Your responses and corrections have been saved. You can close this window.</p></div></section>
+<div id="participant-done" class="panel" hidden><div class="completion-mark" aria-hidden="true">✓</div><div class="eyebrow">Study complete</div><h1>Thank you for your time.</h1><p>Your responses and corrections have been saved. You can close this window or return to the researcher workspace to analyze findings.</p><div class="actions"><button id="return-findings" class="primary" type="button">Return to Researcher Findings →</button></div></div></section>
 </main><footer><span>ChoiceGap</span><span>Local research prototype · Meta Muse</span></footer></body></html>
