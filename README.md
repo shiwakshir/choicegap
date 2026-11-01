@@ -6,6 +6,17 @@ ChoiceGap turns a researcher brief, hypotheses, and an optional concept stimulus
 
 ---
 
+## Project Highlights (Meta Global AI Developer Hackathon)
+
+| Dimension | What ChoiceGap Delivers |
+| :--- | :--- |
+| **Problem & Real-World Impact**<br>*(Build for Your World)* | Bridges the gap between rigid static surveys and costly human-moderated UX interviews. Researchers start from a plain-language brief and hypotheses, approve the generated study, and collect adaptive survey + spoken/typed interview responses with findings tied to exact response IDs, participant corrections, and rival explanations. |
+| **Depth of Meta AI Tooling** | Combines **Muse Spark (`muse-spark-1.3`)** (native `web_search` grounding, strict JSON schemas, reasoning effort, native `select_approved_condition` tool calling, and multimodal `input_video` / `image_url` inspection), **Muse Image (`muse-image-1.0`)** (`/images/generations` and `/images/edits` for concept stimuli), and **Muse Voice Transcribe (`muse-voice-transcribe-1.0`)** (realtime `wss://api.meta.ai/v1/asr/realtime` streaming with endpointing + file ASR fallback). |
+| **Technical Depth & Verifiability** | Enforces strict model/code boundaries: immutable study approvals, SHA-256 stimulus/brief digests, single-cell factorial change auditing, capped & topic-bound adaptive probes, participant member-checks (`C1`) that supersede model interpretations, `0–4` finding synthesis (allowing inconclusive results), capability-scoped one-use WebSocket tickets, and 154 Python + 5 JS test suites. |
+| **End-to-End Live Workflow** | Ships a complete vertical slice (`Start-ChoiceGap.ps1`) featuring cited background research, concept generation/editing, multi-type surveys, a spoken 3D AI moderator (local Three.js character + streaming voice), video task review, controlled comparisons, and de-identified JSON exports. |
+
+---
+
 ## Meta AI Models & Capabilities Used
 
 ChoiceGap integrates the **Meta Model API** across preparation, multimodal stimulus creation, live spoken moderation, adaptive experimentation, and evidence-linked synthesis:
