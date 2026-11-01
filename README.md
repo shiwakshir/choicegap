@@ -1,198 +1,181 @@
 # ChoiceGap
 
-ChoiceGap is a brief-led UX and market research prototype. A researcher supplies a brief, hypotheses and an optional concept image or text. Muse drafts an editable survey and interview guide. After researcher approval, participants answer a survey, an AI-moderated interview, or both. Researchers receive findings linked to the exact responses, including participant corrections, competing explanations and proposed next tests.
+**Brief-led adaptive surveys and AI-moderated UX research, built with Meta Muse.**
 
-## Start with Research Studio
+ChoiceGap turns a researcher brief, hypotheses, and an optional concept stimulus into an editable survey and AI-moderated interview guide. After researcher approval, participants complete a survey, an adaptive spoken or typed interview, or both—with bounded follow-up probes, single-detail controlled comparisons selected via native tool calling, and a participant member-check step to correct the model's tentative understanding. Researchers receive findings linked to exact response IDs, participant corrections, competing explanations, and proposed next tests.
 
-The Studio interface now uses a compact workflow sidebar, a clearer brief form, consistent question editors and a separate participant layout. See [interface design notes](docs/interface-design.md). Refresh an existing browser tab to load the updated styles.
+---
 
-Audited 1 November: 154 Python tests and five JavaScript checks pass. Fresh live sustainability collection and synthesis were exercised with fictional material. Reporting now accepts an inconclusive result with no supported findings. See [the audit, fixes and release boundaries](docs/choicegap-audit-2026-11-01.md). The HTTP server accepts its own localhost origin only; public hosting/tunnelling requires a separate deployment configuration and access controls.
+## Meta AI Models & Capabilities Used
 
-Updated 31 October: Studio now includes cited background research, reviewed Muse Image concept generation/editing, approved single-detail comparisons selected through a Muse tool call, participant-reviewed task recordings, streaming Muse Voice and an optional included 3D moderator. See [the enhanced workflow and setup](docs/muse-enhancements.md). The 3D route needs no external avatar account. Existing study approvals retain their original collection scope.
+ChoiceGap integrates the **Meta Model API** across preparation, multimodal stimulus creation, live spoken moderation, adaptive experimentation, and evidence-linked synthesis:
 
-Run `Start-ChoiceGap.ps1` from this repository directory (it prepares a local environment on first use), then open <http://127.0.0.1:8000/?mode=researcher>. For manual setup, use `python -m pip install -e .` followed by `python -m choicegap.server`. The streaming relay needs the declared `websockets` dependency and the adjacent localhost port; recorded transcription remains available if it cannot start.
+| Meta Model / Endpoint | Capability Used | Role in ChoiceGap | Implementation |
+| :--- | :--- | :--- | :--- |
+| **`muse-spark-1.3`**<br>`POST /v1/responses` | **Native Web Search Grounding** (`tools: [{"type": "web_search"}]`) | Conducts cited desk research from a study brief, validating returned `url_citation` spans and storing a brief SHA-256 digest before study generation. | [`choicegap/studio_capabilities.py`](choicegap/studio_capabilities.py) (`background`) |
+| **`muse-image-1.0`**<br>`POST /v1/images/generations`<br>`POST /v1/images/edits` | **Concept Generation & Visual Editing** | Generates or edits fictional UX/product concept stimuli for researcher review prior to study approval (keeping original and edited drafts distinct). | [`choicegap/studio_capabilities.py`](choicegap/studio_capabilities.py) (`concept`) |
+| **`muse-spark-1.3`**<br>`POST /v1/chat/completions` | **Structured Outputs (`json_schema`, `strict: True`) & Reasoning Effort** | Drafts multi-type surveys and interview guides; plans bounded follow-up probes within approved topics; generates tentative member-check summaries; synthesizes cited reports (supporting `0–4` findings, including inconclusive results) and runs multimodal pre-fieldwork design critiques. | [`choicegap/studio.py`](choicegap/studio.py) (`generate`, `probe`, `synthesize`)<br>[`choicegap/meta.py`](choicegap/meta.py)<br>[`choicegap/review.py`](choicegap/review.py) |
+| **`muse-spark-1.3`**<br>`POST /v1/chat/completions` | **Native Function / Tool Calling** (`select_approved_condition`) | Reviews live session evidence mid-study and selects one researcher-approved single-detail comparison variant to help separate a leading explanation from a rival account. | [`choicegap/studio_capabilities.py`](choicegap/studio_capabilities.py) (`select_comparison`)<br>[`choicegap/muse_research.py`](choicegap/muse_research.py) |
+| **`muse-spark-1.3`**<br>`POST /v1/responses` | **Multimodal Video & Image Understanding** (`input_video`, `image_url`) | Inspects participant-uploaded/recorded task clips (up to 60s) to propose timestamped visible events for participant confirmation/correction, and inspects prototype screenshots for visual confounds. | [`choicegap/studio_capabilities.py`](choicegap/studio_capabilities.py) (`inspect_clip`)<br>[`choicegap/studio.py`](choicegap/studio.py) (`model_context`) |
+| **`muse-voice-transcribe-1.0`**<br>`wss://api.meta.ai/v1/asr/realtime`<br>`POST /v1/audio/transcriptions` | **Realtime Streaming ASR & File ASR** (`PCM_16KHZ`, `ENDPOINTING`, vocabulary `keywords`) | Streams live partial transcripts and speech-turn endpointing through a capability-scoped local WebSocket relay (plus file-based WAV transcription fallback) for the spoken AI moderator. | [`choicegap/voice_stream.py`](choicegap/voice_stream.py) (`Bridge.relay`)<br>[`choicegap/studio.py`](choicegap/studio.py) (`transcribe_voice`) |
 
-1. Enter a brief, or choose **AI assistant adoption** or **Sustainable shopping** as an editable example. Add hypotheses and a concept stimulus if useful.
-2. Select **Create study draft**. Review and edit the questions, answer options, order, interview guide and permitted follow-up topics. Save the draft if needed.
-3. Choose **Survey only**, **Interview only**, or **Survey, then interview**. Optionally offer recorded voice answers. Confirm your review and publish the participant link.
-4. Open the link in another tab. Complete or skip questions. Muse can ask bounded follow-ups; the participant can correct its tentative understanding before finishing.
-5. Return to **Findings**, refresh responses and select **Analyze responses**. Open the supporting responses under each finding, or export the report and evidence.
+See [Why Meta models matter to ChoiceGap](docs/meta-model-role.md) and [Muse enhancements and boundaries](docs/muse-enhancements.md) for detailed capability mappings.
 
-Supported survey types: **open ended, single select, multi select, ranking, 1–5 rating scale, number and hypothetical choice**. This is a working core, not an exhaustive survey question library. Newly approved studies can offer a **spoken AI moderator** and an optional **3D AI character**: the device speaks the question, listens to an answer of up to 90 seconds, and Muse Voice Transcribe supplies an editable transcript. The participant sends the reviewed answer, then Muse Spark chooses the next question. No human moderator needs to attend. Existing approvals retain their original recording protocol. The included character is stylised with approximate speaking movements; photorealistic video was deferred. See [spoken interview setup and validation](docs/spoken-moderator.md) and [the new capability guide](docs/muse-enhancements.md).
+---
 
-The app sends briefs, attached stimuli, submitted responses and optional recordings to Meta. It stores studies and submitted text in a local unencrypted SQLite database, without researcher sign-in. Recordings are not saved by this app. Local links work on this computer; remote recruitment needs hosting, authentication and appropriate data handling. See [Research Studio setup, boundaries and validation](docs/research-studio.md).
-
-Research Studio is independent of the earlier grocery-delivery protocol. Existing links and approvals retain their original flow; open <http://127.0.0.1:8000/index.html?mode=researcher> for those studies. The sections below document that earlier workflow.
-
-## Earlier controlled-choice workflow
-
-The current implementation combines a short survey, adaptive controlled choices, a bounded text interview, participant corrections, and up to two single-detail condition comparisons. The researcher report links statements, task responses, corrections, rival explanations and proposed next tests. See [the product direction](docs/product-direction.md) and [the integrated study guide](docs/adaptive-interviews.md). Separate behavioural experiments are an advanced option.
-
-Updated 30 October: newly approved interviews use the complete session as Muse evidence. A bounded native tool call can choose the order of the two approved comparisons. Muse then reviews the first result and the final responses, preserving source references and the actual earlier reading. At most four calls are made per normal completed interview; no new participant questions were added. Existing version-one approvals retain their narrower one-call protocol. See [the Muse demonstration guide](docs/muse-demonstration.md).
-
-To try the full flow, restart the server and open Researcher view. Select **Set up this study**, review the prepared survey/interview plan and delivery details, confirm, then **Create participant link**. Open it in another tab, complete the study, and return to **View findings**. No imported evidence or hypothesis configuration is needed. See [the simple study guide](docs/simple-study.md).
-
-Evidence import, editable designs and model-review controls remain under **More settings and detailed research tools**. Previously approved studies retain their original flow; create a new draft to add interviews. The participant link is local to the computer running the app.
-
-The researcher workbench now supports an evidence-to-follow-up workflow: import source excerpts, review competing explanations, approve exact factor levels, collect adaptive choice responses, and export a study decision brief with proposed field contrasts.
-
-## Evidence workbench
-
-Updated 28 October: design review runs three times independently of the screenshot, with a separate optional visual review. Broad topic frequency is run consistency, not confidence. The brief leads with per-task counts and separate denominators; model leaders are secondary. Individual headlines contain no rating-mismatch claim. Opening EIG ties and the repeated task are seeded and randomized independently of the inferred leader. Repeat disagreement is descriptive and never excludes a session.
-
-For the detailed workflow, open <http://127.0.0.1:8000/?mode=researcher>, expand **More settings and detailed research tools**, and use **Resolve a research decision**:
-
-1. Enter the product decision and paste one evidence excerpt per line using `type | source label | excerpt`. Supported types are `statement`, `observed` (a researcher-reported action), and `hypothetical`.
-2. Select **Map evidence and draft follow-ups**. With Muse enabled, the model maps sources to explanations and identifies missing or contradictory evidence. Without an API key, sources are preserved without automatic semantic assignments; the researcher assigns relationships manually.
-3. Review each source relationship, explanation, missing-evidence note, and exact factor level. Source IDs and verbatim quotations are validated; their interpretation and provenance are not independently verified.
-   Select **Challenge this design with Muse** for three independent text-only design reviews and, if attached, one separate screenshot review. Broad topics show how many completed design runs raised them; this is consistency, not confidence or identical findings. Results and errors remain visible per run. A local Meta key is required. Image bytes are not saved, and all interpretations need researcher review.
-4. Approve the design. Its source map and blueprint are locked, hashed, and saved. Drafts cannot be used for participant collection. Create a new draft for changes to an approved design.
-5. Open the participant link and collect responses. Return to the workbench to refresh the decision brief, inspect individual cases, and export the research packet.
-
-Muse review is advisory and does not approve a design. Its input digest is checked when the researcher approves or exports the design; later edits are labelled as not covered by the saved review. The model's source, findings, and optional screenshot digest are included in the decision brief. See `docs/meta-model-role.md` for the capability mapping and submission rationale.
-
-**Load fictional example** supplies clearly labelled demonstration data, so the workflow can be evaluated without recruiting researchers or participants. It does not provide evidence of real product demand, model interpretation quality, or time savings.
-
-The first workbench is scoped to grocery delivery and four editable factor levels. Omitted explanations are recorded as unresolved questions; they are not silently forced into one of the four models. The generated field contrasts change one factor at a time and are proposals only. The application does not execute randomized field experiments or calculate a defensible sample size for them.
-
-The software does not infer a stable personal trait or claim that a short hypothetical study reveals real-world behaviour. It reports which of four prespecified choice models is most consistent with the observed responses under the presented stimuli.
-
-Participant mode does not expose hypotheses, information gain, uncertainty, model status, or experiment rationale while responses are collected. Researcher mode exposes the model state and can compile another sustainability decision context into four candidate explanations and six pairwise experiments. Generated studies must pass structural checks before they can run.
-
-## Architecture and responsibility boundaries
+## Verifiable Agent Architecture & Responsibility Boundaries
 
 ```text
-stated preference → competing hypotheses → adaptive controlled choice
-       ↑                                             ↓
-       └──────── cautious evidence report ← Bayesian update
+Researcher Brief + Hypotheses
+   ├──► Muse Spark (/responses + web_search) ──► Cited Desk Research (researcher-reviewed)
+   ├──► Muse Image (/images/generations|edits) ──► Visual Concept Stimulus (researcher-reviewed)
+   └──► Muse Spark (Structured Output) ──► Editable Survey, Interview Guide & Comparison Matrix
+                                                   │
+                                      [ Immutable Study Approval ]
+                                                   │
+                                                   ▼
+Participant Session (Survey / Spoken or Typed AI Interview / Task Recording)
+   ├──► Muse Voice Transcribe (Realtime WSS) ──► Editable Live Transcript (+ 3D AI Moderator)
+   ├──► Muse Spark (/responses + input_video) ──► Timestamped Task Events (participant-confirmed)
+   ├──► Muse Spark (Bounded Probe Planner) ──► Adaptive Follow-Ups (capped & topic-checked)
+   ├──► Muse Spark (Native Tool Call) ──► Single-Cell Variant Selection (code-audited)
+   └──► Muse Spark (Member Check) ──► Participant Correction Step (supersedes model reading)
+                                                   │
+                                                   ▼
+Evidence-Linked Research Report
+   └──► Muse Spark (Strict Schema Synthesis) ──► 0–4 Findings + Exact Response Citations + Next Tests
 ```
 
-- **Muse evidence mapping:** interprets supplied excerpts within four predefined, editable grocery-delivery categories. Omitted explanations remain unresolved.
-- **Muse design review:** reads source quotes, exact study levels and an optional prototype screenshot together, identifying possible confounds and suggested controls before fieldwork.
-- **Computed baseline question selection:** maximum expected information gain selects each baseline task and records the predicted disagreement before observing a response. Baseline selection makes no model call; enabled version-two interviews use Muse for bounded comparison ordering and result reviews.
-- **Deterministic evidence layer:** compiles a complete six-pair design, audits controls and coverage, then owns choice likelihoods, posterior updates, side randomization, and information gain.
-- **Computed reporting:** preserves exact tested levels and distinguishes hypothetical choices from reported actions. Source interpretations and new session results appear side by side without assuming participant matching.
-- **Deterministic operation:** the fixed study works without an API key.
-- **Research quality layer:** neutral practice example, genuine outside option, reversed-side holdout, and de-identified JSON export.
+### Strict Code vs. Model Separation
 
-Participants rate every factor plus a general lower-impact intention item; the choice-model posterior begins uniform. Baseline task selection and numerical analysis make no model calls. In a version-two interview, Muse receives the survey, exact choices and interview responses for a tentative interpretation with an exact quoted span. After participant correction it can select an existing approved comparison through a validated tool call, then review the first result and final response. Local mode uses literal text and computed ordering. Free text and corrections appear in the integrated export.
+Muse performs bounded semantic generation, live moderation, approved-comparison selection, and evidence-linked synthesis. Deterministic application code enforces the research guardrails:
 
-The repeat samples a completed informative task uniformly using a seeded draw independent of the inferred leader, then reverses its sides. Agreement is descriptive: it does not filter sessions or update probabilities. Outside selections also leave probabilities unchanged.
+- **No unapproved stimuli:** Generated desk research, `muse-image-1.0` visuals, survey questions, and comparison matrices are drafts until explicitly approved by the researcher. Once published, study designs and stimuli are locked and hashed.
+- **Bounded adaptive probing:** Code enforces probe budgets (at most 2 added survey probes across 4 attempts; at most 3 added interview probes across 6 attempts) and checks that every follow-up question belongs verbatim to the researcher's approved `followup_topics`.
+- **Audited single-cell comparisons:** When Muse calls `select_approved_condition`, code constructs the variant so **exactly one cell** changes relative to the baseline table, randomizes option order between participants while keeping order consistent within a participant's baseline/variant pair, and logs the rationale before observing the answer.
+- **Participant corrections take precedence:** Before finishing, participants review and can correct Muse's tentative summary (`C1`) and any proposed video task events. Unconfirmed video events are never promoted to observations.
+- **Hallucination & citation checks:** Synthesis accepts `0–4` findings (so weak or fictional evidence cleanly produces an inconclusive report with zero forced findings). Any non-empty finding must cite valid, non-skipped response IDs and preserve participant corrections.
+- **Scoped credentials & local request guards:** Meta API keys stay on the server. Streaming voice uses short-lived, one-use WebSocket tickets tied to the active question nonce. The HTTP server checks `Host`, `Origin`, and `Content-Type` before reading payloads or calling Meta APIs.
 
-Muse Image is not used in this prototype because generated visuals would add an uncontrolled stimulus.
+---
 
-### Model boundary
+## Quickstart (Research Studio)
 
-Muse performs bounded semantic interpretation, pre-fieldwork review, approved-comparison ordering and evidence-linked reconsideration. Code owns baseline question selection, study validation, allowed-task checks, likelihoods, probability updates, randomization and descriptive reporting. A model response cannot override an inconclusive numerical result or introduce an unvalidated experiment. Legacy standalone compiler/API methods remain for compatibility but are hidden from the main researcher workflow.
+Requires **Python 3.10+** (tested through Python 3.14). Core HTTP routes use the Python standard library; realtime voice streaming uses the declared `websockets` package (automatically installed by `Start-ChoiceGap.ps1` or `pip install -e .`).
 
-### Dynamic study workflow
+### 1. Configure your Meta API Key
 
-1. Open **Researcher view**.
-2. Describe a decision, population, and uncertainty in the Muse study compiler.
-3. Muse returns four structured candidate explanations with concrete high/low levels.
-4. The local compiler produces the six unique pairwise experiments.
-5. The audit checks four accounts, complete pairwise coverage, binary factor levels, two varying factors per test, unique experiment IDs, and exact agreement between displayed copy and encoded levels.
-6. Open the generated participant link in a separate tab. Published designs and their links are saved locally and survive a server restart.
-7. Return to the researcher console and select **Load completed sessions** to open a report.
-
-Every completed report includes a decision trail: the plan recorded before each response, computed choice probabilities for all four models, the exact displayed stimuli and their SHA-256 digest, option orientation, and posterior probabilities before and after the response. Entropy may increase after an unexpected answer; the trail preserves that outcome. The digest identifies the recorded payload; it does not provide an external timestamp or independent preregistration.
-
-The server owns question order and orientation. Each issued question has a one-use response token. Replayed answers, out-of-order responses, and responses for an unissued experiment are rejected before evidence is updated.
-
-## Run locally
-
-Requires Python 3.10+ and no third-party packages.
+Set `MODEL_API_KEY` in your environment or save `MODEL_API_KEY=your-key` in a local `.env` file in the repository root (`.env` is git-ignored):
 
 ```powershell
 $env:MODEL_API_KEY = "your-key"
+```
+
+*(Without `MODEL_API_KEY`, the app starts in deterministic offline/local mode and clearly labels that state.)*
+
+### 2. Start the Server
+
+Run the PowerShell helper from the repository root (prepares `work/choicegap-venv` on first use):
+
+```powershell
+.\Start-ChoiceGap.ps1
+```
+
+Or run manually:
+
+```powershell
+python -m pip install -e .
 python -m choicegap.server
 ```
 
-Open <http://127.0.0.1:8000>. Set `META_MODEL` to override the default `muse-spark-1.3`. Without `MODEL_API_KEY`, the app runs in deterministic local mode and clearly labels that state.
+Open **<http://127.0.0.1:8000/?mode=researcher>** in your browser.
 
-Alternatively save `MODEL_API_KEY=your-key` in a local `.env` file in the project folder. The server reads that file at startup; existing environment variables take precedence. The file is excluded from Git and source ZIPs. Do not include keys in shared research packets.
+### 3. Try the End-to-End Studio Workflow
 
-Participant mode is the default and contains no researcher controls or debrief access. Open <http://127.0.0.1:8000/?mode=researcher> for the researcher console.
+1. **Enter a brief & prepare context:** Type a research brief or load the **AI assistant adoption** or **Sustainable shopping** editable example. Optionally expand **Research the background with cited sources** (Muse Spark `web_search`) or **Add a concept or stimulus** (upload or generate/edit with `muse-image-1.0`).
+2. **Create & review the study draft:** Select **Create study draft**. Edit questions, answer options, interview guide prompts, permitted follow-up topics, and optional single-detail comparison tasks. Supported question types: **open ended, single select, multi select, ranking, 1–5 rating scale, number, and hypothetical choice**.
+3. **Configure collection & approve:** Choose **Survey only**, **Interview only**, or **Survey, then interview**. Optionally enable **spoken AI moderation**, **streaming Muse Voice**, the **included 3D AI character** (local Three.js procedural moderator—no external avatar account needed), and **task recording**. Confirm your review and publish the participant link.
+4. **Complete a participant session:** Open the participant link in another tab. Answer or skip questions, try spoken answers (up to 90s with live editable transcription) or a short task clip (up to 60s), complete the baseline/variant comparison, and review/correct Muse's tentative understanding at the end.
+5. **Inspect findings & export:** Return to **Findings**, refresh responses, and click **Analyze responses** to inspect cited responses, comparison counts, participant corrections, and JSON exports.
 
-Meta Model API configuration follows the official OpenAI-compatible endpoint:
+See [interface design notes](docs/interface-design.md), [spoken interview setup and validation](docs/spoken-moderator.md), [the enhanced workflow guide](docs/muse-enhancements.md), [Research Studio setup and boundaries](docs/research-studio.md), and [the 1 November verification audit](docs/choicegap-audit-2026-11-01.md).
 
-- Base URL: `https://api.meta.ai/v1`
-- Endpoint: `POST /chat/completions`
-- Auth: `Authorization: Bearer $MODEL_API_KEY`
-- Structured output: `response_format.type = json_schema`
+---
 
-Research data is stored in `work/choicegap-data/research.sqlite3` relative to the server's starting directory. Set `CHOICEGAP_DATA_DIR` to a fixed directory to keep the same store when starting the server from another location. The store is local and unencrypted. Baseline choice sessions remain memory-only. The integrated interview is persisted once the baseline finishes and can reopen in the same browser tab after refresh or restart.
+## Earlier Controlled-Choice & Evidence Workbench Workflows
 
-## Test
+Research Studio (`studio.html`) is the primary interface and is independent of the earlier grocery-delivery controlled-choice protocol (`index.html`). Existing links and approvals retain their original flow; open <http://127.0.0.1:8000/index.html?mode=researcher> to use those earlier tools:
+
+- **Integrated controlled-choice study (`v2`):** Combines a short rating survey, four adaptive pairwise choices selected by maximum expected information gain (EIG), a bounded text interview, participant corrections, and up to two approved single-detail condition comparisons ordered via a native Muse tool call. See [the simple study guide](docs/simple-study.md), [the integrated study guide](docs/adaptive-interviews.md), [the Muse demonstration guide](docs/muse-demonstration.md), and [the product direction](docs/product-direction.md).
+- **Evidence workbench (`v1`):** Imports source excerpts (`statement`, `observed`, `hypothetical`), maps them to four competing explanations, runs three independent text-only Muse design critiques plus an optional separate prototype screenshot review, and compiles six pairwise controlled choices with a neutral practice task, genuine outside option, and reversed-side holdout. (In this legacy controlled-choice engine, stimuli are templated text tables and `muse-image-1.0` is not used so pairwise attributes remain strictly tabular.)
+
+### Seeded Choice-Engine Diagnostic Benchmark
+
+The deterministic choice engine includes a reproducible simulated-participant benchmark (measuring in-model Bayesian EIG question selection vs. fixed and random policies across 2,000 simulated participants; no API calls required):
+
+| Four-round policy | Top-1 recovery | Mean Brier ↓ | Probability on true driver |
+|---|---:|---:|---:|
+| **Adaptive EIG** | **91.60%** | **0.0333** | **86.86%** |
+| Fixed | 81.10% | 0.0689 | 71.99% |
+| Random | 79.30% | 0.0721 | 72.15% |
+
+*Note: This benchmark evaluates the deterministic 6-pair choice engine ([`docs/benchmark-results.json`](docs/benchmark-results.json)), not the Research Studio AI moderator. A misspecified simulation with continuous mixed preferences, variable noise, 8% attention lapses, and 6% left-side bias yields 60.3% adaptive recovery vs. 55.0% fixed. See [`docs/evaluation-status.md`](docs/evaluation-status.md), [`docs/review-evaluation-protocol.md`](docs/review-evaluation-protocol.md), [`docs/sustainability-research-basis.md`](docs/sustainability-research-basis.md), and [`docs/field-validation-protocol.md`](docs/field-validation-protocol.md).*
+
+---
+
+## Testing & Verification
+
+154 Python unit/integration tests and 5 JavaScript test suites verify schema validation, immutable approvals, single-cell comparison audits, probe caps, zero-finding inconclusive reports, WebSocket ticket scoping, PCM resampling, and localhost origin/host guards:
 
 ```powershell
+# Run the Python test suite (154 tests)
 python -m unittest discover -s tests -v
+
+# Run the JavaScript UI & audio/voice controller checks
+node tests/research_ui.test.cjs
+node tests/report_copy.test.cjs
+node tests/spoken_turn.test.cjs
+node tests/spoken_moderator.test.cjs
+node tests/pcm_worklet.test.cjs
+
+# Run deterministic choice-engine benchmarks
 python -m choicegap.benchmark --participants 2000 --output benchmark-results.json
 python -m choicegap.workbench_benchmark --participants 2000 --output outputs/workbench-benchmark.json
 ```
 
-The optional Node check `node tests/research_ui.test.cjs` exercises the quote editor serializer. See `docs/review-evaluation-protocol.md` to prepare or resume the live Muse review evaluation; it requires a local key and uses synthetic inputs.
+---
 
-The original benchmark below is a legacy preset-engine diagnostic. The workbench benchmark evaluates the engine used by approved workbench studies, adds an all-six-pairs baseline, null rating–model mismatch rates, repeat-failure rates, mixed preferences and threshold sensitivity. It uses no model API calls. Its seeded results and limitations are described in `docs/evaluation-status.md`. The Muse review evaluation is specified separately in `docs/review-evaluation-protocol.md` and uses live API calls only when explicitly run.
-
-### Current seeded result
-
-| Four-round policy | Top-1 recovery | Mean Brier ↓ | Probability on true driver |
-|---|---:|---:|---:|
-| Adaptive EIG | **91.60%** | **0.0333** | **86.86%** |
-| Fixed | 81.10% | 0.0689 | 71.99% |
-| Random | 79.30% | 0.0721 | 72.15% |
-
-The adaptive policy gains **10.50 percentage points** over the fixed sequence in this seeded sustainability simulation. The committed raw result is in `docs/benchmark-results.json`.
-
-That result is an in-model calibration diagnostic. A misspecified simulation—with continuous mixed preferences, variable noise, 8% attention lapses, and 6% left-side bias—produces **60.3%** adaptive recovery versus **55.0%** fixed. Neither simulation establishes external validity with humans.
-
-Generated studies receive a structural design audit, not automatic domain validation. A human researcher must still review whether Muse selected the right explanations and realistic factor levels before recruiting participants.
-
-## Method and guardrails
-
-The candidate set is a small fractional-factorial-style library of paired choices. Each pair either holds all but one attribute constant or presents a clearly disclosed two-attribute trade-off. Product names are neutral, copy is templated, and left/right order is randomized. This reduces obvious wording and position confounds; it does not eliminate hypothetical-choice bias.
-
-The posterior is over four deliberately simple models, not a person's identity. Tied highest ratings are retained. The 45% threshold is an uncalibrated separation heuristic. Individual headlines make no comparison with importance ratings. The legacy `gap_detected` field stays false; `rating_choice_mismatch` is export-only descriptive metadata. Repeat disagreement does not filter sessions. Task shares are conditional on adaptive assignment, have separate denominators, and cannot be pooled into population preferences. Additive single-factor models cannot estimate interactions. The report always discloses:
-
-1. one respondent and four choices cannot prove causality;
-2. conclusions are local to this scenario;
-3. omitted explanations can matter;
-4. results depend on model and stimulus design.
-
-## Project map
+## Project Map
 
 ```text
-choicegap/engine.py     Bayesian model, experiment design, session state
-choicegap/dynamic.py    generic study compiler, audit, and adaptive session
-choicegap/meta.py       Meta Model API structured-output client
-choicegap/server.py     dependency-free local web server and API
-choicegap/benchmark.py  objective simulated-participant evaluation
-choicegap/workbench_benchmark.py  shipped-engine simulation and all-six comparison
-choicegap/review_benchmark.py     frozen multimodal review evaluation and resume
-choicegap/evaluation_report.py    readable reports from recorded results
-choicegap/research.py   source validation, approval, decision briefs, SQLite workspaces
-choicegap/review.py     validated Muse review of semantic and visual confounds
-static/                 participant and researcher web interfaces
-tests/                  deterministic unit and benchmark checks
-docs/                   research basis, validation protocol, benchmark, and submission plan
+choicegap/studio.py               Research Studio workflow: brief-led generation, bounded probes, member check, synthesis
+choicegap/studio_capabilities.py  Muse web_search background, Muse Image generation/edit, native tool comparison, clip review
+choicegap/voice_stream.py         Capability-scoped local WebSocket relay to Muse Voice Transcribe realtime ASR
+choicegap/meta.py                 Meta Model API client (structured outputs, reasoning effort, tool calls)
+choicegap/server.py               Local HTTP server, origin/host guards, and REST endpoints
+choicegap/research.py             SQLite store, workspace approval, and legacy evidence workbench
+choicegap/muse_research.py        Version-2 interview evidence schema and native comparison selection
+choicegap/explore.py              Bounded exploratory interview follow-ups for the legacy workbench
+choicegap/mechanisms.py           Single-detail condition comparisons for the legacy workbench
+choicegap/review.py               Multimodal pre-fieldwork confound critique (text + screenshot)
+choicegap/engine.py               Bayesian choice model, EIG selector, and session state
+choicegap/dynamic.py              Generic 4-hypothesis / 6-pair compiler and structural audit
+choicegap/benchmark.py            Simulated-participant benchmark for the preset choice engine
+choicegap/workbench_benchmark.py  Shipped-engine simulation, holdout, and misspecified diagnostics
+choicegap/review_benchmark.py     Frozen 18-case multimodal design-review evaluation harness
+static/                           Research Studio (studio.html, studio.js, moderator-avatar.js) & legacy workbench UI
+tests/                            154 Python unit tests and 5 Node.js test suites
+docs/                             Audit report, architecture notes, validation protocols, and hackathon plan
 ```
 
-The sustainability choices and claims boundary are grounded in `docs/sustainability-research-basis.md`. The path from prototype to incentive-compatible research, design-specific power simulation, and mixed-logit analysis is specified in `docs/field-validation-protocol.md`.
+---
 
-## Data handling and deployment boundary
+## Data Handling, Claims & Deployment Boundaries
 
-- Baseline choice sessions are memory-only; workspaces, published studies, issued interview follow-ups and completed reports are saved in SQLite.
-- The interface does not request direct identifiers.
-- Integrated interview exports include survey free text, interview answers and corrections. Review for identifying information before sharing. Legacy choice-only records exclude the intake comment.
-- App exports include exact stimuli, decision trails, model source, and returned API token usage when available. Separate evaluation reports estimate token cost using explicitly documented published rates.
-- Muse receives imported excerpts and draft study inputs for researcher-requested mapping/review, plus the optional screenshot when requested. A newly approved version-two interview makes at most four calls using survey responses, exact choices, interview answers, corrections and factor definitions. Skipping all interview text makes no call. Version-one approvals retain their original two-answer, one-call scope. Failed/invalid model output falls back to the recorded evidence and approved local ordering.
-- Imported excerpts are persisted and may appear in the decision-brief export. Use de-identified material you are authorized to process.
-- The local server has no authentication, encrypted storage, retention controls, or multi-user isolation. It is not a production deployment.
-
-The automated and browser evaluation scope is recorded in `docs/evaluation-status.md`.
-
-Hackathon-specific deadlines and presentation work are isolated in `docs/hackathon-plan.md`.
+- **Scientific claims boundary:** ChoiceGap reports which explanations are most consistent with observed responses under the presented stimuli and highlights remaining uncertainty. It does not infer stable personality traits, diagnose psychological biases, claim causal proof from small unrepresentative samples, or equate hypothetical choices with real-world purchases.
+- **Privacy & storage:** The app sends researcher briefs, attached stimuli, submitted responses, and optional audio/video clips to Meta Model APIs when those features are invoked. Studies, responses, reviewed task descriptions, and reports are stored in a local unencrypted SQLite database (`work/choicegap-data/research.sqlite3`); raw audio and video bytes are never saved to disk by ChoiceGap.
+- **Local-origin security boundary:** The built-in server is designed for single-computer local operation (`127.0.0.1` / `localhost`) without researcher authentication or spend caps, and rejects cross-origin writes and foreign `Host` headers. Public hosting requires authentication, participant isolation, HTTPS/WSS routing, and spend limits.
+- **Hackathon submission plan:** See [`docs/hackathon-plan.md`](docs/hackathon-plan.md) and [`docs/choicegap-audit-2026-11-01.md`](docs/choicegap-audit-2026-11-01.md).
 
 ## License
 

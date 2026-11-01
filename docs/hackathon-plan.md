@@ -26,17 +26,25 @@ The current Studio uses model calls during collection, unlike the earlier determ
 - [x] Three-minute demo outline
 - [x] Add `MODEL_API_KEY` locally and run the live Meta smoke test
 - [ ] Collect independent UXR feedback if available; external recruitment is not a prerequisite for continuing development
-- [ ] Publish this repository publicly
+- [x] Publish this repository publicly (`https://github.com/shiwakshir/choicegap`)
 - [ ] Record a three-minute demo
+- [ ] Post the demo on X and submit the link for the Most Viral Project bonus prize
 - [ ] Submit before 4 November 2026, 9:00 PM ET
+
+## Track & bonus prize positioning
+
+- **Primary Problem Statement:** **Build for Your World** — bringing Meta's multimodal and reasoning models into UX and market research so teams can run brief-led, adaptive, evidence-linked studies without losing methodological rigor.
+- **Best Agentic Use-Case ($5,000):** ChoiceGap acts as a **verifiable, bounded research agent**. It conducts live web-grounded desk research (`web_search`), generates structured multi-type studies, autonomously decides when to ask bounded follow-up probes within researcher-approved topics, invokes native tool calling (`select_approved_condition`) mid-session to test a single-cell variant against a rival explanation, checks its tentative mental model with the participant (`C1`), and synthesizes cited findings.
+- **Best Creative Build ($5,000):** Uses **Muse Image (`muse-image-1.0`)** (`/v1/images/generations` and `/v1/images/edits`) inside Research Studio so researchers can generate and iteratively refine visual concept stimuli before locking the approved study.
+- **Most Viral Project ($20,000) & Community Vote ($10,000):** Post the 3-minute demo video on X and submit the post URL on the Cerebral Valley submission form (engagement counted through November 8 EOD).
 
 ## Three-minute demonstration
 
 1. 0:00–0:25: Explain the retailer's decision: which change would make lower-impact delivery practical? Introduce ChoiceGap as a research workflow, without promising to reveal hidden motives.
-2. 0:25–1:00: Show the brief, Muse-generated draft and researcher edits. Approve the survey/interview guide and any comparison. Optional tools need not all appear in the demo.
-3. 1:00–1:45: Show a participant's priorities and a contextual account, a relevant Muse follow-up and optional spoken moderation. Clearly label scripted responses as fictional.
-4. 1:45–2:20: Show the exact approved change, hypothetical choice, model's prospective rationale and participant correction. Use a clearly labelled saved run if latency requires it.
-5. 2:20–3:00: Show findings and supporting responses, uncertainty and export. Explain Meta's contribution and the validation boundary. An inconclusive report is valid. Do not claim human research quality, provider superiority, measured time savings or causal proof.
+2. 0:25–1:00: Show the brief, **Muse Spark `web_search` desk research**, **Muse Image (`muse-image-1.0`) concept generation/edit**, and researcher edits to the **Muse Spark (`muse-spark-1.3`)** draft. Approve the survey/interview guide and comparison matrix.
+3. 1:00–1:45: Show a participant's priorities and a contextual account, a relevant Muse follow-up probe, and spoken moderation with **Muse Voice Transcribe (`muse-voice-transcribe-1.0`)** realtime WebSocket streaming + the 3D AI moderator. Clearly label scripted responses as fictional.
+4. 1:45–2:20: Show the exact approved change selected via **Muse Spark native tool calling (`select_approved_condition`)**, the hypothetical choice, the model's prospective rationale, and the participant correction (`C1`). Use a clearly labelled saved run if latency requires it.
+5. 2:20–3:00: Show findings and supporting responses, uncertainty, and JSON export. Explain Meta's contribution and the validation boundary. An inconclusive report is valid. Do not claim human research quality, provider superiority, measured time savings, or causal proof.
 
 The earlier evidence workbench and its benchmarks remain historical supporting material; do not imply those metrics evaluate the new Studio moderator. See [the current audit](choicegap-audit-2026-11-01.md) for tested scope and remaining submission work.
 
@@ -45,4 +53,3 @@ Do not script a guaranteed gap: an inconclusive result should remain visible whe
 ## Scientific claims policy
 
 Say “the observed choices are more consistent with…” and “this test reduced uncertainty under the model.” Do not say that four hypothetical choices reveal a true preference, prove a cause, or generalize to a market. Human validation should preregister the primary contrast, randomize order, preserve exact stimulus wording, and analyze more than one respondent.
-
