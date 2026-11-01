@@ -4,6 +4,8 @@ ChoiceGap is a brief-led UX and market research prototype. A researcher supplies
 
 ## Start with Research Studio
 
+Audited 1 November: 154 Python tests and five JavaScript checks pass. Fresh live sustainability collection and synthesis were exercised with fictional material. Reporting now accepts an inconclusive result with no supported findings. See [the audit, fixes and release boundaries](docs/choicegap-audit-2026-11-01.md). The HTTP server accepts its own localhost origin only; public hosting/tunnelling requires a separate deployment configuration and access controls.
+
 Updated 31 October: Studio now includes cited background research, reviewed Muse Image concept generation/editing, approved single-detail comparisons selected through a Muse tool call, participant-reviewed task recordings, streaming Muse Voice and an optional included 3D moderator. See [the enhanced workflow and setup](docs/muse-enhancements.md). The 3D route needs no external avatar account. Existing study approvals retain their original collection scope.
 
 Run `Start-ChoiceGap.ps1` from this repository directory (it prepares a local environment on first use), then open <http://127.0.0.1:8000/?mode=researcher>. For manual setup, use `python -m pip install -e .` followed by `python -m choicegap.server`. The streaming relay needs the declared `websockets` dependency and the adjacent localhost port; recorded transcription remains available if it cannot start.

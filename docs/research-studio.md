@@ -61,4 +61,4 @@ This is a single-computer prototype. It has no authentication, encryption, reten
 
 Unknowns remain: real researcher usability, participant burden, transcription quality across accents/languages, moderation neutrality, semantic validity, accessibility across assistive technologies, cost/latency at scale and generalizable product demand.
 
-The latest run passed 148 Python tests (17 for Research Studio and 19 for the new capabilities and streaming relay), five JavaScript checks and script syntax checks. See [the validation record](studio-validation.json). Live transcription used synthetic speech; actual microphone capture across browsers remains unverified.
+The latest run passed 154 Python tests (19 for Research Studio and 19 for the new capabilities and streaming relay), five JavaScript checks and script syntax checks. See [the validation record](studio-validation.json) and [the November 1 audit](choicegap-audit-2026-11-01.md). Live transcription used synthetic speech; actual microphone capture across browsers remains unverified.

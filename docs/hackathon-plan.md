@@ -2,26 +2,26 @@
 
 ## Project thesis
 
-ChoiceGap helps researchers challenge an explanation before spending a round of fieldwork on a confounded sustainability study. Its main flow connects grocery-delivery source quotes, four editable rival accounts, Muse's multimodal design review, approved stimuli, hypothetical responses and an exportable decision brief.
+ChoiceGap turns a researcher brief into an editable survey and interview guide. After approval, Muse asks bounded follow-ups, can select a reviewed single-detail comparison, and gives participants a chance to correct its interpretation. Findings link to the exact answers and distinguish stated priorities, reported episodes, hypothetical choices and reviewed recording descriptions. Sustainability delivery research is one clear demonstration domain.
 
 ## Evaluation mapping
 
 | Criterion | Weight | Evidence in this repository |
 |---|---:|---|
-| Impact | 30% | Targets preventable study confounds; researcher time savings and demand remain unmeasured. |
-| Meta tooling | 25% | Muse interprets quotes, study levels and a screenshot together; paired visual-versus-text review evaluation records findings, usage and failures. |
-| Demo | 25% | One evidence-to-review-to-approved-study flow; live and fixture findings clearly distinguished. |
-| Technical depth | 20% | Citation checks, frozen review inputs, audited stimuli, one-use answers, local EIG, dynamic-engine benchmarks including all six pairs and misspecified preferences. |
+| Impact | 30% | Connects survey answers, adaptive interviewing and evidence-linked findings; human usability, demand and time savings remain unmeasured. |
+| Meta tooling | 25% | Spark designs and moderates; native tool calling selects approved comparisons; Muse Voice transcribes; optional visual context, cited background and Muse Image support study preparation. |
+| Demo | 25% | One brief → researcher review → participant interview → correction → findings flow. Recorded outputs and fictional material are clearly labelled. |
+| Technical depth | 20% | Immutable approvals, bounded probes, checked evidence IDs, participant corrections, audited single-cell changes, stale-response protection and scoped streaming tickets. |
 
 ## Credit budget
 
-Participant sessions use zero model API calls. Spend credits on evidence mapping and pre-fieldwork review. The frozen review evaluation plans 108 calls, records actual returned usage, and accepts verified prices for a cost estimate; no cost is promised without checking account pricing. Run one scheduled call first, then resume. Set the model version available to the account and preserve it throughout the run.
+The current Studio uses model calls during collection, unlike the earlier deterministic choice engine. Survey probe attempts are capped at four, interview probe attempts at six, with at most two and three added probes respectively. A completed session may also call member-check synthesis and approved-condition selection. Streaming/file transcription and optional task review add their own processing. Generation, desk research, images and final synthesis are separate calls. Do not claim a fixed per-study cost without current account pricing and usage. No application-wide spend cap is implemented; public access remains blocked pending deployment controls.
 
 ## Before submission
 
 - [x] Working vertical slice
-- [x] Deterministic local fallback
-- [x] Objective simulated-participant benchmark
+- [x] Explicit Meta-unavailable handling; approved collection can continue without adaptive probes
+- [x] Objective simulated-participant benchmark for the earlier choice engine, clearly separated from Studio integration checks
 - [x] Tests and reproducible seed
 - [x] Three-minute demo outline
 - [x] Add `MODEL_API_KEY` locally and run the live Meta smoke test
@@ -32,13 +32,13 @@ Participant sessions use zero model API calls. Spend credits on evidence mapping
 
 ## Three-minute demonstration
 
-1. 0:00–0:25: Show a sustainability intention and the practical trade-offs that can prevent it becoming a choice.
-2. 0:25–1:05: Show a source-linked draft and a checkout screenshot with a planted default. Run or replay a clearly identified recorded Muse review, verify its visual finding and suggested control. Use a fixture only if explicitly labelled.
-3. 1:05–1:35: Correct the design, review exact quotes and levels, approve it and open the participant link. Show the neutral task UI and complete or open a recorded demonstration session.
-4. 1:35–2:20: Inspect the locked stimulus, pre-response prediction, response and probability update. Export the brief linking imported interpretations with descriptive session evidence.
-5. 2:20–3:00: Show the actual paired-review results if run and adjudicated; otherwise state their pending status. Show four adaptive versus all-six task burden and mixed-model failure rates. Say researcher time savings and demand remain unmeasured. Never frame a hypothetical rating difference as a verified behaviour gap.
+1. 0:00–0:25: Explain the retailer's decision: which change would make lower-impact delivery practical? Introduce ChoiceGap as a research workflow, without promising to reveal hidden motives.
+2. 0:25–1:00: Show the brief, Muse-generated draft and researcher edits. Approve the survey/interview guide and any comparison. Optional tools need not all appear in the demo.
+3. 1:00–1:45: Show a participant's priorities and a contextual account, a relevant Muse follow-up and optional spoken moderation. Clearly label scripted responses as fictional.
+4. 1:45–2:20: Show the exact approved change, hypothetical choice, model's prospective rationale and participant correction. Use a clearly labelled saved run if latency requires it.
+5. 2:20–3:00: Show findings and supporting responses, uncertainty and export. Explain Meta's contribution and the validation boundary. An inconclusive report is valid. Do not claim human research quality, provider superiority, measured time savings or causal proof.
 
-The evidence-workbench demonstration can start with the labelled fictional corpus, map and review its sources, approve a study, and export a decision brief without external recruitment. Describe it as a workflow demonstration rather than customer validation.
+The earlier evidence workbench and its benchmarks remain historical supporting material; do not imply those metrics evaluate the new Studio moderator. See [the current audit](choicegap-audit-2026-11-01.md) for tested scope and remaining submission work.
 
 Do not script a guaranteed gap: an inconclusive result should remain visible when the evidence is weak.
 

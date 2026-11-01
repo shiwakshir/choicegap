@@ -26,12 +26,26 @@ class ServerWorkflowTests(unittest.TestCase):
             registry.clear()
         server.COMPLETED.clear()
         self.handler = object.__new__(server.Handler)
+        from types import SimpleNamespace
+        self.handler.server = SimpleNamespace(server_port=8000)
+        self.handler.headers = {'Host': '127.0.0.1:8000', 'Content-Type': 'application/json'}
         self.handler._json = lambda status, body: setattr(self, 'response', body)
 
     def tearDown(self):
         self.environment.stop()
         self.store_patch.stop()
         self.temp.cleanup()
+
+    def test_participant_count_includes_optional_tasks_and_final_correction(self):
+        from test_studio import draft
+        from choicegap import studio
+        study = studio.approve(draft(), {'confirmed': True, 'design': draft()['design'],
+            'method': 'combined', 'recording': False, 'task_prompt': 'Optional fictional task'})
+        study['comparisons'] = {'reviewed': True}
+        server.STORE.put('studio_study', study['id'], study)
+        self.handler.path = '/api/studio/participant?id=' + study['id']
+        self.handler.do_GET()
+        self.assertEqual(self.response['base_questions'], 7 + 2 + 1 + 3 + 1)
 
     def start(self, **overrides):
         payload = {'ratings': {'impact': 5, 'price': 3, 'convenience': 3, 'trust': 3}}

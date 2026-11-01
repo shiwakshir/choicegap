@@ -14,7 +14,7 @@ from choicegap.research import ResearchStore
 
 def q(kind='open', evidence='context'):
     return {'type': kind, 'prompt': 'What mattered in your most recent choice?',
-            'options': [] if kind in ('open', 'number') else ['Accuracy', 'Familiarity', 'Neither'],
+            'options': [] if kind in ('open', 'number') else ['Not important', 'Very important'] if kind == 'scale' else ['Accuracy', 'Familiarity', 'Neither'],
             'evidence_kind': 'hypothetical_choice' if kind == 'choice' else evidence,
             'purpose': 'Understand the context', 'show_stimulus': False}
 
@@ -50,6 +50,12 @@ class NoMeta(FakeMeta):
 
 
 class StudioTests(unittest.TestCase):
+    def test_scale_rejects_labels_that_would_not_be_displayed(self):
+        value = q('scale')
+        value['options'] = ['Low', 'Middle', 'High']
+        with self.assertRaisesRegex(ValueError, 'exactly two'):
+            studio.question(value, 'Q1')
+
     def setUp(self):
         self.study = studio.approve(draft(), {'confirmed': True, 'design': draft()['design'],
                                              'method': 'combined', 'recording': True})
@@ -158,6 +164,19 @@ class StudioTests(unittest.TestCase):
             meta.refs = refs
             with self.assertRaises(ValueError):
                 studio.report(self.study, [state], meta)
+
+    def test_inconclusive_report_does_not_require_an_invented_finding(self):
+        class Inconclusive(FakeMeta):
+            def _structured(self, *args):
+                return {'overview': 'No substantive conclusion is supported by this fictional test.',
+                        'findings': [], 'next_research': ['Collect real task evidence with consent.']}
+        self.study['method'] = 'interview'
+        state = studio.start(self.study, True)
+        while state['status'] == 'active':
+            state = self.answer(state, 'This is fictional software-test material.')
+        report = studio.report(self.study, [state], Inconclusive())
+        self.assertEqual(report['analysis']['findings'], [])
+        self.assertEqual(report['included'], 1)
 
     def test_invalid_stimulus_and_hypothetical_label(self):
         with self.assertRaises(ValueError):

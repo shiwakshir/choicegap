@@ -121,6 +121,24 @@ def consume_answer(token: str, payload: dict[str, Any]) -> tuple[Any, dict[str, 
 class Handler(BaseHTTPRequestHandler):
     server_version = "ChoiceGap/0.1"
 
+    def _local_request(self, write=False):
+        """Keep this unauthenticated prototype confined to its own local origin."""
+        port = self.server.server_port
+        allowed = {f'{host}:{port}' for host in ('localhost', '127.0.0.1')}
+        if port == 80:
+            allowed.update(('localhost', '127.0.0.1'))
+        host = self.headers.get('Host', '').lower()
+        origin = self.headers.get('Origin')
+        if (host not in allowed or
+                (origin is not None and origin != f'http://{host}') or
+                (write and self.headers.get('Sec-Fetch-Site') == 'cross-site')):
+            self._json(403, {'error': 'This local prototype only accepts requests from its own local address.'})
+            return False
+        if write and self.headers.get('Content-Type', '').split(';')[0].strip().lower() != 'application/json':
+            self._json(415, {'error': 'Send an application/json request.'})
+            return False
+        return True
+
     def log_message(self, format: str, *args: Any) -> None:
         print(f"[choicegap] {format % args}")
 
@@ -145,6 +163,8 @@ class Handler(BaseHTTPRequestHandler):
         return payload
 
     def do_GET(self) -> None:
+        if not self._local_request():
+            return
         path = urlparse(self.path).path
         if path.startswith('/api/studio/'):
             try:
@@ -225,6 +245,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_POST(self) -> None:
+        if not self._local_request(write=True):
+            return
         try:
             payload = self._body()
             if self.path.startswith('/api/studio/'):
@@ -301,7 +323,9 @@ class Handler(BaseHTTPRequestHandler):
                 'avatar': study.get('avatar', 'none'), 'task_recording': study['policy'].get('task_recording') is True,
                 'base_questions':
                 (len(study['design']['questions']) if study['method'] != 'interview' else 0) +
-                (len(study['design']['interview_questions']) if study['method'] != 'survey' else 0)})
+                (len(study['design']['interview_questions']) if study['method'] != 'survey' else 0) +
+                int(bool(study.get('task_prompt') and study['policy'].get('task_recording'))) +
+                (3 if study.get('comparisons') else 0) + 1})
         elif path == '/api/studio/results':
             study = STORE.get('studio_study', identifier)
             sessions = [s for s in STORE.list('studio_session') if s['study_id'] == identifier]

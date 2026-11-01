@@ -81,6 +81,8 @@ def question(q, identifier):
         raise ValueError('Answer options must be distinct')
     if result['type'] in ('single', 'multi', 'ranking', 'choice', 'scale') and len(options) < 2:
         raise ValueError('This question needs at least two answer options (scale endpoints count as options)')
+    if result['type'] == 'scale' and len(options) != 2:
+        raise ValueError('A 1–5 rating scale needs exactly two endpoint labels: 1 and 5')
     result['options'] = options if result['type'] not in ('open', 'number') else []
     if result['type'] == 'choice' and result['evidence_kind'] != 'hypothetical_choice':
         raise ValueError('Study choice tasks must be labelled hypothetical choices')
@@ -443,8 +445,10 @@ def report(study, sessions, meta):
                    'behavioural_interpretation': STR, 'recommendation': STR, 'limitation': STR})
     schema = obj({'overview': STR, 'findings': {'type': 'array', 'items': finding}, 'next_research': STRINGS})
     result = meta._structured([{'role': 'system', 'content': RULES +
-        'Synthesize this UX/market research for the decision owner. Return only 1-4 substantive findings, fewer '
-        'when evidence is thin. Never fill a quota with missing-data observations or speculative mechanisms. '
+        'Synthesize this UX/market research for the decision owner. Return 0-4 substantive findings, fewer '
+        'when evidence is thin. An empty findings list is valid when no substantive conclusion is supported; '
+        'explain this briefly in overview and propose suitable next research. Never fill a quota with '
+        'missing-data observations or speculative mechanisms. '
         'Write for a busy nontechnical researcher. Overview <=500 characters. Each finding is a short headline '
         '<=140 characters, not a paragraph. Each other field <=350 characters. Recommendations are concrete '
         'product/research steps, not boilerplate. Missing data belong in limitations, never as a behavioural '
@@ -470,7 +474,7 @@ def report(study, sessions, meta):
          'brief': study['brief'], 'starting_hypotheses': study['design']['hypotheses'],
          'records': records}, study['stimulus'])}], 'studio_synthesis', schema)
     by_id = {r['id']: r for r in records if not r['skipped']}
-    if not isinstance(result.get('findings'), list) or not 1 <= len(result['findings']) <= 8:
+    if not isinstance(result.get('findings'), list) or not 0 <= len(result['findings']) <= 4:
         raise ValueError('Muse returned an invalid findings structure')
     for f in result['findings']:
         ids = f.get('evidence_ids')

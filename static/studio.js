@@ -171,7 +171,8 @@ async function initParticipant(){
   el('researcher').hidden=true;el('library').hidden=true;el('participant').hidden=false;
   const info=await api(`participant?id=${encodeURIComponent(participantId)}`);
   el('participant-title').textContent=info.title;el('participant-intro').textContent=info.intro;
-  el('participant-format').textContent=`${info.method==='combined'?'Survey followed by an interview':info.method==='interview'?'AI-moderated interview':'Survey'} · ${info.base_questions} planned questions, with a few possible follow-ups. All questions are optional.`;
+  el('participant-format').textContent=`${info.method==='combined'?'Survey followed by an interview':info.method==='interview'?'AI-moderated interview':'Survey'} · Up to ${info.base_questions} planned questions, including the final chance to correct our understanding, plus a few possible follow-ups. All questions are optional.`;
+  el('moderator-notice').textContent=info.method==='survey'?'Muse may ask follow-up questions based on your answers. You can skip any question or leave whenever you wish. There are no right answers. Please avoid names, contact details or other private information.':'The interview is moderated by AI, not a person. You can type your answers and, where enabled, choose voice. You can skip any question or leave whenever you wish. There are no right answers. Please avoid names, contact details or other private information.';
   el('recording-notice').hidden=!info.recording;
   el('task-notice').hidden=!info.task_recording;
   el('avatar-notice').hidden=info.avatar==='none'||!info.avatar;
