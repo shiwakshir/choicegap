@@ -199,3 +199,10 @@ footer > span:first-child { font-weight: 600; color: var(--ink); }
   footer { padding: 18px 20px; gap: 15px; }
 }
 @media (prefers-reduced-motion: reduce) { button, a.primary { transition: none; } }
+
+.demo-bar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(980px, calc(100vw - 32px)); background: rgba(23, 35, 34, 0.96); color: #ffffff; border: 1px solid #3c5d54; border-radius: 10px; padding: 14px 18px; z-index: 90; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22); }
+.demo-bar-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.demo-bar-top strong { font-size: 13px; letter-spacing: .3px; color: #b9e6d8; }
+.demo-bar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.demo-bar-actions button { min-height: 32px; padding: 5px 10px; font-size: 12px; }
+.demo-bar-caption { margin: 0; font-size: 14px; line-height: 1.55; color: #f5f7f6; }

@@ -18,6 +18,5 @@ choicegap = "choicegap.server:main"
 packages = ["choicegap"]
 
 [tool.setuptools.data-files]
-"share/choicegap/static" = ["static/index.html", "static/app.js", "static/research.js", "static/explore.js", "static/simple-study.js", "static/mechanisms.js", "static/styles.css", "static/modes.css", "static/studio.html", "static/studio.js", "static/studio.css", "static/studio-theme.css", "static/spoken-turn.js", "static/research-tools.js", "static/task-capture.js", "static/moderator-avatar.js", "static/voice-stream.js", "static/pcm-worklet.js"]
+"share/choicegap/static" = ["static/index.html", "static/app.js", "static/research.js", "static/explore.js", "static/simple-study.js", "static/mechanisms.js", "static/styles.css", "static/modes.css", "static/studio.html", "static/studio.js", "static/studio.css", "static/studio-theme.css", "static/spoken-turn.js", "static/research-tools.js", "static/task-capture.js", "static/moderator-avatar.js", "static/voice-stream.js", "static/pcm-worklet.js", "static/demo-narrator.js", "static/sample-participant-answer.wav"]
 "share/choicegap/static/vendor" = ["static/vendor/three.module.min.js", "static/vendor/three.core.min.js", "static/vendor/THREE-LICENSE.txt"]
-

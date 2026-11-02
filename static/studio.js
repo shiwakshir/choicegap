@@ -391,6 +391,21 @@ async function beginRecording(automatic=false){
   }catch(err){stopMedia();spokenMode=false;setModerator('ready','Microphone unavailable. You can type your answer.');error(new Error('Microphone unavailable. Check browser permission, or type your answer.'));}
 }
 el('record-answer').onclick=()=>beginRecording(spokenMode);
+if(el('sample-voice-answer'))el('sample-voice-answer').onclick=()=>run('Sending sample spoken audio clip to Muse Voice Transcribe…',async()=>{
+  stopMedia();const version=++audioVersion;
+  setModerator('transcribing','Playing sample spoken clip and transcribing with Muse Voice…');
+  const res=await fetch('/sample-participant-answer.wav');
+  if(!res.ok)throw new Error('Could not load sample spoken clip.');
+  const blob=await res.blob();
+  audioUrl=URL.createObjectURL(blob);el('recording-playback').src=audioUrl;el('recording-playback').hidden=false;
+  try{el('recording-playback').play?.();}catch{}
+  const audio=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(blob);});
+  const response=await api('transcribe',{id:session.id,nonce:session.nonce,audio});
+  if(version!==audioVersion)return;
+  el('open-answer').value=response.transcript;inputMode='confirmed_transcript';
+  el('voice-status').textContent='Sample spoken clip transcribed by Muse Voice. Review the text above, then send your answer.';
+  setModerator('review','Does this capture your answer? Edit the text, send it, or record again.');el('open-answer').focus({preventScroll:true});
+});
 el('read-question').onclick=()=>{if(!window.speechSynthesis)return error(new Error('Read aloud is unavailable in this browser.'));window.speechSynthesis.cancel();window.speechSynthesis.speak(new SpeechSynthesisUtterance(session.question.prompt));el('voice-status').textContent='Reading with your device’s voice. Muse chooses the question.';};
 window.addEventListener('pagehide',()=>{spokenMode=false;stopMedia();});
 window.addEventListener('moderator-avatar-ready',()=>{if(session?.status==='active')window.moderatorAvatar?.configure(session.avatar||'none',!el('spoken-moderator').hidden);});
