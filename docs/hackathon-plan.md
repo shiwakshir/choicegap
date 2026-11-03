@@ -27,7 +27,7 @@ The current Studio uses model calls during collection, unlike the earlier determ
 - [x] Add `MODEL_API_KEY` locally and run the live Meta smoke test
 - [ ] Collect independent UXR feedback if available; external recruitment is not a prerequisite for continuing development
 - [x] Publish this repository publicly (`https://github.com/shiwakshir/choicegap`)
-- [ ] Record a three-minute demo
+- [x] Record a three-minute demo
 - [ ] Post the demo on X and submit the link for the Most Viral Project bonus prize
 - [ ] Submit before 4 November 2026, 9:00 PM ET
 
