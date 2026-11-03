@@ -160,6 +160,10 @@ class StudioTests(unittest.TestCase):
         meta = Synthesis()
         result = studio.report(self.study, [state], meta)
         self.assertEqual(result['included'], 1)
+        finding = result['analysis']['findings'][0]
+        self.assertIn('behavioural_framework', finding)
+        self.assertIn('evidence_triangulation', finding)
+        self.assertTrue(len(finding['evidence_triangulation']) >= 1)
         for refs in (['S1:R1'], ['S1:R2'], ['invented']):
             meta.refs = refs
             with self.assertRaises(ValueError):

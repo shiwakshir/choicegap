@@ -111,7 +111,8 @@
     const u = new SpeechSynthesisUtterance(SCENES[index].speech);
     const v = pickVoice();
     if (v) { u.voice = v; u.lang = v.lang; }
-    u.rate = 1.0;
+    u.rate = 0.94;
+    u.pitch = 1.0;
     window.speechSynthesis.speak(u);
   }
 
